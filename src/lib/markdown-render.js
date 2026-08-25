@@ -28,8 +28,14 @@ export function renderMarkdown(md) {
     return out.replace(/\x00(\d+)\x00/g, (_, n) => '<code>' + codes[+n] + '</code>');
   };
 
-  function makePre(codeText) {
+  function makePre(codeText, lang) {
     const pre = document.createElement('pre');
+    if (lang) {
+      const tag = document.createElement('span');
+      tag.className = 'lang-tag';
+      tag.textContent = lang;
+      pre.appendChild(tag);
+    }
     const btn = document.createElement('button');
     btn.className = 'copy-code';
     btn.type = 'button';
@@ -52,11 +58,12 @@ export function renderMarkdown(md) {
 
     // 代码块 ```
     if (/^```/.test(line)) {
+      const lang = line.replace(/^```/, '').trim().toLowerCase();
       const buf = [];
       i++;
       while (i < lines.length && !/^```/.test(lines[i])) { buf.push(lines[i]); i++; }
       i++; // skip closing ```
-      frag.appendChild(makePre(buf.join('\n')));
+      frag.appendChild(makePre(buf.join('\n'), lang));
       continue;
     }
     // 标题

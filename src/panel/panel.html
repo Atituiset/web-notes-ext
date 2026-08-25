@@ -46,6 +46,7 @@
     .msg .body pre code { background: none; color: inherit; padding: 0; white-space: pre; }
     .msg .body pre .copy-code { position: sticky; top: 0; float: right; border: 1px solid #374151; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 0 6px; cursor: pointer; font-size: 11px; }
     .msg .body pre .copy-code:hover { color: #fff; }
+    .msg .body pre .lang-tag { position: absolute; top: 6px; left: 10px; font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
     .msg .body blockquote { border-left: 3px solid #cbd5e1; color: #475569; padding-left: 8px; }
     .msg .body table { border-collapse: collapse; font-size: 12px; }
     .msg .body :is(td, th) { border: 1px solid #d1d5db; padding: 3px 6px; }
@@ -75,12 +76,32 @@
       z-index: 10; font-size: 14px; line-height: 1;
     }
     .hint { color: #6b7280; font-size: 11px; }
+    /* starters / followups */
+    .starters, .followups { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .starter {
+      text-align: left; background: #fff; border: 1px solid #d1d5db; color: #374151;
+      border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 12.5px;
+    }
+    .starter:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .followups { margin-top: 6px; }
+    /* thread list */
+    #thread-list {
+      display: none; position: absolute; top: 44px; right: 10px; width: 260px; max-height: 60vh;
+      overflow-y: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 50; padding: 4px;
+    }
+    .thread-item { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 7px; cursor: pointer; font-size: 12.5px; }
+    .thread-item:hover { background: #f3f4f6; }
+    .thread-item .thread-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .thread-item .thread-del { border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 11px; padding: 0 3px; }
+    .thread-item .thread-del:hover { color: #dc2626; }
   </style>
 </head>
 <body>
   <header>
     <b>📝 Markpilot</b>
     <button id="btn-new-chat" title="清空当前会话，开始新会话" style="display:none">✚ 新会话</button>
+    <button id="btn-threads" title="会话历史">🕘</button>
     <button id="btn-export">⬇ 导出本页</button>
     <button id="btn-options">⚙</button>
   </header>
@@ -90,6 +111,7 @@
   </nav>
   <main id="main"></main>
   <button id="btn-scroll-bottom" title="滚动到底部">↓</button>
+  <div id="thread-list"></div>
   <div class="chat-input-wrap" id="chat-input-wrap">
     <textarea id="chat-q" placeholder="问点什么…（自动带上页面正文 + 你的笔记 + 选区）"></textarea>
     <div class="row">

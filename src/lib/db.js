@@ -10,7 +10,7 @@
  * 在 service worker 与扩展页面 (panel/options) 中均可使用。
  */
 const DB_NAME = 'web-notes-ext';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let _dbPromise = null;
 
@@ -32,6 +32,11 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('threads')) {
+        // 会话线程: { id, title, url, createdAt, updatedAt, messages:[{role,content}] }
+        const t = db.createObjectStore('threads', { keyPath: 'id' });
+        t.createIndex('updatedAt', 'updatedAt', { unique: false });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -159,4 +164,40 @@ export function saveSettings(patch) {
   return getSettings().then((s) =>
     tx('settings', 'readwrite', (os) => os.put({ key: 'app', value: Object.assign(s, patch) }))
   );
+}
+
+// ---- threads (会话历史) ----
+
+export function putThread(thread) {
+  return tx('threads', 'readwrite', (os) => os.put(thread));
+}
+
+export function getThread(id) {
+  return tx('threads', 'readonly', (os) => {
+    const r = os.get(id);
+    return { _req: r };
+  });
+}
+
+export function listThreads() {
+  return openDB().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const out = [];
+        const idx = db.transaction('threads', 'readonly').objectStore('threads').index('updatedAt');
+        const req = idx.openCursor(null, 'prev'); // 最新在前
+        req.onsuccess = () => {
+          const cur = req.result;
+          if (cur) {
+            out.push(cur.value);
+            cur.continue();
+          } else resolve(out);
+        };
+        req.onerror = () => reject(req.error);
+      })
+  );
+}
+
+export function deleteThread(id) {
+  return tx('threads', 'readwrite', (os) => os.delete(id));
 }

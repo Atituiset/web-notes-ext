@@ -3,7 +3,7 @@
  *
  * LLM fetch 直接在 panel 侧执行（DESIGN.md 坑 #3：不经过 SW，规避休眠）。
  */
-import { getSettings } from '../lib/db.js';
+import { getSettings, putThread, getThread, listThreads, deleteThread } from '../lib/db.js';
 import { streamChat } from '../lib/llm/index.js';
 import { buildContext } from '../lib/llm/context.js';
 import { renderMarkdown } from '../lib/markdown-render.js';
@@ -149,17 +149,109 @@ function appendError(msg) {
   setTimeout(() => box.remove(), 8000);
 }
 
-// ---------- 聊天 ----------
+// ---------- 聊天（会话线程化）----------
+
+const STARTERS = [
+  { icon: '📄', text: '总结这篇文章的核心观点' },
+  { icon: '❓', text: '列出文中我不理解的术语并解释' },
+  { icon: '🤔', text: '针对我的笔记，指出可能的误解' },
+  { icon: '🧭', text: '用费曼方法向我讲解这个页面' },
+];
+
+let streaming = false;
+let currentThread = null; // { id, title, url, createdAt, updatedAt, messages:[{role,content}] }
+
+function uid() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+}
+
+function ensureThread() {
+  if (currentThread) return currentThread;
+  currentThread = {
+    id: uid(),
+    title: '',
+    url: '',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: [],
+  };
+  return currentThread;
+}
+
+async function persistThread() {
+  if (!currentThread || !currentThread.messages.length) return;
+  await putThread(JSON.parse(JSON.stringify(currentThread)));
+}
 
 async function renderChat() {
   const main = $('main');
   main.textContent = '';
-  main.appendChild(el('div', 'empty', '问点什么 — 上下文自动包含页面正文、你在本页的笔记和当前选区'));
   const settings = await getSettings();
   $('model-hint').textContent = settings.provider + ':' + (settings.model || '(未配置)');
+  $('btn-new-chat').style.display = chatStarted ? 'inline-block' : 'none';
+
+  if (!chatStarted) {
+    // 欢迎屏 + conversation starters
+    const hero = el('div', 'empty');
+    hero.appendChild(el('div', '', '问点什么 — 自动带上页面正文、你的笔记和选区'));
+    main.appendChild(hero);
+    const grid = el('div', 'starters');
+    for (const s of STARTERS) {
+      const b = el('button', 'starter', s.icon + ' ' + s.text);
+      b.addEventListener('click', () => askLLMWith(s.text, $('chat-scope').value));
+      grid.appendChild(b);
+    }
+    main.appendChild(grid);
+  }
 }
 
-const chatHistory = []; // {role, content} 仅本次会话内存
+async function loadThreadList() {
+  // 会话历史下拉
+  const wrap = $('thread-list');
+  wrap.textContent = '';
+  const threads = await listThreads();
+  if (!threads.length) { wrap.style.display = 'none'; return; }
+  for (const t of threads.slice(0, 15)) {
+    const item = el('div', 'thread-item');
+    item.appendChild(el('span', 'thread-title', t.title || '(无标题会话)'));
+    const btnDel = el('button', 'thread-del', '✕');
+    btnDel.title = '删除此会话';
+    btnDel.onclick = async (e) => {
+      e.stopPropagation();
+      await deleteThread(t.id);
+      if (currentThread && currentThread.id === t.id) { currentThread = null; chatStarted = false; renderChat(); }
+      loadThreadList();
+    };
+    item.appendChild(btnDel);
+    item.addEventListener('click', async () => {
+      const full = await getThread(t.id);
+      if (!full) return;
+      currentThread = full;
+      chatStarted = true;
+      redrawThread();
+      $('thread-list').style.display = 'none';
+    });
+    wrap.appendChild(item);
+  }
+  wrap.style.display = 'block';
+}
+
+function redrawThread() {
+  const main = $('main');
+  main.textContent = '';
+  for (const m of currentThread.messages) {
+    const d = addMsg(m.role, '');
+    const bodyEl = d.querySelector('.body');
+    if (m.role === 'assistant') {
+      renderMarkdownInto(bodyEl, m.content);
+      d.classList.add('done');
+      attachMsgOps(d, { answer: () => m.content, question: m.question || '', scope: 'page', readonly: true });
+    } else {
+      bodyEl.textContent = m.content;
+    }
+  }
+  scrollBottom();
+}
 
 function sendHandler() { askLLMWith($('chat-q').value.trim(), $('chat-scope').value); }
 $('btn-send').addEventListener('click', sendHandler);
@@ -196,7 +288,16 @@ async function askLLMWith(question, scope) {
   }
 
   const settings = await getSettings();
+  // 多轮记忆：把本线程此前的问答一并送入上下文（截取最近 8 条防超预算）
+  const history = (currentThread && currentThread.messages ? currentThread.messages : [])
+    .slice(-8)
+    .map((m) => ({ role: m.role, content: m.content }));
   const { messages } = buildContext({ question, pageText, notes, selection });
+  if (history.length) messages.splice(1, 0, ...history); // 插在 system 之后
+
+  const thread = ensureThread();
+  thread.messages.push({ role: 'user', content: question });
+  if (!thread.title) thread.title = question.slice(0, 30);
 
   const bubble = addMsg('assistant', '');
   const bodyEl = bubble.querySelector('.body');
@@ -240,9 +341,12 @@ async function askLLMWith(question, scope) {
       onToken: (tok) => { streamingText += tok; flushAndFollow(); },
     });
     aborted = false; // 正常完成
-    // 最终完整渲染 + 标记完成（显示复制/重试按钮）
+    // 最终完整渲染 + 标记完成（显示复制/重试按钮）+ follow-up 建议
     renderMarkdownInto(bodyEl, streamingText);
     bubble.classList.add('done');
+    thread.messages.push({ role: 'assistant', content: streamingText, question });
+    thread.updatedAt = Date.now();
+    persistThread();
     attachMsgOps(bubble, {
       answer: () => streamingText,
       question,
@@ -254,6 +358,7 @@ async function askLLMWith(question, scope) {
       pageText,
     });
     scrollBottom();
+    renderFollowUps(bubble, question, streamingText);
     // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘
     if (pageUrl && streamingText) {
       await send({
@@ -310,6 +415,34 @@ function renderMarkdownInto(container, md) {
   container.appendChild(renderMarkdown(md));
 }
 
+// ---------- Follow-up 建议问题（本地启发式生成，零额外 token）----------
+
+function renderFollowUps(bubble, question, answer) {
+  const old = $('main').querySelector('.followups');
+  if (old) old.remove();
+  const wrap = el('div', 'followups');
+  const suggestions = buildFollowUps(question, answer);
+  for (const s of suggestions) {
+    const b = el('button', 'starter', s);
+    b.addEventListener('click', () => askLLMWith(s, $('chat-scope').value));
+    wrap.appendChild(b);
+  }
+  $('main').appendChild(wrap);
+  scrollBottom();
+}
+
+function buildFollowUps(question, answer) {
+  const out = [];
+  // 从回答中的标题提取深挖方向
+  const headings = [...answer.matchAll(/^#{2,4}\s+(.+)$/gm)].map((m) => m[1].trim()).slice(0, 2);
+  for (const h of headings) out.push('详细展开「' + h.replace(/[**`]/g, '') + '」');
+  if (/代码|```/.test(answer)) out.push('逐行解释上面代码的作用');
+  if (/术语|概念/.test(question)) out.push('举一个具体的例子说明');
+  if (out.length < 3) out.push('总结成 3 点要点');
+  if (out.length < 3) out.push('这和我笔记里的理解有冲突吗？');
+  return out.slice(0, 3);
+}
+
 let chatStarted = false;
 function clearMainIfFirstChat() {
   if (chatStarted) return;
@@ -320,11 +453,11 @@ function clearMainIfFirstChat() {
 // 显式新会话（仅用户点击按钮触发；切 tab 不清空）
 function newChat() {
   if (streaming) return; // 流式中不允许
+  currentThread = null;
   $('main').textContent = '';
   chatStarted = false;
   renderChat();
 }
-let streaming = false;
 $('btn-new-chat').addEventListener('click', () => {
   if (confirm('清空当前会话？已保存的笔记不受影响。')) newChat();
 });
@@ -375,6 +508,17 @@ document.querySelectorAll('nav.tabs button').forEach((b) => {
 });
 
 $('btn-options').addEventListener('click', () => chrome.runtime.openOptionsPage());
+$('btn-threads').addEventListener('click', () => {
+  const wrap = $('thread-list');
+  if (wrap.style.display === 'block') { wrap.style.display = 'none'; return; }
+  loadThreadList();
+});
+document.addEventListener('click', (e) => {
+  const wrap = $('thread-list');
+  if (wrap.style.display === 'block' && !wrap.contains(e.target) && e.target.id !== 'btn-threads') {
+    wrap.style.display = 'none';
+  }
+});
 
 renderNotes();
 
