@@ -32,9 +32,23 @@
     .item .ops button.danger { color: #dc2626; border-color: #fecaca; }
     /* chat */
     .msg { border-radius: 10px; padding: 8px 10px; margin-top: 8px; max-width: 100%; }
-    .msg.user { background: #eff6ff; border: 1px solid #bfdbfe; }
-    .msg.assistant { background: #f9fafb; border: 1px solid #e5e7eb; white-space: pre-wrap; }
-    .msg .who { font-size: 11px; color: #6b7280; margin-bottom: 3px; }
+    .msg.user { background: #eff6ff; border: 1px solid #bfdbfe; white-space: pre-wrap; }
+    .msg.assistant { background: #f9fafb; border: 1px solid #e5e7eb; }
+    .msg .who { font-size: 11px; color: #6b7280; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+    .msg .who .ops { margin-left: auto; display: none; gap: 4px; }
+    .msg.assistant.done .who .ops { display: flex; }
+    .msg .who .ops button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 5px; padding: 1px 7px; cursor: pointer; font-size: 11px; }
+    .msg .body :is(p, ul, ol, pre, blockquote, table) { margin: 4px 0; }
+    .msg .body ul, .msg .body ol { padding-left: 18px; }
+    .msg .body code { background: #eef2f7; border-radius: 3px; padding: 1px 4px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    .msg .body pre { position: relative; background: #111827; color: #f9fafb; border-radius: 8px; padding: 8px 10px; overflow-x: auto; font-size: 12px; line-height: 1.45; }
+    .msg .body pre code { background: none; color: inherit; padding: 0; white-space: pre; }
+    .msg .body pre .copy-code { position: sticky; top: 0; float: right; border: 1px solid #374151; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 0 6px; cursor: pointer; font-size: 11px; }
+    .msg .body pre .copy-code:hover { color: #fff; }
+    .msg .body blockquote { border-left: 3px solid #cbd5e1; color: #475569; padding-left: 8px; }
+    .msg .body table { border-collapse: collapse; font-size: 12px; }
+    .msg .body :is(td, th) { border: 1px solid #d1d5db; padding: 3px 6px; }
+    .msg .body h1, .msg .body h2, .msg .body h3, .msg .body h4 { margin: 8px 0 4px; font-size: 13.5px; }
     .err { color: #b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius: 8px; padding: 8px; margin-top: 8px; white-space: pre-wrap; }
     .chat-input-wrap { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 12px; border-top: 1px solid #e5e7eb; background: #fff; display: none; }
     .chat-input-wrap textarea {

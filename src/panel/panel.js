@@ -6,6 +6,7 @@
 import { getSettings } from '../lib/db.js';
 import { streamChat } from '../lib/llm/index.js';
 import { buildContext } from '../lib/llm/context.js';
+import { renderMarkdown } from '../lib/markdown-render.js';
 import {
   getVaultHandle, exportViaFsAccess, vaultPermissionState,
   ensureVaultPermission, exportViaUri,
@@ -160,17 +161,17 @@ async function renderChat() {
 
 const chatHistory = []; // {role, content} 仅本次会话内存
 
-$('btn-send').addEventListener('click', askLLM);
+$('btn-send').addEventListener('click', () => askLLMWith($('chat-q').value.trim(), $('chat-scope').value));
 $('chat-q').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askLLM(); }
 });
 
-async function askLLM() {
-  const qEl = $('chat-q');
-  const question = qEl.value.trim();
+async function askLLM() { askLLMWith($('chat-q').value.trim(), $('chat-scope').value); }
+
+async function askLLMWith(question, scope) {
   if (!question) return;
+  const qEl = $('chat-q');
   qEl.value = '';
-  const scope = $('chat-scope').value;
 
   clearMainIfFirstChat();
   addMsg('user', question);
@@ -197,25 +198,54 @@ async function askLLM() {
   const { messages } = buildContext({ question, pageText, notes, selection });
 
   const bubble = addMsg('assistant', '');
-  bubble.querySelector('.body').textContent = '…';
+  const bodyEl = bubble.querySelector('.body');
+  bodyEl.textContent = '…';
   const btnSend = $('btn-send');
   btnSend.disabled = true;
+
+  // 流式期间：只在用户本来就在底部时才自动跟随，避免打断手动上滚
+  let streamingText = '';
+  let rafPending = false;
+  const nearBottom = () => $('main').scrollHeight - $('main').scrollTop - $('main').clientHeight < 60;
+  const flushAndFollow = () => {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      renderMarkdownInto(bodyEl, streamingText);
+      if (nearBottom()) scrollBottom();
+    });
+  };
+
   try {
     await streamChat({
       settings,
       messages,
-      onToken: (tok) => { bubble.querySelector('.body').textContent += tok; scrollBottom(); },
+      onToken: (tok) => { streamingText += tok; flushAndFollow(); },
     });
+    // 最终完整渲染 + 标记完成（显示复制/重试按钮）
+    renderMarkdownInto(bodyEl, streamingText);
+    bubble.classList.add('done');
+    attachMsgOps(bubble, {
+      answer: () => streamingText,
+      question,
+      scope,
+      info,
+      pageUrl,
+      notes,
+      selection,
+      pageText,
+    });
+    scrollBottom();
     // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘
     if (pageUrl) {
-      const lastAssistant = bubble.querySelector('.body').textContent;
       await send({
         type: 'notes:put',
         note: {
           id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
           ts: Date.now(), updatedAt: Date.now(),
           url: pageUrl, kind: 'ai-qa',
-          content: 'Q: ' + question + '\n\nA: ' + lastAssistant,
+          content: 'Q: ' + question + '\n\nA: ' + streamingText,
           sel: null, aiMeta: { provider: settings.provider, model: settings.model, q: question },
         },
         page: { title: info ? info.title : '', host: info ? new URL(info.url).hostname : '' },
@@ -228,6 +258,29 @@ async function askLLM() {
   btnSend.disabled = false;
 }
 
+// ---------- 消息操作: 复制 / 重试 ----------
+
+function attachMsgOps(bubble, ctxInfo) {
+  const ops = bubble.querySelector('.ops');
+  const btnCopy = el('button', '', '复制');
+  btnCopy.addEventListener('click', () => {
+    navigator.clipboard.writeText(ctxInfo.answer()).then(() => toast('已复制回答'));
+  });
+  const btnRetry = el('button', '', '重试');
+  btnRetry.addEventListener('click', async () => {
+    bubble.remove();
+    $('chat-q').value = ctxInfo.question;
+    await askLLMWith(ctxInfo.question, ctxInfo.scope);
+  });
+  ops.appendChild(btnCopy);
+  ops.appendChild(btnRetry);
+}
+
+function renderMarkdownInto(container, md) {
+  container.textContent = '';
+  container.appendChild(renderMarkdown(md));
+}
+
 let chatStarted = false;
 function clearMainIfFirstChat() {
   if (chatStarted) return;
@@ -238,7 +291,9 @@ function scrollBottom() { $('main').scrollTop = $('main').scrollHeight; }
 
 function addMsg(role, text) {
   const d = el('div', 'msg ' + role);
-  d.appendChild(el('div', 'who', role === 'user' ? '你' : 'AI'));
+  const who = el('div', 'who', role === 'user' ? '你' : 'AI');
+  if (role === 'assistant') who.appendChild(el('span', 'ops'));
+  d.appendChild(who);
   const body = el('div', 'body', text);
   d.appendChild(body);
   $('main').appendChild(d);
