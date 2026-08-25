@@ -8,6 +8,7 @@
     body {
       margin: 0; font: 13px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
       color: #1f2937; background: #fff;
+      display: flex; flex-direction: column; height: 100vh;
     }
     header {
       display: flex; align-items: center; gap: 8px;
@@ -21,7 +22,7 @@
       color: #6b7280; border-bottom: 2px solid transparent; font-size: 13px;
     }
     nav.tabs button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
-    main { padding: 10px 12px; padding-right: 22px; overflow-y: auto; position: absolute; inset: 84px 0 0 0; scrollbar-gutter: stable; }
+    main { padding: 10px 12px; padding-right: 22px; overflow-y: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; position: relative; }
     .empty { color: #9ca3af; text-align: center; padding: 24px 0; }
     .item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-top: 8px; background: #fafafa; }
     .item .meta { color: #6b7280; font-size: 12px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
@@ -50,7 +51,7 @@
     .msg .body :is(td, th) { border: 1px solid #d1d5db; padding: 3px 6px; }
     .msg .body h1, .msg .body h2, .msg .body h3, .msg .body h4 { margin: 8px 0 4px; font-size: 13.5px; }
     .err { color: #b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius: 8px; padding: 8px; margin-top: 8px; white-space: pre-wrap; }
-    .chat-input-wrap { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 12px; border-top: 1px solid #e5e7eb; background: #fff; display: none; }
+    .chat-input-wrap { padding: 10px 12px; border-top: 1px solid #e5e7eb; background: #fff; display: none; flex-shrink: 0; }
     .chat-input-wrap textarea {
       width: 100%; min-height: 56px; resize: vertical; border: 1px solid #d1d5db;
       border-radius: 8px; padding: 6px 8px; font: inherit;
@@ -79,6 +80,7 @@
 <body>
   <header>
     <b>📝 Markpilot</b>
+    <button id="btn-new-chat" title="清空当前会话，开始新会话" style="display:none">✚ 新会话</button>
     <button id="btn-export">⬇ 导出本页</button>
     <button id="btn-options">⚙</button>
   </header>

@@ -203,6 +203,7 @@ async function askLLMWith(question, scope) {
   bodyEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
   const btnSend = $('btn-send');
   let aborted = false;
+  streaming = true;
 
   // 发送按钮变「停止」（流式中断，对齐主流 chat）
   const abortCtrl = new AbortController();
@@ -283,6 +284,7 @@ async function askLLMWith(question, scope) {
   btnSend.classList.remove('stop');
   btnSend.removeEventListener('click', stopStream);
   btnSend.addEventListener('click', sendHandler);
+  streaming = false;
 }
 
 // ---------- 消息操作: 复制 / 重试 ----------
@@ -314,6 +316,18 @@ function clearMainIfFirstChat() {
   $('main').textContent = '';
   chatStarted = true;
 }
+
+// 显式新会话（仅用户点击按钮触发；切 tab 不清空）
+function newChat() {
+  if (streaming) return; // 流式中不允许
+  $('main').textContent = '';
+  chatStarted = false;
+  renderChat();
+}
+let streaming = false;
+$('btn-new-chat').addEventListener('click', () => {
+  if (confirm('清空当前会话？已保存的笔记不受影响。')) newChat();
+});
 function scrollBottom() { $('main').scrollTop = $('main').scrollHeight; }
 
 // 离开底部时显示「↓ 回到底部」（对齐主流 chat）
@@ -347,9 +361,16 @@ document.querySelectorAll('nav.tabs button').forEach((b) => {
     tab = b.dataset.tab;
     document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
-    chatStarted = false;
+    // 切 tab 保留聊天记录，只切换视图与输入框显隐
     $('chat-input-wrap').style.display = tab === 'chat' ? 'block' : 'none';
-    if (tab === 'notes') renderNotes(); else renderChat();
+    $('btn-new-chat').style.display = tab === 'chat' ? 'inline-block' : 'none';
+    if (tab === 'notes') {
+      renderNotes();
+      updateScrollBtn();
+    } else {
+      if (!chatStarted) renderChat();
+      else { updateScrollBtn(); scrollBottom(); }
+    }
   });
 });
 
