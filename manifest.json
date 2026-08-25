@@ -9,8 +9,7 @@
     "http://127.0.0.1/*"
   ],
   "background": {
-    "service_worker": "src/background/sw.js",
-    "type": "module"
+    "service_worker": "src/background/sw.js"
   },
   "side_panel": {
     "default_path": "src/panel/panel.html"
