@@ -68,8 +68,9 @@ export async function listModels(settings) {
 function endpointFor(settings) {
   if (settings.provider === 'anthropic') return 'https://api.anthropic.com/v1/messages';
   if (settings.provider === 'openrouter') return 'https://openrouter.ai/api/v1/chat/completions';
+  // 有预设端点的 provider 强制走预设；仅 openai-compatible 使用用户自定义 baseUrl
   const preset = PROVIDERS[settings.provider] && PROVIDERS[settings.provider].presetBase;
-  const base = (settings.baseUrl || preset || 'http://localhost:11434/v1').replace(/\/+$/, '');
+  const base = (preset || settings.baseUrl || 'http://localhost:11434/v1').replace(/\/+$/, '');
   return base + '/chat/completions';
 }
 

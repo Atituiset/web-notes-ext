@@ -147,7 +147,7 @@ export async function getSettings() {
     provider: 'openai-compatible',
     model: '',
     apiKeys: {},
-    baseUrl: 'http://localhost:11434/v1',
+    baseUrl: '', // 留空 = 用 provider 预设端点；仅 openai-compatible 需手填
     vaultDirTemplate: 'Clippings',
     exportAiQA: false,
   };
