@@ -155,6 +155,8 @@ export async function getSettings() {
     baseUrl: '', // 留空 = 用 provider 预设端点；仅 openai-compatible 需手填
     vaultDirTemplate: 'Clippings',
     exportAiQA: false,
+    memoryInject: true,  // 提问时注入长期记忆
+    autoMemory: false,   // 自动提取记忆（确认流）
   };
   const stored = (await idbGet('settings', 'app')) || {};
   return Object.assign(defaults, stored);

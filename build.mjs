@@ -1,0 +1,40 @@
+// esbuild 构建：src/*.ts(js) -> dist/ 单文件 bundle
+// content script 不能 bundle 成 ESM（classic script），sw 同理 —— 全部打为 iife/cjs 单文件
+import * as esbuild from 'esbuild';
+
+const watch = process.argv.includes('--watch');
+
+const common = {
+  bundle: true,
+  minify: false,
+  sourcemap: 'inline',
+  logLevel: 'info',
+  target: 'chrome120',
+};
+
+const entries = [
+  // [entry, outfile, format]
+  ['src/background/sw.ts', 'dist/background/sw.js', 'iife'],
+  ['src/content/extract.js', 'dist/content/extract.js', 'iife'],
+  ['src/content/annotator.js', 'dist/content/annotator.js', 'iife'],
+  ['src/panel/panel.ts', 'dist/panel/panel.js', 'iife'],
+  ['src/options/options.ts', 'dist/options/options.js', 'iife'],
+];
+
+const builds = entries.map(([entry, outfile, format]) =>
+  esbuild.context({
+    ...common,
+    entryPoints: [entry],
+    outfile,
+    format,
+  })
+);
+
+const ctxs = await Promise.all(builds);
+if (watch) {
+  await Promise.all(ctxs.map((c) => c.watch()));
+  console.log('watching...');
+} else {
+  await Promise.all(ctxs.map((c) => c.rebuild()));
+  await Promise.all(ctxs.map((c) => c.dispose()));
+}

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowJs": false,
+    "types": ["chrome"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.js"],
+  "exclude": ["src/background/sw.ts"]
+}

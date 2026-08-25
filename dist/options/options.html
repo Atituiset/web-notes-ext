@@ -15,6 +15,14 @@
     .status { font-size: 12px; color: #059669; margin-left: 10px; }
     .warn { color: #b45309; font-size: 12px; }
     code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .mem-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 13px; background: #fafafa; }
+    .mem-item .meta { color: #6b7280; font-size: 11px; display: flex; gap: 6px; align-items: center; margin-bottom: 3px; flex-wrap: wrap; }
+    .mem-item .body { white-space: pre-wrap; word-break: break-word; }
+    .mem-item .ops { margin-top: 5px; display: flex; gap: 6px; }
+    .mem-item .ops button, .mem-item .pin { border: 1px solid #d1d5db; background: #fff; border-radius: 5px; padding: 1px 8px; cursor: pointer; font-size: 11px; color: #374151; }
+    .mem-item .danger { color: #dc2626 !important; border-color: #fecaca !important; }
+    .mem-item.cold { opacity: .55; }
+    .mem-item .cold-tag { color: #b45309; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -48,6 +56,17 @@
     <label>导出子目录模板</label>
     <input id="vaultDirTemplate" placeholder="Clippings" />
     <label><input type="checkbox" id="exportAiQA" style="width:auto" /> AI 问答一并导出（默认关）</label>
+  </section>
+
+  <section>
+    <h2>🧠 长期记忆</h2>
+    <label><input type="checkbox" id="memoryInject" style="width:auto" /> 提问时自动注入相关记忆（默认开）</label>
+    <label><input type="checkbox" id="autoMemory" style="width:auto" /> 自动提取记忆候选（默认关；产生角标待你确认）</label>
+    <div class="row" style="margin-top:8px">
+      <button class="secondary" id="btn-mem-mgr" type="button">管理记忆…</button>
+      <span class="status" id="mem-count"></span>
+    </div>
+    <div id="mem-list"></div>
   </section>
 
   <button id="btn-save">保存设置</button><span class="status" id="save-status"></span>

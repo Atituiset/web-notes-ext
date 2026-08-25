@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Markpilot</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 13px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #1f2937; background: #fff;
+      display: flex; flex-direction: column; height: 100vh;
+    }
+    header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
+    }
+    header b { flex: 1; font-size: 14px; }
+    header button { border: 1px solid #d1d5db; background: #fff; border-radius: 6px; padding: 3px 9px; cursor: pointer; font-size: 12px; }
+    nav.tabs { display: flex; border-bottom: 1px solid #e5e7eb; }
+    nav.tabs button {
+      flex: 1; padding: 7px; background: none; border: none; cursor: pointer;
+      color: #6b7280; border-bottom: 2px solid transparent; font-size: 13px;
+    }
+    nav.tabs button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+    main { padding: 10px 12px; padding-right: 22px; overflow-y: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; position: relative; }
+    .empty { color: #9ca3af; text-align: center; padding: 24px 0; }
+    .item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-top: 8px; background: #fafafa; }
+    .item .meta { color: #6b7280; font-size: 12px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+    .item .meta .url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item .quote { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; font-size: 12px; padding: 4px 6px; margin: 4px 0; max-height: 64px; overflow: auto; }
+    .item .text { white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; margin: 4px 0 6px; }
+    .item .ops button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 3px 8px; margin-right: 6px; cursor: pointer; font-size: 12px; }
+    .item .ops button.danger { color: #dc2626; border-color: #fecaca; }
+    /* chat */
+    .msg { border-radius: 10px; padding: 8px 10px; margin-top: 8px; max-width: 100%; }
+    .msg.user { background: #eff6ff; border: 1px solid #bfdbfe; white-space: pre-wrap; }
+    .msg.assistant { background: #f9fafb; border: 1px solid #e5e7eb; }
+    .msg .who { font-size: 11px; color: #6b7280; margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+    .msg .who .ops { margin-left: auto; display: none; gap: 4px; }
+    .msg.assistant.done .who .ops { display: flex; }
+    .msg .who .ops button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 5px; padding: 1px 7px; cursor: pointer; font-size: 11px; }
+    .msg .body :is(p, ul, ol, pre, blockquote, table) { margin: 4px 0; }
+    .msg .body ul, .msg .body ol { padding-left: 18px; }
+    .msg .body code { background: #eef2f7; border-radius: 3px; padding: 1px 4px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+    .msg .body pre { position: relative; background: #111827; color: #f9fafb; border-radius: 8px; padding: 8px 10px; overflow-x: auto; font-size: 12px; line-height: 1.45; }
+    .msg .body pre code { background: none; color: inherit; padding: 0; white-space: pre; }
+    .msg .body pre .copy-code { position: sticky; top: 0; float: right; border: 1px solid #374151; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 0 6px; cursor: pointer; font-size: 11px; }
+    .msg .body pre .copy-code:hover { color: #fff; }
+    .msg .body pre .lang-tag { position: absolute; top: 6px; left: 10px; font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
+    .msg .body blockquote { border-left: 3px solid #cbd5e1; color: #475569; padding-left: 8px; }
+    .msg .body table { border-collapse: collapse; font-size: 12px; }
+    .msg .body :is(td, th) { border: 1px solid #d1d5db; padding: 3px 6px; }
+    .msg .body h1, .msg .body h2, .msg .body h3, .msg .body h4 { margin: 8px 0 4px; font-size: 13.5px; }
+    .err { color: #b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius: 8px; padding: 8px; margin-top: 8px; white-space: pre-wrap; }
+    .chat-input-wrap { padding: 10px 12px; border-top: 1px solid #e5e7eb; background: #fff; display: none; flex-shrink: 0; }
+    .chat-input-wrap textarea {
+      width: 100%; min-height: 56px; resize: vertical; border: 1px solid #d1d5db;
+      border-radius: 8px; padding: 6px 8px; font: inherit;
+    }
+    .chat-input-wrap .row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+    .chat-input-wrap select { flex: 1; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+    .chat-input-wrap .send { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 6px 16px; cursor: pointer; }
+    .chat-input-wrap .send:disabled { opacity: .5; cursor: default; }
+    .chat-input-wrap .send.stop { background: #dc2626; }
+    /* 打字指示 */
+    .typing { display: inline-flex; gap: 3px; padding: 4px 0; }
+    .typing span { width: 6px; height: 6px; border-radius: 50%; background: #9ca3af; animation: blink 1.2s infinite; }
+    .typing span:nth-child(2) { animation-delay: .2s; }
+    .typing span:nth-child(3) { animation-delay: .4s; }
+    @keyframes blink { 0%,80%,100% { opacity:.25 } 40% { opacity:1 } }
+    /* 滚动到底按钮 */
+    #btn-scroll-bottom {
+      position: absolute; right: 16px; bottom: 130px; display: none;
+      width: 30px; height: 30px; border-radius: 50%; border: 1px solid #d1d5db;
+      background: #fff; color: #374151; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      z-index: 10; font-size: 14px; line-height: 1;
+    }
+    .hint { color: #6b7280; font-size: 11px; }
+    /* starters / followups */
+    .starters, .followups { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .starter {
+      text-align: left; background: #fff; border: 1px solid #d1d5db; color: #374151;
+      border-radius: 10px; padding: 8px 12px; cursor: pointer; font-size: 12.5px;
+    }
+    .starter:hover { border-color: #2563eb; color: #2563eb; background: #eff6ff; }
+    .followups { margin-top: 6px; }
+    /* thread list */
+    #thread-list {
+      display: none; position: absolute; top: 44px; right: 10px; width: 260px; max-height: 60vh;
+      overflow-y: auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.15); z-index: 50; padding: 4px;
+    }
+    .thread-item { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 7px; cursor: pointer; font-size: 12.5px; }
+    .thread-item:hover { background: #f3f4f6; }
+    .thread-item .thread-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .thread-item .thread-del { border: none; background: none; color: #9ca3af; cursor: pointer; font-size: 11px; padding: 0 3px; }
+    .thread-item .thread-del:hover { color: #dc2626; }
+  </style>
+</head>
+<body>
+  <header>
+    <b>📝 Markpilot</b>
+    <button id="btn-new-chat" title="清空当前会话，开始新会话" style="display:none">✚ 新会话</button>
+    <button id="btn-threads" title="会话历史">🕘</button>
+    <button id="btn-export">⬇ 导出本页</button>
+    <button id="btn-options">⚙</button>
+  </header>
+  <nav class="tabs">
+    <button data-tab="notes" class="active">本页笔记</button>
+    <button data-tab="chat">问 AI</button>
+  </nav>
+  <main id="main"></main>
+  <button id="btn-scroll-bottom" title="滚动到底部">↓</button>
+  <div id="thread-list"></div>
+  <div class="chat-input-wrap" id="chat-input-wrap">
+    <textarea id="chat-q" placeholder="问点什么…（自动带上页面正文 + 你的笔记 + 选区）"></textarea>
+    <div class="row">
+      <select id="chat-scope">
+        <option value="page">整页上下文</option>
+        <option value="selection">仅当前选区 + 笔记</option>
+      </select>
+      <span class="hint" id="model-hint"></span>
+      <button class="send" id="btn-send">发送</button>
+    </div>
+  </div>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

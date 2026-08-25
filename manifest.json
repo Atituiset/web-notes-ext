@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Markpilot — Web Notes to Obsidian & AI",
-  "version": "0.1.0",
-  "description": "划词笔记 → 本地 Obsidian → LLM 实时问答",
+  "version": "0.2.0",
+  "description": "划词笔记 → 本地 Obsidian → LLM 实时问答，带跨会话长期记忆",
   "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
   "host_permissions": [
     "http://localhost/*",
@@ -16,19 +16,19 @@
     "https://api.openai.com/*"
   ],
   "background": {
-    "service_worker": "src/background/sw.js"
+    "service_worker": "background/sw.js"
   },
   "side_panel": {
-    "default_path": "src/panel/panel.html"
+    "default_path": "panel/panel.html"
   },
-  "options_page": "src/options/options.html",
+  "options_page": "options/options.html",
   "action": {
     "default_title": "Markpilot"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/extract.js", "src/content/annotator.js"],
+      "js": ["content/extract.js", "content/annotator.js"],
       "run_at": "document_idle"
     }
   ],

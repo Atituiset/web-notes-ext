@@ -101,7 +101,12 @@ async function consumeSSE(response, onData) {
   }
 }
 
-export async function streamChat({ settings, messages, signal, onToken }) {
+export async function streamChat({ settings, messages, signal, onToken }: {
+  settings: any;
+  messages: { role: string; content: string }[];
+  signal?: AbortSignal;
+  onToken?: (tok: string) => void;
+}) {
   const model = settings.model;
   if (!model) throw new Error('未配置模型 — 请到设置页填写');
   const url = endpointFor(settings);

@@ -2,11 +2,8 @@
  * Service worker: 消息网关（存储/页面记录）。
  *
  * 设计约束：
- * - 自包含（不 import）：MV3 SW 默认按 classic script 注册，避免 module 兼容性问题
+ * - 自包含（不 import）：esbuild 会把依赖打进单文件，bundle 后无 import 语句
  * - LLM 流式请求不经过 SW（DESIGN.md 坑 #3）—— panel 侧直接 fetch，规避 30s 休眠
- *
- * 与 src/lib/db.js 保持同一 schema：
- *   db web-notes-ext v1 / stores: pages(url) notes(id,idx:url) handles(name) settings(key)
  */
 
 const DB_NAME = 'web-notes-ext';

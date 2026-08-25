@@ -7,16 +7,18 @@ import { getSettings, putThread, getThread, listThreads, deleteThread } from '..
 import { streamChat } from '../lib/llm/index.js';
 import { buildContext } from '../lib/llm/context.js';
 import { renderMarkdown } from '../lib/markdown-render.js';
+import { saveMemory, searchMemories, listMemories, deleteMemory, pinMemory, isCold } from '../lib/memory.js';
+import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
 import {
   getVaultHandle, exportViaFsAccess, vaultPermissionState,
   ensureVaultPermission, exportViaUri,
 } from '../lib/obsidian.js';
 import { renderPageMarkdown } from '../lib/markdown.js';
 
-const $ = (id) => document.getElementById(id);
+const $ = (id: string): any => document.getElementById(id);
 let tab = 'notes';
 
-function send(msg) {
+function send(msg): Promise<any> {
   return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve));
 }
 
@@ -27,7 +29,7 @@ async function activeTabInfo() {
   try {
     // activeTab 权限下可注入；失败则无选区
     const [r] = await chrome.scripting.executeScript({
-      target: { tabId: t.id },
+      target: { tabId: t.id! },
       func: () => String(window.getSelection() || ''),
     });
     selection = (r && r.result) || '';
@@ -57,7 +59,7 @@ function normalizeUrl(u) {
   try { const x = new URL(u); return x.origin + x.pathname; } catch { return u; }
 }
 
-function el(tag, cls, text) {
+function el(tag: string, cls?: string, text?: string): any {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text !== undefined) n.textContent = text;
@@ -112,8 +114,8 @@ $('btn-export').addEventListener('click', async () => {
   let pageMarkdown = '';
   try {
     const [res] = await chrome.scripting.executeScript({
-      target: { tabId: info.tab.id },
-      func: () => window.__wneExtract ? window.__wneExtract() : null,
+      target: { tabId: (info.tab.id as any) },
+      func: () => ((window as any).__wneExtract ? (window as any).__wneExtract() : null),
     });
     if (res && res.result && res.result.text) pageMarkdown = res.result.text.slice(0, 40000);
   } catch { /* 提取失败则只导笔记 */ }
@@ -124,7 +126,7 @@ $('btn-export').addEventListener('click', async () => {
       const out = await exportViaFsAccess({ url: pageUrl, title: info.title, notes, pageMarkdown });
       toast('已写入 vault: ' + out.file);
       return;
-    } catch (e) {
+    } catch (e: any) {
       appendError('导出失败: ' + e.message);
       return;
     }
@@ -136,7 +138,7 @@ $('btn-export').addEventListener('click', async () => {
       else await ensureVaultPermission();
       const out = await exportViaFsAccess({ url: pageUrl, title: info.title, notes, pageMarkdown });
       toast('已写入 vault: ' + out.file);
-    } catch (e) {
+    } catch (e: any) {
       appendError('目录授权/导出失败: ' + e.message + '\n（可改用 obsidian:// URI 兜底）');
     }
     return;
@@ -159,15 +161,16 @@ const STARTERS = [
 ];
 
 let streaming = false;
-let currentThread = null; // { id, title, url, createdAt, updatedAt, messages:[{role,content}] }
+interface Thread { id: string; title: string; url: string; createdAt: number; updatedAt: number; messages: any[]; }
+let currentThread: Thread | null = null;
 
 function uid() {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-function ensureThread() {
+function ensureThread(): Thread {
   if (currentThread) return currentThread;
-  currentThread = {
+  const t: Thread = {
     id: uid(),
     title: '',
     url: '',
@@ -175,7 +178,8 @@ function ensureThread() {
     updatedAt: Date.now(),
     messages: [],
   };
-  return currentThread;
+  currentThread = t;
+  return t;
 }
 
 async function persistThread() {
@@ -239,6 +243,7 @@ async function loadThreadList() {
 function redrawThread() {
   const main = $('main');
   main.textContent = '';
+  if (!currentThread) return;
   for (const m of currentThread.messages) {
     const d = addMsg(m.role, '');
     const bodyEl = d.querySelector('.body');
@@ -273,15 +278,15 @@ async function askLLMWith(question, scope) {
   const pageUrl = info ? normalizeUrl(info.url) : '';
   const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
   const notes = (r && r.notes) || [];
-  const selection = scope === 'selection' ? (info.selection || '').trim() : null;
+  const selection = scope === 'selection' ? ((info && info.selection) || '').trim() : null;
 
   // 整页正文提取
   let pageText = null;
   if (scope !== 'selection' && info && /^https?:/.test(info.url)) {
     try {
       const [res] = await chrome.scripting.executeScript({
-        target: { tabId: info.tab.id },
-        func: () => (window.__wneExtract ? window.__wneExtract() : null),
+        target: { tabId: (info.tab.id as any) },
+        func: () => ((window as any).__wneExtract ? (window as any).__wneExtract() : null),
       });
       if (res && res.result) pageText = res.result.text;
     } catch { /* 受限页面 */ }
@@ -292,7 +297,24 @@ async function askLLMWith(question, scope) {
   const history = (currentThread && currentThread.messages ? currentThread.messages : [])
     .slice(-8)
     .map((m) => ({ role: m.role, content: m.content }));
-  const { messages } = buildContext({ question, pageText, notes, selection });
+  const built = buildContext({ question, pageText, notes, selection });
+  const messages = built.messages;
+
+  // 长期记忆检索 + 注入【材料0】（设置可关）
+  if (settings.memoryInject !== false) {
+    try {
+      const { memories } = await searchMemories(question);
+      if (memories.length) {
+        const memMd = '【用户长期记忆】\n' +
+          memories.map((m) => `- (${m.tags.join(',') || 'note'}) ${m.body}`).join('\n');
+        messages.splice(1, 0, {
+          role: 'user',
+          content: memMd + '\n\n以上是用户过往的记忆，回答时请衔接这些背景。若与本次材料冲突以新材料为准。',
+        });
+      }
+    } catch { /* vault 未授权等 — 静默降级 */ }
+  }
+
   if (history.length) messages.splice(1, 0, ...history); // 插在 system 之后
 
   const thread = ensureThread();
@@ -300,7 +322,7 @@ async function askLLMWith(question, scope) {
   if (!thread.title) thread.title = question.slice(0, 30);
 
   const bubble = addMsg('assistant', '');
-  const bodyEl = bubble.querySelector('.body');
+  const bodyEl: any = bubble.querySelector('.body');
   bodyEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
   const btnSend = $('btn-send');
   let aborted = false;
@@ -359,6 +381,10 @@ async function askLLMWith(question, scope) {
     });
     scrollBottom();
     renderFollowUps(bubble, question, streamingText);
+    // Phase 3: 自动记忆提取（设置开关，默认关；确认流防未授权写入）
+    if (settings.autoMemory && streamingText) {
+      autoExtractMemory(settings, question, streamingText).catch(() => {});
+    }
     // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘
     if (pageUrl && streamingText) {
       await send({
@@ -373,7 +399,7 @@ async function askLLMWith(question, scope) {
         page: { title: info ? info.title : '', host: info ? new URL(info.url).hostname : '' },
       });
     }
-  } catch (e) {
+  } catch (e: any) {
     if (aborted || String(e.name) === 'AbortError') {
       // 用户主动停止：保留已有内容，可复制
       if (streamingText) renderMarkdownInto(bodyEl, streamingText);
@@ -400,14 +426,69 @@ function attachMsgOps(bubble, ctxInfo) {
   btnCopy.addEventListener('click', () => {
     navigator.clipboard.writeText(ctxInfo.answer()).then(() => toast('已复制回答'));
   });
+  const btnRemember = el('button', '', '🧠 记住');
+  btnRemember.title = '把这条结论存为长期记忆';
+  btnRemember.addEventListener('click', async () => {
+    btnRemember.disabled = true;
+    btnRemember.textContent = '提取中…';
+    try {
+      await extractAndStore(await getSettings(), ctxInfo.question, ctxInfo.answer(), currentThread?.url);
+      btnRemember.textContent = '✓ 已记忆';
+      toast('已存入 Markpilot-Memory');
+    } catch (e: any) {
+      btnRemember.disabled = false;
+      btnRemember.textContent = '🧠 记住';
+      toast('记忆失败: ' + e.message);
+    }
+  });
   const btnRetry = el('button', '', '重试');
   btnRetry.addEventListener('click', async () => {
     bubble.remove();
     $('chat-q').value = ctxInfo.question;
     await askLLMWith(ctxInfo.question, ctxInfo.scope);
   });
+  if (!ctxInfo.readonly) ops.appendChild(btnRemember);
   ops.appendChild(btnCopy);
   ops.appendChild(btnRetry);
+}
+
+// ---------- 记忆：自动提取（Phase 3，走 memory-extract 模块）----------
+
+/** 自动提取候选 → 角标确认（不直接写 vault） */
+async function autoExtractMemory(settings, question, answer) {
+  const summary = await proposeExtraction(settings, question, answer);
+  if (!summary) return;
+  pendingMemories.push(summary);
+  updateMemoryBadge();
+}
+
+const pendingMemories: string[] = [];
+
+function updateMemoryBadge() {
+  const btn = $('btn-new-chat');
+  if (!btn) return;
+  const old = $('mem-badge');
+  if (old) old.remove();
+  if (pendingMemories.length) {
+    const badge = el('span', '', `🧠 ${pendingMemories.length} 条可记忆`);
+    badge.id = 'mem-badge';
+    badge.style.cssText = 'cursor:pointer;color:#2563eb;font-size:11px;';
+    badge.title = '点击查看并保存自动发现的记忆';
+    badge.addEventListener('click', reviewPendingMemories);
+    btn.parentElement.insertBefore(badge, btn);
+  }
+}
+
+async function reviewPendingMemories() {
+  for (const s of [...pendingMemories]) {
+    if (confirm('记住这条吗？\n\n' + s)) {
+      try {
+        await storeProposed(s, currentThread?.url);
+      } catch { /* vault 未授权等 */ }
+    }
+    pendingMemories.splice(pendingMemories.indexOf(s), 1);
+  }
+  updateMemoryBadge();
 }
 
 function renderMarkdownInto(container, md) {
@@ -431,8 +512,8 @@ function renderFollowUps(bubble, question, answer) {
   scrollBottom();
 }
 
-function buildFollowUps(question, answer) {
-  const out = [];
+function buildFollowUps(question: string, answer: string): string[] {
+  const out: string[] = [];
   // 从回答中的标题提取深挖方向
   const headings = [...answer.matchAll(/^#{2,4}\s+(.+)$/gm)].map((m) => m[1].trim()).slice(0, 2);
   for (const h of headings) out.push('详细展开「' + h.replace(/[**`]/g, '') + '」');
@@ -489,9 +570,9 @@ function addMsg(role, text) {
 
 // ---------- tabs ----------
 
-document.querySelectorAll('nav.tabs button').forEach((b) => {
+document.querySelectorAll('nav.tabs button').forEach((b: any) => {
   b.addEventListener('click', () => {
-    tab = b.dataset.tab;
+    tab = (b as HTMLElement).dataset.tab || 'notes';
     document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
     // 切 tab 保留聊天记录，只切换视图与输入框显隐
@@ -513,7 +594,7 @@ $('btn-threads').addEventListener('click', () => {
   if (wrap.style.display === 'block') { wrap.style.display = 'none'; return; }
   loadThreadList();
 });
-document.addEventListener('click', (e) => {
+document.addEventListener('click', (e: any) => {
   const wrap = $('thread-list');
   if (wrap.style.display === 'block' && !wrap.contains(e.target) && e.target.id !== 'btn-threads') {
     wrap.style.display = 'none';
@@ -525,7 +606,9 @@ renderNotes();
 // 暴露给 annotator 的「问 AI」按钮：切到 chat 并预填选区
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.type === 'panel:focus-chat') {
-    document.querySelector('[data-tab="chat"]').click();
+    document.querySelectorAll('nav.tabs button').forEach((b: any) => {
+      if (b.dataset.tab === 'chat') b.click();
+    });
     if (msg.selection) $('chat-q').value = '解释这段话：“' + msg.selection + '”';
   }
 });
