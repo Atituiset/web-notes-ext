@@ -23,18 +23,19 @@
   <section>
     <h2>LLM Provider (BYOK)</h2>
     <label>Provider</label>
-    <select id="provider">
-      <option value="openai-compatible">OpenAI 兼容（自定义 baseUrl / vLLM / 中转）</option>
-      <option value="ollama">Ollama 本地 (localhost:11434)</option>
-      <option value="openrouter">OpenRouter</option>
-      <option value="anthropic">Anthropic</option>
-    </select>
-    <label>Base URL（仅 OpenAI 兼容时生效，默认 Ollama）</label>
-    <input id="baseUrl" placeholder="http://localhost:11434/v1" />
+    <select id="provider"></select>
+    <label>Base URL（可留空，用 provider 预设；自定义中转/vLLM 时填写）</label>
+    <input id="baseUrl" placeholder="留空使用预设 / 或 http://localhost:11434/v1" />
     <label>模型名</label>
-    <input id="model" placeholder="如 qwen2.5:14b / claude-sonnet-4-20250514" />
-    <label>API Key（仅本机 chrome.storage.local，不上传）</label>
-    <input id="apiKey" type="password" placeholder="Ollama 无需填写" />
+    <div class="row">
+      <input id="model" list="model-list" placeholder="手填或点右侧「获取模型」" style="flex:1" />
+      <button class="secondary" id="btn-models" type="button">获取模型</button>
+    </div>
+    <datalist id="model-list"></datalist>
+    <div id="model-status" class="warn"></div>
+    <p class="hint" style="color:#6b7280;font-size:12px;margin:6px 0">OpenRouter 无需 Key 即可拉取模型列表，免费模型会标 ⭐。</p>
+    <label>API Key（仅存本机 IndexedDB，不上传）</label>
+    <input id="apiKey" type="password" placeholder="本地模型无需填写" />
     <p class="warn">Key 仅存本机浏览器。Anthropic 浏览器直连已自动加 dangerous-direct-browser-access 头。</p>
   </section>
 

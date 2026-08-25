@@ -12,17 +12,64 @@
  */
 
 export const PROVIDERS = {
-  'openai-compatible': { label: 'OpenAI 兼容 (含 Ollama/vLLM)', needsKey: false },
-  openrouter: { label: 'OpenRouter', needsKey: true },
+  'openai-compatible': { label: 'OpenAI 兼容 (自定义 baseUrl)', needsKey: false },
+  ollama: { label: 'Ollama 本地 (localhost:11434)', needsKey: false, presetBase: 'http://localhost:11434/v1' },
+  openrouter: { label: 'OpenRouter', needsKey: true, presetBase: 'https://openrouter.ai/api/v1' },
   anthropic: { label: 'Anthropic', needsKey: true },
+  deepseek: { label: 'DeepSeek 深度求索', needsKey: true, presetBase: 'https://api.deepseek.com/v1', models: ['deepseek-chat', 'deepseek-reasoner'] },
+  zhipu: { label: '智谱 GLM', needsKey: true, presetBase: 'https://open.bigmodel.cn/api/paas/v4', models: ['glm-4-plus', 'glm-4-air', 'glm-4-flash', 'glm-4-flashx'] },
+  moonshot: { label: '月之暗面 Kimi', needsKey: true, presetBase: 'https://api.moonshot.cn/v1', models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'] },
+  qwen: { label: '阿里通义千问 (兼容模式)', needsKey: true, presetBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: ['qwen-plus', 'qwen-turbo', 'qwen-max'] },
 };
 
+/**
+ * 拉取模型列表（/models 端点，OpenAI 兼容格式）。
+ * - openrouter: 无 key 也可列；标记出免费模型（pricing 全 0）
+ * - 其他 OpenAI 兼容 provider: 需要 key
+ * 返回 [{id, free}]
+ */
+export async function listModels(settings) {
+  const p = settings.provider;
+  if (p === 'anthropic') {
+    const key = (settings.apiKeys && settings.apiKeys.anthropic) || '';
+    const resp = await fetch('https://api.anthropic.com/v1/models', {
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+    });
+    if (!resp.ok) throw new Error('拉取模型列表失败 HTTP ' + resp.status);
+    const data = await resp.json();
+    return (data.data || []).map((m) => ({ id: m.id, free: false }));
+  }
+  // OpenAI 兼容系
+  const base = ((PROVIDERS[p] && PROVIDERS[p].presetBase) || settings.baseUrl || '').replace(/\/+$/, '');
+  if (!base) throw new Error('未配置 Base URL，无法拉取模型列表');
+  const key = (settings.apiKeys && settings.apiKeys[p]) || '';
+  const headers = {};
+  if (key) headers['Authorization'] = 'Bearer ' + key;
+  const resp = await fetch(base + '/models', { headers });
+  if (!resp.ok) throw new Error('拉取模型列表失败 HTTP ' + resp.status);
+  const data = await resp.json();
+  const models = (data.data || []).map((m) => m.id).filter(Boolean).sort();
+  if (p === 'openrouter') {
+    // 免费模型判定：pricing.prompt/completion 均为 "0"
+    const freeSet = new Set(
+      (data.data || [])
+        .filter((m) => m.pricing && String(m.pricing.prompt) === '0' && String(m.pricing.completion) === '0')
+        .map((m) => m.id)
+    );
+    return models.map((id) => ({ id, free: freeSet.has(id) }));
+  }
+  return models.map((id) => ({ id, free: false }));
+}
+
 function endpointFor(settings) {
-  if (settings.provider === 'ollama') return 'http://localhost:11434/v1/chat/completions';
   if (settings.provider === 'anthropic') return 'https://api.anthropic.com/v1/messages';
   if (settings.provider === 'openrouter') return 'https://openrouter.ai/api/v1/chat/completions';
-  // openai-compatible：用户自定义 baseUrl（默认 Ollama）
-  const base = (settings.baseUrl || 'http://localhost:11434/v1').replace(/\/+$/, '');
+  const preset = PROVIDERS[settings.provider] && PROVIDERS[settings.provider].presetBase;
+  const base = (settings.baseUrl || preset || 'http://localhost:11434/v1').replace(/\/+$/, '');
   return base + '/chat/completions';
 }
 
