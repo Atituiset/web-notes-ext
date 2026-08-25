@@ -12,6 +12,7 @@
  */
 
 export const PROVIDERS = {
+  opencode: { label: 'OpenCode 免费模型 (零配置)', needsKey: false, presetBase: 'https://opencode.ai/zen/v1', models: ['mimo-v2.5-free', 'nemotron-3.5-lightning-free', 'hy3-free'] },
   'openai-compatible': { label: 'OpenAI 兼容 (自定义 baseUrl)', needsKey: false },
   ollama: { label: 'Ollama 本地 (localhost:11434)', needsKey: false, presetBase: 'http://localhost:11434/v1' },
   openrouter: { label: 'OpenRouter', needsKey: true, presetBase: 'https://openrouter.ai/api/v1' },

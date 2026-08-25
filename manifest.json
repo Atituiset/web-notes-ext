@@ -13,7 +13,8 @@
     "https://dashscope.aliyuncs.com/*",
     "https://openrouter.ai/*",
     "https://api.anthropic.com/*",
-    "https://api.openai.com/*"
+    "https://api.openai.com/*",
+    "https://opencode.ai/*"
   ],
   "background": {
     "service_worker": "background/sw.js"
