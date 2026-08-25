@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Markpilot</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font: 13px/1.5 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: #1f2937; background: #fff;
+    }
+    header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb;
+    }
+    header b { flex: 1; font-size: 14px; }
+    header button { border: 1px solid #d1d5db; background: #fff; border-radius: 6px; padding: 3px 9px; cursor: pointer; font-size: 12px; }
+    nav.tabs { display: flex; border-bottom: 1px solid #e5e7eb; }
+    nav.tabs button {
+      flex: 1; padding: 7px; background: none; border: none; cursor: pointer;
+      color: #6b7280; border-bottom: 2px solid transparent; font-size: 13px;
+    }
+    nav.tabs button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+    main { padding: 10px 12px; overflow-y: auto; position: absolute; inset: 84px 0 0 0; }
+    .empty { color: #9ca3af; text-align: center; padding: 24px 0; }
+    .item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; margin-top: 8px; background: #fafafa; }
+    .item .meta { color: #6b7280; font-size: 12px; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+    .item .meta .url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item .quote { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; font-size: 12px; padding: 4px 6px; margin: 4px 0; max-height: 64px; overflow: auto; }
+    .item .text { white-space: pre-wrap; word-break: break-word; max-height: 160px; overflow: auto; margin: 4px 0 6px; }
+    .item .ops button { border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 6px; padding: 3px 8px; margin-right: 6px; cursor: pointer; font-size: 12px; }
+    .item .ops button.danger { color: #dc2626; border-color: #fecaca; }
+    /* chat */
+    .msg { border-radius: 10px; padding: 8px 10px; margin-top: 8px; max-width: 100%; }
+    .msg.user { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .msg.assistant { background: #f9fafb; border: 1px solid #e5e7eb; white-space: pre-wrap; }
+    .msg .who { font-size: 11px; color: #6b7280; margin-bottom: 3px; }
+    .err { color: #b91c1c; background:#fef2f2; border:1px solid #fecaca; border-radius: 8px; padding: 8px; margin-top: 8px; white-space: pre-wrap; }
+    .chat-input-wrap { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 12px; border-top: 1px solid #e5e7eb; background: #fff; display: none; }
+    .chat-input-wrap textarea {
+      width: 100%; min-height: 56px; resize: vertical; border: 1px solid #d1d5db;
+      border-radius: 8px; padding: 6px 8px; font: inherit;
+    }
+    .chat-input-wrap .row { display: flex; gap: 8px; margin-top: 6px; align-items: center; }
+    .chat-input-wrap select { flex: 1; border: 1px solid #d1d5db; border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+    .chat-input-wrap .send { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 6px 16px; cursor: pointer; }
+    .chat-input-wrap .send:disabled { opacity: .5; cursor: default; }
+    .hint { color: #6b7280; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <b>📝 Markpilot</b>
+    <button id="btn-export">⬇ 导出本页</button>
+    <button id="btn-options">⚙</button>
+  </header>
+  <nav class="tabs">
+    <button data-tab="notes" class="active">本页笔记</button>
+    <button data-tab="chat">问 AI</button>
+  </nav>
+  <main id="main"></main>
+  <div class="chat-input-wrap" id="chat-input-wrap">
+    <textarea id="chat-q" placeholder="问点什么…（自动带上页面正文 + 你的笔记 + 选区）"></textarea>
+    <div class="row">
+      <select id="chat-scope">
+        <option value="page">整页上下文</option>
+        <option value="selection">仅当前选区 + 笔记</option>
+      </select>
+      <span class="hint" id="model-hint"></span>
+      <button class="send" id="btn-send">发送</button>
+    </div>
+  </div>
+
+  <script type="module" src="panel.js"></script>
+</body>
+</html>

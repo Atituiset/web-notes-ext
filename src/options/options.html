@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>Markpilot 设置</title>
+  <style>
+    body { font: 14px/1.6 system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1f2937; max-width: 640px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 18px; }
+    section { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    label { display: block; margin: 10px 0 4px; font-weight: 600; font-size: 13px; }
+    input, select { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font: inherit; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    button { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer; }
+    button.secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+    .status { font-size: 12px; color: #059669; margin-left: 10px; }
+    .warn { color: #b45309; font-size: 12px; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>📝 Markpilot 设置</h1>
+
+  <section>
+    <h2>LLM Provider (BYOK)</h2>
+    <label>Provider</label>
+    <select id="provider">
+      <option value="openai-compatible">OpenAI 兼容（自定义 baseUrl / vLLM / 中转）</option>
+      <option value="ollama">Ollama 本地 (localhost:11434)</option>
+      <option value="openrouter">OpenRouter</option>
+      <option value="anthropic">Anthropic</option>
+    </select>
+    <label>Base URL（仅 OpenAI 兼容时生效，默认 Ollama）</label>
+    <input id="baseUrl" placeholder="http://localhost:11434/v1" />
+    <label>模型名</label>
+    <input id="model" placeholder="如 qwen2.5:14b / claude-sonnet-4-20250514" />
+    <label>API Key（仅本机 chrome.storage.local，不上传）</label>
+    <input id="apiKey" type="password" placeholder="Ollama 无需填写" />
+    <p class="warn">Key 仅存本机浏览器。Anthropic 浏览器直连已自动加 dangerous-direct-browser-access 头。</p>
+  </section>
+
+  <section>
+    <h2>Obsidian Vault</h2>
+    <div class="row">
+      <button id="btn-pick">授权 vault 目录…</button>
+      <span id="vault-state" class="warn"></span>
+    </div>
+    <label>导出子目录模板</label>
+    <input id="vaultDirTemplate" placeholder="Clippings" />
+    <label><input type="checkbox" id="exportAiQA" style="width:auto" /> AI 问答一并导出（默认关）</label>
+  </section>
+
+  <button id="btn-save">保存设置</button><span class="status" id="save-status"></span>
+
+  <script src="options.js"></script>
+</body>
+</html>
