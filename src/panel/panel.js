@@ -161,7 +161,8 @@ async function renderChat() {
 
 const chatHistory = []; // {role, content} 仅本次会话内存
 
-$('btn-send').addEventListener('click', () => askLLMWith($('chat-q').value.trim(), $('chat-scope').value));
+function sendHandler() { askLLMWith($('chat-q').value.trim(), $('chat-scope').value); }
+$('btn-send').addEventListener('click', sendHandler);
 $('chat-q').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askLLM(); }
 });
@@ -199,9 +200,21 @@ async function askLLMWith(question, scope) {
 
   const bubble = addMsg('assistant', '');
   const bodyEl = bubble.querySelector('.body');
-  bodyEl.textContent = '…';
+  bodyEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
   const btnSend = $('btn-send');
-  btnSend.disabled = true;
+  let aborted = false;
+
+  // 发送按钮变「停止」（流式中断，对齐主流 chat）
+  const abortCtrl = new AbortController();
+  function stopStream() {
+    aborted = true;
+    abortCtrl.abort();
+  }
+  btnSend.textContent = '停止';
+  btnSend.classList.add('stop');
+  btnSend.disabled = false;
+  btnSend.removeEventListener('click', sendHandler);
+  btnSend.addEventListener('click', stopStream);
 
   // 流式期间：只在用户本来就在底部时才自动跟随，避免打断手动上滚
   let streamingText = '';
@@ -213,6 +226,7 @@ async function askLLMWith(question, scope) {
     requestAnimationFrame(() => {
       rafPending = false;
       renderMarkdownInto(bodyEl, streamingText);
+      updateScrollBtn();
       if (nearBottom()) scrollBottom();
     });
   };
@@ -221,8 +235,10 @@ async function askLLMWith(question, scope) {
     await streamChat({
       settings,
       messages,
+      signal: abortCtrl.signal,
       onToken: (tok) => { streamingText += tok; flushAndFollow(); },
     });
+    aborted = false; // 正常完成
     // 最终完整渲染 + 标记完成（显示复制/重试按钮）
     renderMarkdownInto(bodyEl, streamingText);
     bubble.classList.add('done');
@@ -238,7 +254,7 @@ async function askLLMWith(question, scope) {
     });
     scrollBottom();
     // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘
-    if (pageUrl) {
+    if (pageUrl && streamingText) {
       await send({
         type: 'notes:put',
         note: {
@@ -252,10 +268,21 @@ async function askLLMWith(question, scope) {
       });
     }
   } catch (e) {
-    bubble.remove();
-    appendError(String(e.message || e));
+    if (aborted || String(e.name) === 'AbortError') {
+      // 用户主动停止：保留已有内容，可复制
+      if (streamingText) renderMarkdownInto(bodyEl, streamingText);
+      bubble.classList.add('done');
+      attachMsgOps(bubble, { answer: () => streamingText, question, scope });
+    } else {
+      bubble.remove();
+      appendError(String(e.message || e));
+    }
   }
-  btnSend.disabled = false;
+  // 恢复发送按钮
+  btnSend.textContent = '发送';
+  btnSend.classList.remove('stop');
+  btnSend.removeEventListener('click', stopStream);
+  btnSend.addEventListener('click', sendHandler);
 }
 
 // ---------- 消息操作: 复制 / 重试 ----------
@@ -288,6 +315,18 @@ function clearMainIfFirstChat() {
   chatStarted = true;
 }
 function scrollBottom() { $('main').scrollTop = $('main').scrollHeight; }
+
+// 离开底部时显示「↓ 回到底部」（对齐主流 chat）
+function updateScrollBtn() {
+  const m = $('main');
+  const away = m.scrollHeight - m.scrollTop - m.clientHeight > 200;
+  $('btn-scroll-bottom').style.display = away && chatStarted ? 'block' : 'none';
+}
+$('main').addEventListener('scroll', updateScrollBtn);
+$('btn-scroll-bottom').addEventListener('click', () => {
+  scrollBottom();
+  updateScrollBtn();
+});
 
 function addMsg(role, text) {
   const d = el('div', 'msg ' + role);
