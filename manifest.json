@@ -29,7 +29,13 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content/extract.js", "content/annotator.js"],
+      "js": ["content/extract.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/annotator.js"],
       "run_at": "document_idle"
     }
   ],

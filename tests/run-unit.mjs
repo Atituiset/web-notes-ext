@@ -4,6 +4,8 @@ import { execSync } from 'node:child_process';
 const cases = [
   ['tests/unit/memory.test.mjs', '/tmp/wne-mem-test.mjs'],
   ['tests/unit/markdown-xss.test.mjs', '/tmp/wne-xss-test.mjs'],
+  ['tests/unit/pipeline.test.mjs', '/tmp/wne-pipeline-test.mjs'],
+  ['tests/unit/model-picker.test.mjs', '/tmp/wne-picker-test.mjs'],
 ];
 for (const [src, out] of cases) {
   execSync(

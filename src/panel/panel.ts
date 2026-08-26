@@ -252,7 +252,19 @@ function redrawThread() {
     const d = addMsg(m.role, '');
     const bodyEl = d.querySelector('.body');
     if (m.role === 'assistant') {
-      renderMarkdownInto(bodyEl, m.content);
+      const bodyEl2 = d.querySelector('.body');
+      bodyEl2.textContent = '';
+      if (m.reasoning) {
+        const think = el('details', 'thinking');
+        think.appendChild(el('summary', '', '💭 思考过程'));
+        const tb = el('div', 'thinking-body');
+        tb.textContent = m.reasoning;
+        think.appendChild(tb);
+        bodyEl2.appendChild(think);
+      }
+      const holder = el('div');
+      bodyEl2.appendChild(holder);
+      renderMarkdownInto(holder, m.content);
       d.classList.add('done');
       attachMsgOps(d, { answer: () => m.content, question: m.question || '', scope: 'page', readonly: true });
     } else {
@@ -332,14 +344,33 @@ async function askLLMWith(question, scope) {
 
   // 流式期间：只在用户本来就在底部时才自动跟随，避免打断手动上滚
   let streamingText = '';
+  let streamingReasoning = '';
   let rafPending = false;
   const nearBottom = () => $('main').scrollHeight - $('main').scrollTop - $('main').clientHeight < 60;
+
+  // 思考过程折叠块（reasoning 模型才有内容）
+  const thinkWrap = el('details', 'thinking');
+  const thinkSummary = el('summary', '', '💭 思考过程');
+  const thinkBody = el('div', 'thinking-body');
+  thinkWrap.appendChild(thinkSummary);
+  thinkWrap.appendChild(thinkBody);
+  bodyEl.textContent = '';
+  bodyEl.appendChild(thinkWrap);
+  const answerHolder = el('div', 'answer-holder');
+  bodyEl.appendChild(answerHolder);
+
+  let lastThinkLen = -1;
   const flushAndFollow = () => {
     if (rafPending) return;
     rafPending = true;
     requestAnimationFrame(() => {
       rafPending = false;
-      renderMarkdownInto(bodyEl, streamingText);
+      // 思考流式：只更新折叠块文本，不强制展开
+      if (streamingReasoning.length !== lastThinkLen) {
+        lastThinkLen = streamingReasoning.length;
+        thinkBody.textContent = streamingReasoning;
+      }
+      renderMarkdownInto(answerHolder, streamingText);
       updateScrollBtn();
       if (nearBottom()) scrollBottom();
     });
@@ -353,11 +384,13 @@ async function askLLMWith(question, scope) {
     await runStream({
       settings, messages, signal: abortCtrl.signal,
       onToken: (tok) => { streamingText += tok; flushAndFollow(); },
+      onReasoning: (tok) => { streamingReasoning += tok; flushAndFollow(); },
     });
 
     // 正常完成：完整回答入 thread
     finishAssistant(thread, question, scope, streamingText, bubble, {
       info, pageUrl, notes, selection, pageText, settings,
+      reasoning: streamingReasoning,
     });
     scrollBottom();
     renderFollowUps(bubble, question, streamingText);
@@ -365,10 +398,10 @@ async function askLLMWith(question, scope) {
     abortedByUser = abortedByUser || e.name === 'AbortError';
     if (abortedByUser || abortCtrl.signal.aborted) {
       // 用户主动停止：保留已有内容（partial 也持久化，刷新不丢）
-      if (streamingText) {
-        renderMarkdownInto(bodyEl, streamingText);
+      if (streamingText || streamingReasoning) {
         finishAssistant(thread, question, scope, streamingText, bubble, {
           info, pageUrl, notes, selection, pageText, settings,
+          reasoning: streamingReasoning,
           partial: true,
         });
         scrollBottom();
@@ -394,15 +427,30 @@ async function askLLMWith(question, scope) {
 function finishAssistant(thread, question, scope, answer, bubble, extra: {
   info?, pageUrl?, notes?, selection?, pageText?, settings?,
   partial?: boolean,
+  reasoning?: string,
 }) {
   thread.messages.push({
     role: 'assistant',
     content: answer,
     question,
+    ...(extra.reasoning ? { reasoning: extra.reasoning } : {}),
     ...(extra.partial ? { partial: true } : {}),
   });
   thread.updatedAt = Date.now();
-  renderMarkdownInto(bubble.querySelector('.body'), answer);
+  const bodyEl = bubble.querySelector('.body');
+  // 重绘最终内容：思考折叠块（若有）+ 正文
+  bodyEl.textContent = '';
+  if (extra.reasoning) {
+    const think = el('details', 'thinking');
+    think.appendChild(el('summary', '', '💭 思考过程'));
+    const tb = el('div', 'thinking-body');
+    tb.textContent = extra.reasoning;
+    think.appendChild(tb);
+    bodyEl.appendChild(think);
+  }
+  const holder = el('div');
+  bodyEl.appendChild(holder);
+  renderMarkdownInto(holder, answer);
   bubble.classList.add('done');
   attachMsgOps(bubble, {
     answer: () => answer,

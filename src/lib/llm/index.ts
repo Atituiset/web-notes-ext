@@ -112,11 +112,12 @@ async function consumeSSE(response, onData) {
   }
 }
 
-export async function streamChat({ settings, messages, signal, onToken }: {
+export async function streamChat({ settings, messages, signal, onToken, onReasoning }: {
   settings: any;
   messages: { role: string; content: string }[];
   signal?: AbortSignal;
   onToken?: (tok: string) => void;
+  onReasoning?: (tok: string) => void;
 }) {
   const model = settings.model;
   if (!model) throw new Error('未配置模型 — 请到设置页填写');
@@ -151,17 +152,32 @@ export async function streamChat({ settings, messages, signal, onToken }: {
   }
 
   let full = '';
+  let reasoning = '';
   await consumeSSE(resp, (data) => {
     let tok = null;
+    let rtok = null;
     if (settings.provider === 'anthropic') {
       if (data.type === 'content_block_delta' && data.delta && data.delta.text) tok = data.delta.text;
+      // Anthropic extended thinking
+      if (data.type === 'content_block_delta' && data.delta && data.delta.thinking) rtok = data.delta.thinking;
     } else {
-      tok = data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content;
+      const d = data.choices && data.choices[0] && data.choices[0].delta;
+      if (d) {
+        tok = d.content;
+        // DeepSeek R1 / OpenCode free reasoning models: delta.reasoning_content
+        // OpenAI o-series style: delta.reasoning
+        rtok = d.reasoning_content || d.reasoning || null;
+        if (typeof rtok !== 'string') rtok = null;
+      }
+    }
+    if (rtok) {
+      reasoning += rtok;
+      if (onReasoning) onReasoning(rtok);
     }
     if (tok) {
       full += tok;
       if (onToken) onToken(tok);
     }
   });
-  return { text: full };
+  return { text: full, reasoning };
 }
