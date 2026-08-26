@@ -67,6 +67,9 @@ function fuzzyMatch(query, text) {
 /**
  * 模型展示名别名：搜索时同时匹配别名（如输 "ox alpha" 命中 x-preview-f-free）。
  * 下拉中仍显示真实模型 ID，保证选中值可直接请求。
+ * 来源两层：
+ *   1. MODEL_ALIASES 内置兜底（OpenCode 文档页结构变更时仍可用）
+ *   2. fetchDisplayNameAliases() 从 OpenCode 文档页解析全量映射（见下）
  */
 const MODEL_ALIASES = {
   'x-preview-f-free': 'ox alpha free stealth',
@@ -79,8 +82,44 @@ const MODEL_ALIASES = {
   'muse-spark-1.2-contributor-free': 'muse spark contributor',
 };
 
+// 运行时别名表（文档页解析结果覆盖/补充内置兜底）
+let dynamicAliases: Record<string, string> = {};
+
+function aliasFor(id: string): string {
+  return dynamicAliases[id] || (MODEL_ALIASES as Record<string, string>)[id] || '';
+}
+
+/**
+ * 从 OpenCode Zen 文档页抓「展示名 ↔ 模型 ID」对照表。
+ * 页面表格结构：<tr><td>Ox Alpha Free</td><td>x-preview-f-free</td><td>…
+ * 失败静默返回 {} —— 别名是增强功能，不能阻塞拉取模型列表。
+ */
+export async function fetchDisplayNameAliases(): Promise<Record<string, string>> {
+  try {
+    const resp = await fetch('https://opencode.ai/docs/zen');
+    if (!resp.ok) return {};
+    const html = await resp.text();
+    const out: Record<string, string> = {};
+    const re = /<tr><td>([^<]+)<\/td><td>([a-z0-9._-]+)<\/td><td>/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html))) {
+      const [, name, id] = m;
+      if (!out[id]) out[id] = name.toLowerCase();
+    }
+    return out;
+  } catch {
+    return {}; // 网络失败/页面改版 — 静默降级到内置兜底
+  }
+}
+
+/** 拉取模型列表后调用，用文档页映射增强别名搜索 */
+async function enrichAliases() {
+  if (Object.keys(dynamicAliases).length) return; // 只抓一次
+  dynamicAliases = await fetchDisplayNameAliases();
+}
+
 function matchModel(query, m) {
-  const alias = MODEL_ALIASES[m.id] || '';
+  const alias = aliasFor(m.id);
   return fuzzyMatch(query, m.id) || (alias ? fuzzyMatch(query, alias) : false);
 }
 
@@ -101,7 +140,7 @@ function renderModelDropdown() {
     o.className = 'opt';
     const name = document.createElement('span');
     name.textContent = m.id;
-    name.title = MODEL_ALIASES[m.id] || '';
+    name.title = aliasFor(m.id);
     o.appendChild(name);
     if (m.free) {
       const f = document.createElement('span');
@@ -171,6 +210,8 @@ $('btn-models').addEventListener('click', async () => {
       ' — 在模型输入框点击即可选择。';
     // 免费模型排前面方便选：自动带上第一个免费模型作为建议
     if (freeCount && !$('model').value) $('model').value = models.find((m) => m.free).id;
+    // 别名增强（文档页解析，失败静默）— 不阻塞下拉展示
+    void enrichAliases();
     // 拉取后立即展示下拉（聚焦输入框），方便直接换模型
     if (models.length) {
       renderModelDropdown();
