@@ -1,0 +1,43 @@
+name: CI
+
+# push / PR 到 main 时验证：类型检查、单测、构建，
+# 并确保已提交的 dist 静态文件（panel.html 等）与重新构建的结果一致
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Unit tests
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      # dist 下已入库的静态文件（html 等）若与重新构建的结果不一致，在这里拦住
+      # （dist 的 js 由构建产物不入库，只有静态文件入库，故只比较已跟踪文件）
+      - name: Verify committed dist static files are up to date
+        run: |
+          CHANGED=$(git status --porcelain -- dist | grep -v '^??' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::仓库中的 dist 静态文件与构建结果不一致 — 请运行 npm run build 并提交更新"
+            echo "$CHANGED"
+            exit 1
+          fi

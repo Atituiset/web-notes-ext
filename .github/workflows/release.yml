@@ -1,0 +1,47 @@
+name: Release
+
+# push tag (v*) 时自动构建、打包、创建 GitHub Release 并上传 zip
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check & unit tests
+        run: |
+          npm run check
+          npm run test
+
+      - name: Build & package
+        run: npm run package
+
+      # tag 名应与 manifest.json version 一致（v0.2.3 ↔ 0.2.3），不一致直接失败
+      - name: Verify version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          MANIFEST=$(node -p "require('./manifest.json').version")
+          if [ "$TAG" != "$MANIFEST" ]; then
+            echo "::error::tag v$TAG 与 manifest.json version $MANIFEST 不一致"
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/markpilot-v*.zip
+          generate_release_notes: true
