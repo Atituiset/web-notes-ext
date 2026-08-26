@@ -8,13 +8,19 @@
 // File System) 验证同一套写文件代码路径（saveMemory / writePage 共享 createWritable 逻辑），
 // 并单独验证 manifest 的 content_scripts world 配置与 dist 产物一致性。
 import { chromium } from '/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright/index.mjs';
-import { mkdtempSync, readdirSync, readFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, existsSync, cpSync, rmSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const DIST = join(ROOT, 'dist');
+// 加载的扩展目录 = dist 产物 + manifest（仓库根没有构建产物，不能直接加载）
+const EXT_DIR = '/tmp/wne-ext-staging';
+rmSync(EXT_DIR, { recursive: true, force: true });
+mkdirSync(EXT_DIR, { recursive: true });
+cpSync(DIST, EXT_DIR, { recursive: true });
+copyFileSync(join(ROOT, 'manifest.json'), join(EXT_DIR, 'manifest.json'));
 let pass = 0, fail = 0;
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name); } };
 
@@ -35,7 +41,7 @@ console.log('[2] 扩展加载 + SW 注册健康');
   const ctx = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
     executablePath: '/home/atituiset/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome',
-    args: ['--disable-extensions-except=' + ROOT, '--load-extension=' + ROOT, '--no-first-run', '--no-sandbox', '--disable-gpu'],
+    args: ['--disable-extensions-except=' + EXT_DIR, '--load-extension=' + EXT_DIR, '--no-first-run', '--no-sandbox', '--disable-gpu'],
   });
   // MV3 SW 惰性注册不稳定 —— 直接从 chrome://extensions 页面读扩展 ID
   const page = await ctx.newPage();

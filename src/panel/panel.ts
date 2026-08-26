@@ -32,16 +32,16 @@ function send(msg): Promise<any> {
 async function activeTabInfo() {
   const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!t) return null;
-  let selection = '';
+  let selection = '', csUrl = '', csTitle = '';
   try {
-    // activeTab 权限下可注入；失败则无选区
-    const [r] = await chrome.scripting.executeScript({
-      target: { tabId: t.id! },
-      func: () => String(window.getSelection() || ''),
-    });
-    selection = (r && r.result) || '';
-  } catch { /* 受限页面 */ }
-  return { tab: t, url: t.url || '', title: t.title || '', selection };
+    // 走 content script 回读，不依赖 activeTab/scripting 授权（切 tab 后授权常失效；
+    // 未授权时 tabs.query 的 url/title 也是空串，同样由 content script 兜底）
+    const r = await chrome.tabs.sendMessage(t.id!, { type: 'page:get-selection' });
+    selection = (r && r.selection) || '';
+    csUrl = (r && r.url) || '';
+    csTitle = (r && r.title) || '';
+  } catch { /* 受限页面或 content script 未注入 */ }
+  return { tab: t, url: t.url || csUrl, title: t.title || csTitle, selection };
 }
 
 // ---------- 笔记列表 ----------
@@ -302,7 +302,7 @@ $('chat-q').addEventListener('keydown', (e) => {
   }
 });
 
-async function askLLMWith(question, scope) {
+async function askLLMWith(question, scope, selectionOverride?: string) {
   if (!question) return;
   if (streaming) return; // 流式中不接受新提问
   const qEl = $('chat-q');
@@ -315,7 +315,10 @@ async function askLLMWith(question, scope) {
   const pageUrl = info ? normalizeUrl(info.url) : '';
   const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
   const notes = (r && r.notes) || [];
-  const selection = scope === 'selection' ? ((info && info.selection) || '').trim() : null;
+  // 页面「问 AI」带进来的选区优先（点击后页面选区可能已失焦清空，回读不可靠）
+  const selection = scope === 'selection'
+    ? ((selectionOverride || (info && info.selection) || '').trim() || null)
+    : null;
 
   // 整页正文提取
   let pageText: string | null = null;
@@ -686,12 +689,39 @@ document.addEventListener('click', (e: any) => {
 
 renderNotes();
 
-// 暴露给 annotator 的「问 AI」按钮：切到 chat 并预填选区
+// ---------- 页面「问 AI」入口（SW 转发 + 缓冲消费）----------
+
+let lastHandledAskId = '';
+
+/** 处理页面划词「问 AI」：切到聊天页、锁定选区 scope、直接提问 */
+function handleIncomingAsk(selection: string, askId?: string) {
+  if (askId && askId === lastHandledAskId) return; // SW 转发与启动消费可能双触发
+  if (askId) lastHandledAskId = askId;
+  document.querySelectorAll('nav.tabs button').forEach((b: any) => {
+    if (b.dataset.tab === 'chat') b.click();
+  });
+  if (!selection) return;
+  $('chat-scope').value = 'selection';
+  const q = '解释这段话：“' + selection + '”';
+  $('chat-q').value = q;
+  if (!streaming) askLLMWith(q, 'selection', selection);
+}
+
+// SW 转发的实时消息（panel 已打开时走这里）
 chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && msg.type === 'panel:focus-chat') {
-    document.querySelectorAll('nav.tabs button').forEach((b: any) => {
-      if (b.dataset.tab === 'chat') b.click();
-    });
-    if (msg.selection) $('chat-q').value = '解释这段话：“' + msg.selection + '”';
+  if (msg && msg.type === 'panel:ask') {
+    handleIncomingAsk(msg.selection || '', msg.askId);
+    chrome.storage.session.remove('pendingAsk').catch(() => {});
   }
 });
+
+// panel 未开时 SW 缓冲在 storage.session，启动时消费（兜底）
+(async () => {
+  try {
+    const { pendingAsk } = await chrome.storage.session.get('pendingAsk');
+    if (pendingAsk && pendingAsk.selection && Date.now() - pendingAsk.ts < 5 * 60 * 1000) {
+      handleIncomingAsk(pendingAsk.selection, pendingAsk.askId);
+    }
+    chrome.storage.session.remove('pendingAsk').catch(() => {});
+  } catch { /* session 存储不可用等 */ }
+})();

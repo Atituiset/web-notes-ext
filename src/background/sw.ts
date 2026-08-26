@@ -49,6 +49,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           sendResponse({ ok: true });
           break;
         }
+        case 'panel:focus-chat': {
+          // 页面「问 AI」入口。content script → side panel 直发不可靠
+          // （panel 未开时丢失），统一由 SW 接手：
+          //   1. 缓冲 pendingAsk —— panel 启动时消费（兜底）
+          //   2. 打开侧栏 —— 用户点击的手势 activation 随消息传递到此
+          //   3. 转发 panel:ask —— SW → panel 的投递始终可达
+          const ask = {
+            askId: msg.askId || '',
+            selection: msg.selection || '',
+            ts: msg.ts || Date.now(),
+          };
+          await chrome.storage.session.set({ pendingAsk: ask });
+          try {
+            const winId = sender && sender.tab && sender.tab.windowId;
+            if (winId != null) await chrome.sidePanel.open({ windowId: winId });
+          } catch { /* 已打开或手势上下文失效 */ }
+          // 无接收者时（panel 未加载）sendMessage 会 reject，属预期，启动消费兜底
+          chrome.runtime.sendMessage({ type: 'panel:ask', ...ask }).catch(() => {});
+          sendResponse({ ok: true });
+          break;
+        }
         default:
           sendResponse({ ok: false, error: 'unknown message type' });
       }

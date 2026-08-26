@@ -1,9 +1,17 @@
 // E2E 冒烟测试：加载扩展 → 本地测试页划词 → 保存笔记 → 刷新重高亮 → mock LLM 流式
+// 运行：node tests/e2e-smoke.cjs（需先 npm run build；headed，走 WSLg/显示器）
+const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
 
-const ROOT = '/home/atituiset/Projects/web-notes-ext';
+const ROOT = path.resolve(__dirname, '..');
+// 加载的扩展目录 = dist 产物 + manifest（仓库根没有构建产物，不能直接加载）
+const EXT_DIR = '/tmp/wne-ext-staging';
+fs.rmSync(EXT_DIR, { recursive: true, force: true });
+fs.mkdirSync(EXT_DIR, { recursive: true });
+fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 
 // ---- 简单静态服务器 + mock OpenAI SSE 端点 ----
 function startServer(port) {
@@ -49,8 +57,8 @@ function startServer(port) {
   const ctx = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
     args: [
-      `--disable-extensions-except=${ROOT}`,
-      `--load-extension=${ROOT}`,
+      `--disable-extensions-except=${EXT_DIR}`,
+      `--load-extension=${EXT_DIR}`,
       '--no-first-run',
     ],
   });
@@ -65,6 +73,9 @@ function startServer(port) {
   let sw = ctx.serviceWorkers().find((w) => w.url().includes('sw.js'));
   if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 8000 }).catch(() => null);
   check('service worker registered', !!sw, sw && sw.url());
+  // 扩展源（读 IndexedDB / 打开 panel 都要在扩展源页面里，网页源的 IDB 是另一份）
+  // 注意：chrome-extension: 是非 http(s) scheme，URL.origin 恒为 'null'，要用 host 拼
+  const extOrigin = sw ? 'chrome-extension://' + new URL(sw.url()).host : null;
 
   // 2. 打开测试页，等待 content script 注入
   const page = await ctx.newPage();
@@ -72,7 +83,7 @@ function startServer(port) {
   page.on('pageerror', (e) => pageErrors.push(String(e)));
   page.on('framenavigated', (f) => { if (f === page.mainFrame()) console.log('NAV:', f.url()); });
   await page.goto('http://localhost:8899/');
-  await page.waitForSelector('#wne-root', { timeout: 5000 }).catch(() => {});
+  await page.waitForSelector('#wne-root', { state: 'attached', timeout: 5000 }).catch(() => {});
   check('content script injected (#wne-root)', !!(await page.$('#wne-root')));
 
   // 3. 划词：选中 "Beta paragraph" 一段
@@ -105,30 +116,31 @@ function startServer(port) {
     try { await page.evaluate(() => 1); await page.waitForTimeout(300); break; }
     catch { await page.waitForTimeout(500); }
   }
-  // SW 收到消息了吗？直接查 IndexedDB（用独立页面，避免主页面导航干扰）
+  // SW 收到消息了吗？直接查 IndexedDB（必须在扩展源页面里读，网页源是另一份 IDB）
   let noteCount = -99;
   try {
     const idbPage = await ctx.newPage();
-    idbPage.on('framenavigated', (f) => { if (f === idbPage.mainFrame()) console.log('IDBPAGE NAV:', f.url()); });
-    await idbPage.goto('http://localhost:8899/');
+    await idbPage.goto(extOrigin + '/options/options.html');
     await idbPage.waitForLoadState('load');
-    await idbPage.waitForTimeout(500);
     noteCount = -98;
     for (let i = 0; i < 5; i++) {
       try {
         noteCount = await idbPage.evaluate(() => new Promise((res) => {
-          const r = indexedDB.open('web-notes-ext', 1);
+          const r = indexedDB.open('web-notes-ext');
           r.onsuccess = () => {
-            const db = r.result;
-            const t = db.transaction('notes', 'readonly');
-            const q = t.objectStore('notes').getAll();
-            q.onsuccess = () => res(q.result.length);
-            q.onerror = () => res(-1);
+            try {
+              const db = r.result;
+              const t = db.transaction('notes', 'readonly');
+              const q = t.objectStore('notes').getAll();
+              q.onsuccess = () => res(q.result.length);
+              q.onerror = () => res(-1);
+            } catch { res(-3); }
           };
           r.onerror = () => res(-2);
         }));
-        break;
+        if (noteCount >= 0) break;
       } catch (e) { await idbPage.waitForTimeout(500); }
+      await idbPage.waitForTimeout(500);
     }
     await idbPage.close();
   } catch (e) {
@@ -146,7 +158,7 @@ function startServer(port) {
   const sw2 = sw || (await ctx.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
   const settingsOk = await (sw2 || ctx.workers()[0] || page).evaluate(() => {
     return new Promise((res) => {
-      const r = indexedDB.open('web-notes-ext', 1);
+      const r = indexedDB.open('web-notes-ext', 2);
       r.onsuccess = () => {
         const db = r.result;
         try {
@@ -172,11 +184,14 @@ function startServer(port) {
   check('settings written', settingsOk);
 
   // 7. panel 聊天：打开 side panel 页面（作为普通标签页验证逻辑）
-  const extOrigin = sw ? new URL(sw.url()).origin : ctx.serviceWorkers().map((w) => new URL(w.url()).origin).find((o) => o.startsWith('chrome-extension'));
   const panelPage = await ctx.newPage();
-  await panelPage.goto('chrome-extension://' + extOrigin + '/src/panel/panel.html');
+  await panelPage.goto(extOrigin + '/panel/panel.html');
   await panelPage.waitForTimeout(800);
+  // chat 输入框初始隐藏，先切到「问 AI」tab
+  await panelPage.click('nav.tabs button[data-tab="chat"]');
   await panelPage.fill('#chat-q', '这段讲了什么?');
+  // 让测试页成为活动 tab（panel 的 activeTabInfo 指向它），CDP 点击不改变激活态
+  await page.bringToFront();
   await panelPage.click('#btn-send');
   await panelPage.waitForTimeout(2500);
   const aiText = await panelPage.evaluate(() => {
@@ -185,16 +200,21 @@ function startServer(port) {
   });
   check('LLM streamed reply', aiText.includes('mocked'), aiText.slice(0, 60));
 
-  // AI-QA 笔记入库
-  const counts = await panelPage.evaluate(() => new Promise((res) => {
-    const r = indexedDB.open('web-notes-ext', 1);
-    r.onsuccess = () => {
-      const t = r.result.transaction('notes', 'readonly');
-      const q = t.objectStore('notes').getAll();
-      q.onsuccess = () => res(q.result.map((n) => n.kind));
-      q.onerror = () => res([]);
-    };
-  })).catch(() => []);
+  // AI-QA 笔记入库（saveAiQaNote 是 fire-and-forget，轮询等写入落库）
+  let counts = [];
+  for (let i = 0; i < 6 && !counts.includes('ai-qa'); i++) {
+    counts = await panelPage.evaluate(() => new Promise((res) => {
+      const r = indexedDB.open('web-notes-ext');
+      r.onsuccess = () => {
+        const t = r.result.transaction('notes', 'readonly');
+        const q = t.objectStore('notes').getAll();
+        q.onsuccess = () => res(q.result.map((n) => n.kind));
+        q.onerror = () => res([]);
+      };
+      r.onerror = () => res([]);
+    })).catch(() => []);
+    if (!counts.includes('ai-qa')) await panelPage.waitForTimeout(500);
+  }
   check('ai-qa note saved', counts.includes('ai-qa'), JSON.stringify(counts));
 
   if (pageErrors.length) console.log('PAGE ERRORS:', pageErrors.slice(0, 5));

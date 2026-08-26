@@ -6,11 +6,35 @@
  *   - 容器: #content (mdBook) → article/main 或 body（通用站点）
  *   - 新增: URL 变化监听 (patch pushState + popstate)，SPA 切页时重载高亮 (D5)
  */
+import { extractArticle } from '../lib/page-extract.js';
+
 (() => {
   'use strict';
 
   const ROOT_ID = 'wne-root';
   const MARK_CLASS = 'wne-mark';
+
+  // ---------- panel 侧回读通道（不依赖 activeTab/scripting 授权） ----------
+  // tabs.sendMessage 只送达本 tab 的 content script，SW 收不到，无抢答问题
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (!msg || !msg.type) return;
+    if (msg.type === 'page:get-selection') {
+      // url/title 一并返回：panel 的 tabs.query 在未授予 activeTab 的站点上
+      // 拿不到 url/title（返回空串），content script 不受此限
+      sendResponse({
+        ok: true,
+        selection: String(window.getSelection() || ''),
+        url: location.href,
+        title: document.title || '',
+      });
+    } else if (msg.type === 'page:get-text') {
+      try {
+        sendResponse({ ok: true, text: extractArticle(document).text });
+      } catch {
+        sendResponse({ ok: false });
+      }
+    }
+  });
 
   // ---------- 页面容器与标识 ----------
 
@@ -317,11 +341,16 @@
       if (!pendingSel) return;
       const selText = pendingSel.text;
       hideSelbar();
-      try {
-        // 通知 side panel 切到聊天页并预填问题；panel 未开时消息丢失，用户点工具栏图标即可
-        chrome.runtime.sendMessage({ type: 'panel:focus-chat', selection: selText }, () => void chrome.runtime.lastError);
-      } catch { }
-      toast('已发送到侧栏（若侧栏未打开请点击工具栏图标）');
+      // 发给 SW：缓冲 pendingAsk（panel 未开时的兜底）+ 打开侧栏 + 转发给 panel。
+      // 直接发给 panel 不可靠——panel 未开时消息丢失，且部分版本
+      // content script → side panel 的消息投递不到（SW 转发则始终可达）。
+      const r = await send({
+        type: 'panel:focus-chat',
+        selection: selText,
+        askId: uid(),
+        ts: Date.now(),
+      });
+      toast(r && r.ok ? '已发送到侧栏' : '发送失败，请点击工具栏图标打开侧栏');
     });
     selbar.appendChild(btnNote);
     selbar.appendChild(btnAsk);

@@ -31,15 +31,18 @@ export const BUDGET = {
 /**
  * 页面正文提取（受限页面返回 null）。
  *
- * 关键：必须注入到 MAIN world。content script 运行在 isolated world，
- * 看不到页面 window 上的 __wneExtract；而 extract.js 是以 content_scripts
- * 方式注册的（isolated world），所以它挂的 __wneExtract 只有 MAIN world
- * 注入的代码才能读到……反过来才对：content_scripts 默认 isolated world，
- * 页面 JS 与 MAIN-world 注入共享同一个 window，因此这里用 world: 'MAIN'
- * 才能访问 content script 挂到「页面可见 window」上的函数——前提是
- * extract.js 自己也在 MAIN world 注册（见 manifest.json）。
+ * 主路径：tabs.sendMessage → annotator.js（isolated world）的 page:get-text，
+ * 不依赖 activeTab/scripting 授权（切 tab 后授权常失效，曾导致静默拿不到正文）。
+ *
+ * 兜底：executeScript 注入 MAIN world 调 __wneExtract（extract.js 挂载），
+ * 覆盖 content script 尚未注入的旧标签页。isolated world 看不到 MAIN world
+ * window 上的 __wneExtract，所以兜底必须 world: 'MAIN'。
  */
 export async function extractPageText(tabId: number): Promise<string | null> {
+  try {
+    const r = await chrome.tabs.sendMessage(tabId, { type: 'page:get-text' });
+    if (r && r.ok && r.text) return String(r.text);
+  } catch { /* content script 未注入，走注入兜底 */ }
   try {
     const [res] = await chrome.scripting.executeScript({
       target: { tabId },

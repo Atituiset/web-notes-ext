@@ -1,11 +1,20 @@
 // 调试：真实页面 https://atituiset.github.io/book-llvm/ 上划词无反应问题
+// 运行：node tests/debug-live-page.cjs（需先 npm run build；headed）
+const fs = require('fs');
+const path = require('path');
 const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
-const ROOT = '/home/atituiset/Projects/web-notes-ext';
+const ROOT = path.resolve(__dirname, '..');
+// 加载的扩展目录 = dist 产物 + manifest（仓库根没有构建产物，不能直接加载）
+const EXT_DIR = '/tmp/wne-ext-staging';
+fs.rmSync(EXT_DIR, { recursive: true, force: true });
+fs.mkdirSync(EXT_DIR, { recursive: true });
+fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 
 (async () => {
   const ctx = await chromium.launchPersistentContext('/tmp/wne-debug-live-' + Date.now(), {
     headless: false,
-    args: [`--disable-extensions-except=${ROOT}`, `--load-extension=${ROOT}`, '--no-first-run'],
+    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run'],
   });
   const page = await ctx.newPage();
   page.on('console', (m) => console.log('CONSOLE[' + m.type() + ']:', m.text().slice(0, 150)));
