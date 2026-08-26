@@ -45,6 +45,23 @@ test('buildContext: 超长 pageText 头尾保留并标注省略', () => {
   assert.ok(messages[1].content.length < longText.length);
 });
 
+test('buildContext: 缺省用默认 system prompt，自定义则替换', () => {
+  const def = buildContext({ question: 'q', pageText: null, notes: [], selection: null });
+  assert.equal(def.messages[0].role, 'system');
+  assert.ok(def.messages[0].content.includes('阅读助手'));
+  const custom = buildContext({ question: 'q', pageText: null, notes: [], selection: null, systemPrompt: '你是猫娘。' });
+  assert.equal(custom.messages[0].role, 'system');
+  assert.equal(custom.messages[0].content, '你是猫娘。');
+  assert.equal(custom.messages[1].role, 'user');
+});
+
+test('buildContext: systemPrompt 为空串时不带 system 消息', () => {
+  const { messages } = buildContext({ question: 'q', pageText: null, notes: [], selection: null, systemPrompt: '' });
+  assert.equal(messages.length, 1);
+  assert.equal(messages[0].role, 'user');
+  assert.ok(messages[0].content.includes('【问题】'));
+});
+
 // ---- streamChat reasoning 解析：模拟 SSE 流 ----
 globalThis.fetch = async () => ({
   ok: true,

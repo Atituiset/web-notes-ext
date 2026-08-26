@@ -73,9 +73,11 @@ export async function buildLlmMessages(opts: {
     pageText: opts.pageText,
     notes: opts.notes,
     selection: opts.selection,
+    systemPrompt: opts.settings.systemPrompt, // 缺省=默认 prompt；空串=不带 system 消息
   });
   const messages = built.messages.slice();
-  const insertAt = 1; // system 之后
+  // system 存在时插到其后；无 system（用户清空）则插到最前
+  const insertAt = messages.length && messages[0].role === 'system' ? 1 : 0;
 
   // 长期记忆注入（设置可关；vault 未授权静默降级）
   if (opts.settings.memoryInject !== false) {

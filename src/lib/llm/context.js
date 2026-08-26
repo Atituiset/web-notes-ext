@@ -2,7 +2,7 @@
  * 上下文构建器 ★ 产品差异化核心 (DESIGN.md D3)
  *
  * 组装顺序（预算内从上往下装）:
- *   [system] 阅读助手指令
+ *   [system] 阅读助手指令（默认 DEFAULT_SYSTEM_PROMPT，设置页可自定义/清空）
  *   [材料1]  页面正文（截断到字符预算，保留标题结构）
  *   [材料2]  用户在该页的已有笔记（时间序） ← 让模型知道"我已经想到了什么"
  *   [材料3]  当前选区原文（若有）
@@ -14,9 +14,15 @@ export function estTokens(s) {
   return Math.ceil(String(s || '').length / 2.5);
 }
 
-const SYSTEM_PROMPT =
-  '你是一个阅读助手。请基于给定的「页面正文」「用户笔记」「选中原文」材料回答问题；' +
-  '材料中没有的内容，明确说不知道，不要编造。用户笔记代表用户已有的思考，回答时请衔接和回应这些思考。';
+/**
+ * 默认 system prompt。
+ * 定位为阅读助手但以「材料优先」而非「仅限材料」：允许模型用自己的知识补充，
+ * 只要求分清来源、不谎称出自材料——避免过度收敛导致回答干瘪。
+ */
+export const DEFAULT_SYSTEM_PROMPT =
+  '你是一个阅读助手。优先依据给定的「页面正文」「用户笔记」「选中原文」材料回答问题；' +
+  '材料不足时可以结合你自己的知识补充，但需分清哪些来自材料、哪些是你的补充，不要把材料中没有的内容谎称为出自材料。' +
+  '用户笔记代表用户已有的思考，回答时请衔接和回应这些思考。';
 
 /**
  * @param {object} opts
@@ -25,9 +31,13 @@ const SYSTEM_PROMPT =
  * @param {Array}  opts.notes             该页已有笔记（时间序）
  * @param {string|null} opts.selection    当前选区原文
  * @param {number} [opts.budgetTokens=24000] 总预算
+ * @param {string} [opts.systemPrompt]    自定义 system prompt；缺省用默认，空串=不带 system 消息
  */
-export function buildContext({ question, pageText, notes, selection, budgetTokens = 24000 }) {
-  const fixed = estTokens(SYSTEM_PROMPT) + estTokens(question) + 200;
+export function buildContext({ question, pageText, notes, selection, budgetTokens = 24000, systemPrompt }) {
+  const sys = systemPrompt === undefined || systemPrompt === null
+    ? DEFAULT_SYSTEM_PROMPT
+    : String(systemPrompt).trim();
+  const fixed = estTokens(sys) + estTokens(question) + 200;
   let remaining = budgetTokens - fixed;
 
   // 材料3 选区优先级最高（用户正盯着它问）
@@ -63,10 +73,8 @@ export function buildContext({ question, pageText, notes, selection, budgetToken
     .filter(Boolean)
     .join('\n\n');
 
-  return {
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: material + '\n\n【问题】\n' + question },
-    ],
-  };
+  const messages = [];
+  if (sys) messages.push({ role: 'system', content: sys });
+  messages.push({ role: 'user', content: material + '\n\n【问题】\n' + question });
+  return { messages };
 }

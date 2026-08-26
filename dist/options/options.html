@@ -8,7 +8,7 @@
     h1 { font-size: 18px; }
     section { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
     label { display: block; margin: 10px 0 4px; font-weight: 600; font-size: 13px; }
-    input, select { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font: inherit; }
+    input, select, textarea { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font: inherit; }
     .row { display: flex; gap: 10px; align-items: center; }
     button { background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; cursor: pointer; }
     button.secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
@@ -53,6 +53,16 @@
     <label>API Key（仅存本机 IndexedDB，不上传）</label>
     <input id="apiKey" type="password" placeholder="本地模型无需填写" />
     <p class="warn">Key 仅存本机浏览器。Anthropic 浏览器直连已自动加 dangerous-direct-browser-access 头。</p>
+  </section>
+
+  <section>
+    <h2>System Prompt</h2>
+    <label>问答使用的 system prompt（清空则完全不带 system 消息）</label>
+    <textarea id="systemPrompt" rows="4"></textarea>
+    <div class="row" style="margin-top:6px">
+      <button class="secondary" id="btn-prompt-reset" type="button">恢复默认</button>
+      <span style="color:#6b7280;font-size:12px">页面正文/笔记/选区材料始终随问题发送，这里只控制模型人设。</span>
+    </div>
   </section>
 
   <section>

@@ -1,6 +1,7 @@
 import { getSettings, saveSettings } from '../lib/db.js';
 import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
 import { PROVIDERS, listModels } from '../lib/llm/index.js';
+import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
 
 const $ = (id: string): any => document.getElementById(id);
@@ -29,6 +30,10 @@ async function load() {
   $('exportAiQA').checked = !!s.exportAiQA;
   $('memoryInject').checked = s.memoryInject !== false;
   $('autoMemory').checked = !!s.autoMemory;
+  // 未设置过则展示默认 prompt；设置过（含清空成 ''）按原值展示
+  $('systemPrompt').value = s.systemPrompt !== undefined && s.systemPrompt !== null
+    ? s.systemPrompt
+    : DEFAULT_SYSTEM_PROMPT;
   // 有预设模型的 provider 直接填 datalist
   const presetModels = (PROVIDERS[$('provider').value] && PROVIDERS[$('provider').value].models) || [];
   fillModelList(presetModels.map((id) => ({ id, free: false })));
@@ -245,9 +250,14 @@ $('btn-save').addEventListener('click', async () => {
     exportAiQA: $('exportAiQA').checked,
     memoryInject: $('memoryInject').checked,
     autoMemory: $('autoMemory').checked,
+    systemPrompt: $('systemPrompt').value.trim(), // 空串 = 不带 system 消息
   });
   $('save-status').textContent = '已保存 ✓';
   setTimeout(() => ($('save-status').textContent = ''), 2000);
+});
+
+$('btn-prompt-reset').addEventListener('click', () => {
+  $('systemPrompt').value = DEFAULT_SYSTEM_PROMPT;
 });
 
 // ---------- 记忆管理 ----------

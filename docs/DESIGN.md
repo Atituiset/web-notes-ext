@@ -119,7 +119,8 @@ if ((await h.queryPermission({mode:'readwrite'})) !== 'granted')
 ### D3 上下文构建器（context.js）★ 本产品差异化核心
 ```
 组装顺序（预算内从上往下装）:
-  [system] 你是阅读助手; 回答基于给定材料, 材料没有的说不知道
+  [system] 阅读助手，材料优先、允许结合自身知识补充（DEFAULT_SYSTEM_PROMPT，
+           设置页可自定义；清空则不带 system 消息）
   [材料1] 页面正文 (Readability, 截断到 token 预算, 保留标题结构)
   [材料2] 用户在该页的已有笔记 (时间序)   ← 让模型知道"我已经想到了什么"
   [材料3] 当前选区原文 (若有)
