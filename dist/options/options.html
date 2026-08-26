@@ -23,6 +23,14 @@
     .mem-item .danger { color: #dc2626 !important; border-color: #fecaca !important; }
     .mem-item.cold { opacity: .55; }
     .mem-item .cold-tag { color: #b45309; font-weight: 600; }
+    /* 模型自定义下拉 */
+    #model-dropdown { position: relative; display: none; max-height: 240px; overflow-y: auto;
+      border: 1px solid #d1d5db; border-radius: 8px; background: #fff; margin-top: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08); z-index: 10; }
+    #model-dropdown .opt { padding: 5px 10px; font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+    #model-dropdown .opt:hover, #model-dropdown .opt.hl { background: #eff6ff; }
+    #model-dropdown .opt .free { color: #059669; font-weight: 600; white-space: nowrap; }
+    #model-dropdown .empty { padding: 6px 10px; font-size: 12px; color: #9ca3af; }
   </style>
 </head>
 <body>
@@ -36,10 +44,10 @@
     <input id="baseUrl" placeholder="留空使用预设 / 或 http://localhost:11434/v1" />
     <label>模型名</label>
     <div class="row">
-      <input id="model" list="model-list" placeholder="手填或点右侧「获取模型」" style="flex:1" />
+      <input id="model" placeholder="手填、输入过滤，或点「获取模型」" style="flex:1" autocomplete="off" />
       <button class="secondary" id="btn-models" type="button">获取模型</button>
     </div>
-    <datalist id="model-list"></datalist>
+    <div id="model-dropdown"></div>
     <div id="model-status" class="warn"></div>
     <p class="hint" style="color:#6b7280;font-size:12px;margin:6px 0">OpenRouter 无需 Key 即可拉取模型列表，免费模型会标 ⭐。</p>
     <label>API Key（仅存本机 IndexedDB，不上传）</label>

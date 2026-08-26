@@ -35,16 +35,81 @@ async function load() {
   refreshVaultState();
 }
 
-function fillModelList(models) {
-  const dl = $('model-list');
-  dl.textContent = '';
-  for (const m of models) {
-    const o = document.createElement('option');
-    o.value = m.id;
-    o.label = m.free ? '⭐ 免费' : m.id;
-    dl.appendChild(o);
-  }
+// ---------- 模型下拉（自定义，支持模糊过滤；免费/最新排序靠前）----------
+
+let allModels = []; // [{id, free}]
+
+/** 排序：免费优先 → 新一代模型关键词优先 → 字母序 */
+function sortModels(models) {
+  const recencyRe = /(gpt-5|claude-(opus-4|sonnet-4|haiku-4)|gemini-2|glm-5|glm-4\.?[6-9]|deepseek-v[3-9]|deepseek-r\d|qwen-?max|qwen3|kimi-k?\d|moonshot-v1-128|llama-?[4-9]|mistral-large|nemotron-[3-9])/i;
+  return [...models].sort((a, b) => {
+    if (a.free !== b.free) return a.free ? -1 : 1;
+    const ra = recencyRe.test(a.id) ? 0 : 1;
+    const rb = recencyRe.test(b.id) ? 0 : 1;
+    if (ra !== rb) return ra - rb;
+    return a.id.localeCompare(b.id);
+  });
 }
+
+/** 简单模糊匹配：所有子序列片段按顺序命中即可 */
+function fuzzyMatch(query, text) {
+  const q = query.toLowerCase();
+  const t = text.toLowerCase();
+  let i = 0;
+  for (const ch of q) {
+    i = t.indexOf(ch, i);
+    if (i < 0) return false;
+    i++;
+  }
+  return true;
+}
+
+function renderModelDropdown() {
+  const dd = $('model-dropdown');
+  const query = $('model').value.trim();
+  dd.textContent = '';
+  let list = sortModels(allModels);
+  if (query) list = list.filter((m) => fuzzyMatch(query, m.id));
+  if (!list.length) {
+    const e = document.createElement('div');
+    e.className = 'empty';
+    e.textContent = allModels.length ? '无匹配模型' : '暂无列表 — 点「获取模型」或直接手填';
+    dd.appendChild(e);
+  }
+  for (const m of list.slice(0, 100)) {
+    const o = document.createElement('div');
+    o.className = 'opt';
+    const name = document.createElement('span');
+    name.textContent = m.id;
+    o.appendChild(name);
+    if (m.free) {
+      const f = document.createElement('span');
+      f.className = 'free';
+      f.textContent = '⭐ 免费';
+      o.appendChild(f);
+    }
+    o.addEventListener('mousedown', (e) => {
+      // mousedown 抢在 blur 前选中
+      e.preventDefault();
+      $('model').value = m.id;
+      hideModelDropdown();
+    });
+    dd.appendChild(o);
+  }
+  dd.style.display = 'block';
+}
+
+function hideModelDropdown() {
+  $('model-dropdown').style.display = 'none';
+}
+
+function fillModelList(models) {
+  allModels = models || [];
+}
+
+$('model').addEventListener('focus', () => { if (allModels.length) renderModelDropdown(); });
+$('model').addEventListener('input', () => { if (allModels.length) renderModelDropdown(); });
+$('model').addEventListener('blur', () => setTimeout(hideModelDropdown, 120));
 
 async function refreshVaultState() {
   const state = await vaultPermissionState();
@@ -85,6 +150,11 @@ $('btn-models').addEventListener('click', async () => {
       ' — 在模型输入框点击即可选择。';
     // 免费模型排前面方便选：自动带上第一个免费模型作为建议
     if (freeCount && !$('model').value) $('model').value = models.find((m) => m.free).id;
+    // 拉取后立即展示下拉（聚焦输入框），方便直接换模型
+    if (models.length) {
+      renderModelDropdown();
+      $('model').focus();
+    }
   } catch (e: any) {
     $('model-status').textContent = '拉取失败: ' + e.message + '（可手动填模型名）';
   }
