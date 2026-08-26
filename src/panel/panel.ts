@@ -2,12 +2,19 @@
  * Side panel: 本页笔记列表 + LLM 流式问答
  *
  * LLM fetch 直接在 panel 侧执行（DESIGN.md 坑 #3：不经过 SW，规避休眠）。
+ * 问答业务逻辑在 lib/chat-pipeline.ts，本文件只做渲染与事件绑定。
  */
 import { getSettings, putThread, getThread, listThreads, deleteThread } from '../lib/db.js';
-import { streamChat } from '../lib/llm/index.js';
-import { buildContext } from '../lib/llm/context.js';
+import {
+  BUDGET,
+  buildLlmMessages,
+  recentHistory,
+  extractPageText,
+  saveAiQaNote,
+  runStream,
+} from '../lib/chat-pipeline.js';
 import { renderMarkdown } from '../lib/markdown-render.js';
-import { saveMemory, searchMemories, listMemories, deleteMemory, pinMemory, isCold } from '../lib/memory.js';
+import { saveMemory, listMemories, deleteMemory, pinMemory, isCold } from '../lib/memory.js';
 import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
 import {
   getVaultHandle, exportViaFsAccess, vaultPermissionState,
@@ -113,11 +120,8 @@ $('btn-export').addEventListener('click', async () => {
 
   let pageMarkdown = '';
   try {
-    const [res] = await chrome.scripting.executeScript({
-      target: { tabId: (info.tab.id as any) },
-      func: () => ((window as any).__wneExtract ? (window as any).__wneExtract() : null),
-    });
-    if (res && res.result && res.result.text) pageMarkdown = res.result.text.slice(0, 40000);
+    const text = await extractPageText(info.tab.id as number);
+    pageMarkdown = (text || '').slice(0, BUDGET.pageTextMaxChars);
   } catch { /* 提取失败则只导笔记 */ }
 
   const state = await vaultPermissionState();
@@ -160,7 +164,6 @@ const STARTERS = [
   { icon: '🧭', text: '用费曼方法向我讲解这个页面' },
 ];
 
-let streaming = false;
 interface Thread { id: string; title: string; url: string; createdAt: number; updatedAt: number; messages: any[]; }
 let currentThread: Thread | null = null;
 
@@ -228,6 +231,7 @@ async function loadThreadList() {
     };
     item.appendChild(btnDel);
     item.addEventListener('click', async () => {
+      if (streaming) { toast('流式回答中，先停止或等待完成'); return; }
       const full = await getThread(t.id);
       if (!full) return;
       currentThread = full;
@@ -258,16 +262,37 @@ function redrawThread() {
   scrollBottom();
 }
 
-function sendHandler() { askLLMWith($('chat-q').value.trim(), $('chat-scope').value); }
-$('btn-send').addEventListener('click', sendHandler);
-$('chat-q').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askLLM(); }
-});
+// ---------- 发送 / 停止（单 handler 状态机，无 listener 增删竞态）----------
 
-async function askLLM() { askLLMWith($('chat-q').value.trim(), $('chat-scope').value); }
+let streaming = false;
+let stopCurrent: (() => void) | null = null;
+
+function setSendButton(mode: 'send' | 'stop') {
+  const btn = $('btn-send');
+  if (mode === 'stop') {
+    btn.textContent = '停止';
+    btn.classList.add('stop');
+  } else {
+    btn.textContent = '发送';
+    btn.classList.remove('stop');
+  }
+}
+
+$('btn-send').addEventListener('click', () => {
+  if (streaming && stopCurrent) { stopCurrent(); return; }
+  askLLMWith($('chat-q').value.trim(), $('chat-scope').value);
+});
+$('chat-q').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (streaming) return;
+    askLLMWith($('chat-q').value.trim(), $('chat-scope').value);
+  }
+});
 
 async function askLLMWith(question, scope) {
   if (!question) return;
+  if (streaming) return; // 流式中不接受新提问
   const qEl = $('chat-q');
   qEl.value = '';
 
@@ -281,41 +306,15 @@ async function askLLMWith(question, scope) {
   const selection = scope === 'selection' ? ((info && info.selection) || '').trim() : null;
 
   // 整页正文提取
-  let pageText = null;
+  let pageText: string | null = null;
   if (scope !== 'selection' && info && /^https?:/.test(info.url)) {
-    try {
-      const [res] = await chrome.scripting.executeScript({
-        target: { tabId: (info.tab.id as any) },
-        func: () => ((window as any).__wneExtract ? (window as any).__wneExtract() : null),
-      });
-      if (res && res.result) pageText = res.result.text;
-    } catch { /* 受限页面 */ }
+    pageText = await extractPageText(info.tab.id as number);
+    if (pageText) pageText = pageText.slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
   }
 
   const settings = await getSettings();
-  // 多轮记忆：把本线程此前的问答一并送入上下文（截取最近 8 条防超预算）
-  const history = (currentThread && currentThread.messages ? currentThread.messages : [])
-    .slice(-8)
-    .map((m) => ({ role: m.role, content: m.content }));
-  const built = buildContext({ question, pageText, notes, selection });
-  const messages = built.messages;
-
-  // 长期记忆检索 + 注入【材料0】（设置可关）
-  if (settings.memoryInject !== false) {
-    try {
-      const { memories } = await searchMemories(question);
-      if (memories.length) {
-        const memMd = '【用户长期记忆】\n' +
-          memories.map((m) => `- (${m.tags.join(',') || 'note'}) ${m.body}`).join('\n');
-        messages.splice(1, 0, {
-          role: 'user',
-          content: memMd + '\n\n以上是用户过往的记忆，回答时请衔接这些背景。若与本次材料冲突以新材料为准。',
-        });
-      }
-    } catch { /* vault 未授权等 — 静默降级 */ }
-  }
-
-  if (history.length) messages.splice(1, 0, ...history); // 插在 system 之后
+  // 多轮记忆：把本线程此前的问答一并送入上下文
+  const history = recentHistory(currentThread && currentThread.messages);
 
   const thread = ensureThread();
   thread.messages.push({ role: 'user', content: question });
@@ -324,21 +323,12 @@ async function askLLMWith(question, scope) {
   const bubble = addMsg('assistant', '');
   const bodyEl: any = bubble.querySelector('.body');
   bodyEl.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-  const btnSend = $('btn-send');
-  let aborted = false;
-  streaming = true;
 
-  // 发送按钮变「停止」（流式中断，对齐主流 chat）
+  streaming = true;
+  setSendButton('stop');
+
   const abortCtrl = new AbortController();
-  function stopStream() {
-    aborted = true;
-    abortCtrl.abort();
-  }
-  btnSend.textContent = '停止';
-  btnSend.classList.add('stop');
-  btnSend.disabled = false;
-  btnSend.removeEventListener('click', sendHandler);
-  btnSend.addEventListener('click', stopStream);
+  stopCurrent = () => abortCtrl.abort();
 
   // 流式期间：只在用户本来就在底部时才自动跟随，避免打断手动上滚
   let streamingText = '';
@@ -355,67 +345,98 @@ async function askLLMWith(question, scope) {
     });
   };
 
+  let abortedByUser = false;
   try {
-    await streamChat({
-      settings,
-      messages,
-      signal: abortCtrl.signal,
+    const { messages } = await buildLlmMessages({
+      settings, question, pageText, notes, selection, history,
+    });
+    await runStream({
+      settings, messages, signal: abortCtrl.signal,
       onToken: (tok) => { streamingText += tok; flushAndFollow(); },
     });
-    aborted = false; // 正常完成
-    // 最终完整渲染 + 标记完成（显示复制/重试按钮）+ follow-up 建议
-    renderMarkdownInto(bodyEl, streamingText);
-    bubble.classList.add('done');
-    thread.messages.push({ role: 'assistant', content: streamingText, question });
-    thread.updatedAt = Date.now();
-    persistThread();
-    attachMsgOps(bubble, {
-      answer: () => streamingText,
-      question,
-      scope,
-      info,
-      pageUrl,
-      notes,
-      selection,
-      pageText,
+
+    // 正常完成：完整回答入 thread
+    finishAssistant(thread, question, scope, streamingText, bubble, {
+      info, pageUrl, notes, selection, pageText, settings,
     });
     scrollBottom();
     renderFollowUps(bubble, question, streamingText);
-    // Phase 3: 自动记忆提取（设置开关，默认关；确认流防未授权写入）
-    if (settings.autoMemory && streamingText) {
-      autoExtractMemory(settings, question, streamingText).catch(() => {});
-    }
-    // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘
-    if (pageUrl && streamingText) {
-      await send({
-        type: 'notes:put',
-        note: {
-          id: Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8),
-          ts: Date.now(), updatedAt: Date.now(),
-          url: pageUrl, kind: 'ai-qa',
-          content: 'Q: ' + question + '\n\nA: ' + streamingText,
-          sel: null, aiMeta: { provider: settings.provider, model: settings.model, q: question },
-        },
-        page: { title: info ? info.title : '', host: info ? new URL(info.url).hostname : '' },
-      });
-    }
   } catch (e: any) {
-    if (aborted || String(e.name) === 'AbortError') {
-      // 用户主动停止：保留已有内容，可复制
-      if (streamingText) renderMarkdownInto(bodyEl, streamingText);
-      bubble.classList.add('done');
-      attachMsgOps(bubble, { answer: () => streamingText, question, scope });
+    abortedByUser = abortedByUser || e.name === 'AbortError';
+    if (abortedByUser || abortCtrl.signal.aborted) {
+      // 用户主动停止：保留已有内容（partial 也持久化，刷新不丢）
+      if (streamingText) {
+        renderMarkdownInto(bodyEl, streamingText);
+        finishAssistant(thread, question, scope, streamingText, bubble, {
+          info, pageUrl, notes, selection, pageText, settings,
+          partial: true,
+        });
+        scrollBottom();
+      } else {
+        bubble.remove();
+        thread.messages.pop(); // 移除没有回答的 user 消息
+        appendError('已停止');
+      }
     } else {
       bubble.remove();
+      thread.messages.pop();
       appendError(String(e.message || e));
     }
   }
+  persistThread();
   // 恢复发送按钮
-  btnSend.textContent = '发送';
-  btnSend.classList.remove('stop');
-  btnSend.removeEventListener('click', stopStream);
-  btnSend.addEventListener('click', sendHandler);
+  stopCurrent = null;
   streaming = false;
+  setSendButton('send');
+}
+
+/** 回答收尾：入 thread、渲染操作按钮、可选自动记忆/落盘 */
+function finishAssistant(thread, question, scope, answer, bubble, extra: {
+  info?, pageUrl?, notes?, selection?, pageText?, settings?,
+  partial?: boolean,
+}) {
+  thread.messages.push({
+    role: 'assistant',
+    content: answer,
+    question,
+    ...(extra.partial ? { partial: true } : {}),
+  });
+  thread.updatedAt = Date.now();
+  renderMarkdownInto(bubble.querySelector('.body'), answer);
+  bubble.classList.add('done');
+  attachMsgOps(bubble, {
+    answer: () => answer,
+    question,
+    scope,
+    info: extra.info,
+    pageUrl: extra.pageUrl,
+    notes: extra.notes,
+    selection: extra.selection,
+    pageText: extra.pageText,
+  });
+  const settings = extra.settings;
+  // Phase 3: 自动记忆提取（设置开关，默认关；确认流防未授权写入）— 中断的 partial 不提取
+  if (!extra.partial && settings.autoMemory && answer) {
+    autoExtractMemory(settings, question, answer).catch(() => {});
+  }
+  // AI 问答存为该页笔记（kind=ai-qa），随导出一并落盘 — partial 不落盘
+  if (!extra.partial && extra.pageUrl && answer) {
+    saveAiQaNote({
+      send,
+      pageUrl: extra.pageUrl,
+      title: extra.info ? extra.info.title : '',
+      host: safeHost(extra.info),
+      question,
+      answer,
+      provider: settings.provider,
+      model: settings.model,
+      pageNotes: extra.notes || [],
+    }).catch(() => {});
+  }
+}
+
+function safeHost(info) {
+  try { return info ? new URL(info.url).hostname : ''; } catch { return ''; }
 }
 
 // ---------- 消息操作: 复制 / 重试 ----------
@@ -442,14 +463,28 @@ function attachMsgOps(bubble, ctxInfo) {
     }
   });
   const btnRetry = el('button', '', '重试');
-  btnRetry.addEventListener('click', async () => {
-    bubble.remove();
-    $('chat-q').value = ctxInfo.question;
-    await askLLMWith(ctxInfo.question, ctxInfo.scope);
-  });
+  btnRetry.addEventListener('click', () => retryQuestion(bubble, ctxInfo));
   if (!ctxInfo.readonly) ops.appendChild(btnRemember);
   ops.appendChild(btnCopy);
   ops.appendChild(btnRetry);
+}
+
+/** 重试：移除该轮 user+assistant 消息对后重新提问（避免 thread 出现重复问答） */
+function retryQuestion(bubble, ctxInfo) {
+  if (streaming) { toast('流式回答中'); return; }
+  // 从 thread 里 pop 掉这对问答（assistant 及其前的 user）
+  if (currentThread) {
+    const idx = currentThread.messages.length - 1;
+    if (idx >= 1 && currentThread.messages[idx].role === 'assistant' &&
+        currentThread.messages[idx].content === ctxInfo.answer()) {
+      currentThread.messages.splice(idx - 1, 2);
+    }
+  }
+  bubble.remove();
+  // 同时移除界面上紧邻的 user 气泡
+  const prev = bubble.previousElementSibling;
+  if (prev && prev.classList.contains('user')) prev.remove();
+  askLLMWith(ctxInfo.question, ctxInfo.scope);
 }
 
 // ---------- 记忆：自动提取（Phase 3，走 memory-extract 模块）----------

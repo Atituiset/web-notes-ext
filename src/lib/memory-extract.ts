@@ -7,6 +7,7 @@
 
 import { streamChat } from './llm/index.js';
 import { saveMemory } from './memory.js';
+import { BUDGET } from './chat-pipeline.js';
 
 const COMPRESS_SYSTEM =
   '你是记忆压缩器。从问答对中提炼值得跨会话记住的结论/偏好/事实，输出1-2句中文陈述句。' +
@@ -38,7 +39,7 @@ export async function compressQA(settings, question: string, answer: string): Pr
     settings,
     messages: [
       { role: 'system', content: COMPRESS_SYSTEM },
-      { role: 'user', content: `Q: ${question}\n\nA: ${answer.slice(0, 2000)}` },
+      { role: 'user', content: `Q: ${question}\n\nA: ${answer.slice(0, BUDGET.compressAnswerMaxChars)}` },
     ],
   });
   const summary = text.trim();

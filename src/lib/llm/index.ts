@@ -46,18 +46,28 @@ export async function listModels(settings) {
   }
   // OpenAI 兼容系
   const base = ((PROVIDERS[p] && PROVIDERS[p].presetBase) || settings.baseUrl || '').replace(/\/+$/, '');
+  const presetModels = (PROVIDERS[p] && PROVIDERS[p].models) || [];
   if (!base) throw new Error('未配置 Base URL，无法拉取模型列表');
   const key = (settings.apiKeys && settings.apiKeys[p]) || '';
   const headers = {};
   if (key) headers['Authorization'] = 'Bearer ' + key;
-  const resp = await fetch(base + '/models', { headers });
-  if (!resp.ok) throw new Error('拉取模型列表失败 HTTP ' + resp.status);
-  const data = await resp.json();
-  const models = (data.data || []).map((m) => m.id).filter(Boolean).sort();
+  let models: string[];
+  let freeData: any = null;
+  try {
+    const resp = await fetch(base + '/models', { headers });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    models = (data.data || []).map((m) => m.id).filter(Boolean).sort();
+    freeData = data;
+  } catch (e: any) {
+    // 拉取失败回退到预置列表（零配置 provider 网络抖动时不阻塞设置）
+    if (presetModels.length) return presetModels.map((id) => ({ id, free: true }));
+    throw new Error('拉取模型列表失败: ' + (e?.message || e));
+  }
   if (p === 'openrouter') {
     // 免费模型判定：pricing.prompt/completion 均为 "0"
     const freeSet = new Set(
-      (data.data || [])
+      (freeData.data || [])
         .filter((m) => m.pricing && String(m.pricing.prompt) === '0' && String(m.pricing.completion) === '0')
         .map((m) => m.id)
     );

@@ -240,7 +240,12 @@ export function scoreMemory(
   return (m.pinned ? 1000 : 0) + m.hits * 2 + recency * 10 + relevance * 50;
 }
 
-/** hits 自增（直接改文件 frontmatter，避免整条重写竞态） */
+/**
+ * hits 自增（直接改文件 frontmatter 的 hits 行，避免整条重写竞态）。
+ * 注意：这是「读-改-写」非原子操作 —— 多个 panel 同时检索同一批文件时可能丢失
+ * 个别自增；个人规模下可接受。若用户恰好在 Obsidian 中编辑同一文件，写回可能
+ * 覆盖其未保存改动（Obsidian 会检测外部变更并提示，风险可控）。
+ */
 async function bumpHits(files: string[]): Promise<void> {
   const dir = await memDir();
   if (!dir) return;
