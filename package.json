@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "package": "npm run build && node package.mjs",
     "watch": "node build.mjs --watch",
     "test": "node tests/run-unit.mjs",
     "check": "tsc --noEmit"
