@@ -64,12 +64,32 @@ function fuzzyMatch(query, text) {
   return true;
 }
 
+/**
+ * 模型展示名别名：搜索时同时匹配别名（如输 "ox alpha" 命中 x-preview-f-free）。
+ * 下拉中仍显示真实模型 ID，保证选中值可直接请求。
+ */
+const MODEL_ALIASES = {
+  'x-preview-f-free': 'ox alpha free stealth',
+  'mimo-v2.5-free': 'mimo xiaomi',
+  'hy3-free': 'hy3 hunyuan tencent',
+  'nemotron-3-ultra-free': 'nemotron nvidia ultra',
+  'nemotron-3.5-lightning-free': 'nemotron nvidia lightning',
+  'laguna-s-2.1-free': 'laguna',
+  'big-pickle': 'big pickle stealth',
+  'muse-spark-1.2-contributor-free': 'muse spark contributor',
+};
+
+function matchModel(query, m) {
+  const alias = MODEL_ALIASES[m.id] || '';
+  return fuzzyMatch(query, m.id) || (alias ? fuzzyMatch(query, alias) : false);
+}
+
 function renderModelDropdown() {
   const dd = $('model-dropdown');
   const query = $('model').value.trim();
   dd.textContent = '';
   let list = sortModels(allModels);
-  if (query) list = list.filter((m) => fuzzyMatch(query, m.id));
+  if (query) list = list.filter((m) => matchModel(query, m));
   if (!list.length) {
     const e = document.createElement('div');
     e.className = 'empty';
@@ -81,6 +101,7 @@ function renderModelDropdown() {
     o.className = 'opt';
     const name = document.createElement('span');
     name.textContent = m.id;
+    name.title = MODEL_ALIASES[m.id] || '';
     o.appendChild(name);
     if (m.free) {
       const f = document.createElement('span');
