@@ -42,6 +42,25 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 - 不引入重型浏览器向量库组件——<1000 条规模下 IDB 平面向量 + JS 暴力余弦就是"轻量级向量数据库"的合理形态。
 - 验收：paraphrase 子集 recall 回到 ≥90% 且其余指标无回归（>1%）。
 
+**通道探测结论（2026-08-28）**：
+- OpenRouter 有免费 embedding（liquid/lfm-2.5-embedding-350m:free，1024d）但**调用需 API key**，测试环境无 key → 弃用为主通道（保留为可选 provider）
+- OpenCode zen 无 embedding 端点（404）
+- 本机无 Ollama 守护进程
+- **选定：transformers.js 端侧 embedding**（paraphrase-multilingual-MiniLM-L12-v2，384d，为改述匹配而生且支持中文）——零 key、零外传（隐私叙事与产品完全一致）、extension 页内 WASM 推理；先用探针验证对 paraphrase 失败对的区分度，再进管线
+
+**探针验证（2026-08-28，/tmp/embed-probe）**：同一 paraphrase 子集，词法 3/8 vs **dense embedding top5 7/8（87.5%）**——q27-q33 全部 rank 0-1 命中，唯一失败 q26（「流式回答中途断掉」vs「SW 休眠」，语义跳跃过大，dense 也无能为力，接受为已知难例）。余弦相似度绝对值温和（0.34-0.58）→ 融合用**名次融合的 RRF** 而非分数阈值。管线决策：
+- 模型 Xenova/paraphrase-multilingual-MiniLM-L12-v2（quantized，384d）
+- 向量存 IndexedDB 新 store（file → {mtime, vector}），mtime 失效与 listMemories 缓存同模式
+- RRF(dense rank, sparse rank) 融合；目标 recall@5 ≥95%、paraphrase ≥90%（注意 8 条子集下需 8/8，实施时扩充改述集降低颗粒度）
+
+### Phase 5 — 用户画像（新增，方向已确认：自动抽取）
+
+- 定位：画像是**派生物而非新存储**——对既有记忆库做一次 LLM 聚合，生成 `Markpilot-Profile.md`（角色/领域及置信度、知识背景、偏好、活跃主题），注入优先级等同 pinned（"用户是谁"卡片）。
+- 为什么是自动抽取而非预设角色：预设 taxonomy（程序员/财务/PM…）永远贴不准真实用户且增加 onboarding 摩擦；偏好/事实本就在流入记忆库，画像是它们的聚合视图，随使用自动演化。
+- 触发：每积累 N 条新记忆后提示生成（复用 autoMemory 的确认流，用户可控）；手动按钮可随时重新聚合。
+- 评测接入：画像注入后 precision/abstain 口径与 pinned 一致处理（设计注入不计入分母）。
+- 执行顺序：Phase 3/4（recall+precision 达标）之后。
+
 ### Phase 4 — 精确率收紧：相关性阈值 + 拒答治理
 
 - 动作：注入过滤从 `overlap>0` 升级为 IDF 相关性阈值（治理 q19「世界杯」类单 token 误命中）；必要时多 token 重叠要求按查询长度分级。
