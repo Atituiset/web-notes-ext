@@ -12,8 +12,9 @@ const staging = 'release/markpilot';
 rmSync('release', { recursive: true, force: true });
 mkdirSync(staging, { recursive: true });
 
-// dist 全部内容 + manifest 放到包根
+// dist 全部内容 + icons + manifest 放到包根
 cpSync('dist', staging, { recursive: true });
+cpSync('icons', join(staging, 'icons'), { recursive: true });
 cpSync('manifest.json', join(staging, 'manifest.json'));
 
 // ---- 最小 ZIP (store/deflate) 写入器 ----

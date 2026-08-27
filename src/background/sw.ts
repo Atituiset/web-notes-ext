@@ -11,9 +11,13 @@ import {
   putNote, deleteNote, getNotesByUrl, getAllNotes, touchPage,
 } from '../lib/db.js';
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   // 点击工具栏图标打开 side panel
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+  // 首次安装打开设置页（选 provider/模型），降低上手门槛
+  if (details.reason === 'install') {
+    chrome.runtime.openOptionsPage();
+  }
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {

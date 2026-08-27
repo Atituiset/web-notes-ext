@@ -21,6 +21,7 @@ rmSync(EXT_DIR, { recursive: true, force: true });
 mkdirSync(EXT_DIR, { recursive: true });
 cpSync(DIST, EXT_DIR, { recursive: true });
 copyFileSync(join(ROOT, 'manifest.json'), join(EXT_DIR, 'manifest.json'));
+cpSync(join(ROOT, 'icons'), join(EXT_DIR, 'icons'), { recursive: true });
 let pass = 0, fail = 0;
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name); } };
 

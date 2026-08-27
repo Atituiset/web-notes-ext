@@ -12,6 +12,7 @@ fs.rmSync(EXT_DIR, { recursive: true, force: true });
 fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
+fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
 
 // ---- 简单静态服务器 + mock OpenAI SSE 端点 ----
 function startServer(port) {

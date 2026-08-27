@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Markpilot — Web Notes to Obsidian & AI",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "划词笔记 → 本地 Obsidian → LLM 实时问答，带跨会话长期记忆",
+  "author": "Atituiset",
+  "homepage_url": "https://github.com/Atituiset/web-notes-ext",
+  "minimum_chrome_version": "114",
   "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
   "host_permissions": [
     "http://localhost/*",
@@ -39,5 +42,9 @@
       "run_at": "document_idle"
     }
   ],
-  "icons": {}
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
 }

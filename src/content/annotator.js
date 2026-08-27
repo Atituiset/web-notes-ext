@@ -197,10 +197,11 @@ import { extractArticle } from '../lib/page-extract.js';
   let pendingSel = null;
   let popState = null; // { id }
 
-  function el(tag, cls, html) {
+  function el(tag, cls, text) {
     const n = document.createElement(tag);
     if (cls) n.className = cls;
-    if (html !== undefined) n.innerHTML = html;
+    // 一律 textContent：页面标题等是不可信输入，innerHTML 会被注入（CWS 审核也查这个）
+    if (text !== undefined) n.textContent = text;
     return n;
   }
 
@@ -358,7 +359,8 @@ import { extractArticle } from '../lib/page-extract.js';
     // 笔记弹窗
     const pop = el('div');
     pop.id = 'wne-pop';
-    const head = el('div', 'wp-head', '<b>' + pageTitle() + '</b>');
+    const head = el('div', 'wp-head');
+    head.appendChild(el('b', '', pageTitle()));
     const closeBtn = el('button', '', '✕');
     closeBtn.addEventListener('click', closePopover);
     head.appendChild(closeBtn);

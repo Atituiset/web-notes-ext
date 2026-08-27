@@ -18,6 +18,7 @@ fs.rmSync(EXT_DIR, { recursive: true, force: true });
 fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
+fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
 const PORT = 8899;
 
 let pass = 0, fail = 0;
