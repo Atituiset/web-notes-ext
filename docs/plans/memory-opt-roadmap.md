@@ -29,13 +29,14 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
   3. 重记基线（baseline.json 加 metricVersion 字段，v2=新口径）
 - 验收：跑通，输出新口径 precision，基线落盘，commit。
 
-### Phase 2 — 语义天花板探测：改述查询集
+### Phase 2 — 语义天花板探测：改述查询集（✅ 已完成，结论：需要向量）
 
-- 问题：词法检索的天花板在哪？需要用数据决定要不要上向量。
-- 动作：数据集加一组 paraphrase 查询（记忆与查询措辞完全不同、语义相同，如记忆"系统变卡"查询"电脑运行缓慢"），跑评测看 recall@5 是否掉下 95%。
-- 验收：paraphrase 子集 recall 数据落盘；若 ≥90% 则说明词法够用，跳过 Phase 3 直接进入 Phase 4；否则启动 Phase 3。
+- 动作（已做）：数据集新增 8 条 paraphrase 查询（q26-q33，查询与记忆措辞完全不同、语义相同）。
+- **结果：paraphrase 子集 recall 仅 3/8（37.5%）**，整体 recall@5 从 100% 掉到 82.8%——词法检索的语义天花板被数据证实（典型：f2「SW 休眠断长连接」应答不了「流式回答中途断掉」；k3「主动阅读提取动作」应答不了「怎样读书记得牢」）。
+- 结论：**触发 Phase 3**。当前 82.8% 的 recall@5 作为向量混合召回要击败的参照点（目标 ≥95%，paraphrase 子集 ≥90%）。
+- 测试 LLM 通道：OpenRouter / OpenCode 免费模型（embedding 可用性在 Phase 3 探测）。
 
-### Phase 3 — 混合召回（仅在 Phase 2 证据支持时执行）
+### Phase 3 — 混合召回（✅ 已确认启动）
 
 - 方案：OpenRouter 免费 embedding 模型（先探测可用性；备选 Ollama 本地 embedding）→ 记忆向量缓存进 IndexedDB（文件 mtime 失效，复用 listMemories 缓存模式）→ 查询向量 cosine + 词法分数 **RRF 融合** → 混合检索跑全量评测对比基线。
 - 不引入重型浏览器向量库组件——<1000 条规模下 IDB 平面向量 + JS 暴力余弦就是"轻量级向量数据库"的合理形态。

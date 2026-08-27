@@ -93,6 +93,16 @@ export const queries = [
   { id: 'q22', q: 'What are the limits of pure vector retrieval?', expect: ['f10'], category: 'en-mixed', relevant: ['f10'] },
   { id: 'q23', q: 'How should memory hits influence ranking?', expect: ['k10'], category: 'en-mixed', relevant: ['k10', 'k8'] },
 
+  // ---- paraphrase ×8（改述：查询与记忆措辞完全不同、语义相同，测词法检索的语义天花板）----
+  { id: 'q26', q: '为什么我的流式回答总是中途断掉？', expect: ['f2'], category: 'paraphrase', relevant: ['f2', 'k1'] },
+  { id: 'q27', q: '学过的东西很快就忘，该怎么办？', expect: ['f5'], category: 'paraphrase', relevant: ['f5'] },
+  { id: 'q28', q: '以后回复我能不能别那么啰嗦？', expect: ['p1'], category: 'paraphrase', relevant: ['p1', 'p7'] },
+  { id: 'q29', q: '怎样读书才能记得牢？', expect: ['k3'], category: 'paraphrase', relevant: ['k3', 'f6'] },
+  { id: 'q30', q: 'OpenAI 的 SDK 想直接连本地模型，改个地址就行吗？', expect: ['f9'], category: 'paraphrase', relevant: ['f9'] },
+  { id: 'q31', q: 'why does my assistant fail when a question needs two facts at once?', expect: ['f10'], category: 'paraphrase', relevant: ['f10'] },
+  { id: 'q32', q: "don't just dump commands on me, tell me what each part does", expect: ['p9'], category: 'paraphrase', relevant: ['p9'] },
+  { id: 'q33', q: '我记的东西下次还能被想起来吗，还是说过段时间就沉底了？', expect: ['k10'], category: 'paraphrase', relevant: ['k10', 'f5'] },
+
   // ---- noise-robust ×2（词面高重合但语义无关，不应被误导）----
   { id: 'q24', q: 'CSS 盒模型里 padding 指什么？', expect: ['c1', 'c2'], category: 'fact-recall', relevant: ['c1', 'c2'] },
   { id: 'q25', q: '记忆面包和记忆曲线有什么关系？', expect: ['f5'], category: 'noise-robust', relevant: ['f5'] },
