@@ -107,6 +107,21 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 | paraphrase 子集 | 10/12 (83%) | ≥90% | ⚠️ 见下 |
 | 1000 条 p50 延迟 | ~400ms（含评测 RPC 开销） | ≤400ms | ✅ 边缘 |
 
+**补充：OpenRouter API embedding A/B 对照（2026-08-28，liquid/lfm-2.5-embedding-350m:free，1024d）**
+
+评测 harness 已支持双通道（`DENSE_CHANNEL=minilm|openrouter`，key 仅走环境变量不进仓库；批量调用 + 429 退避 + 向量预热）。难例集 A/B 结果：
+
+| 用例 | MiniLM-L12（端侧） | liquid-350m（OpenRouter） |
+|---|---|---|
+| q35 跨语种 | ✗（sim 0.219 低于地板） | ✅ **rank 0（0.384）** |
+| q28 反义改述 | ✅ rank 0（0.344） | ✗ rank 9 |
+| q33 改述 | ✅ rank 1 | ✗ rank 12 |
+| q26 语义跳跃 | ✗（所有模型一致失败） | ✗ rank 19 |
+| 拒答噪声上限 | 0.262 | **0.234**（略优） |
+
+结论：**两通道互补而非替代**——API 通道修好跨语种（q35）但丢掉反义/部分改述（q28/q33）；端侧 MiniLM 在改述家族上更稳且零成本零外传。产品建议：端侧为默认通道，OpenRouter embedding 作为 BYOK 用户的可选增强（用户已有 key 时自动可用）。
+注：全量套件 A/B 受 OpenRouter 免费账户日限额（~50 req/日）限制当日未完成，harness 已就绪（预热后全量仅 ~2 次批量调用），额度重置后可 `DENSE_CHANNEL=openrouter OR_KEY=... node tests/eval-memory.mjs` 直接复跑。
+
 **模型边界结论（三轮探针实证）**：未达标的两格由且仅由 q26（语义跳跃）与 q35（跨语种）两条查询构成——q35 的 sim(0.219) 与拒答噪声 q18 的 sim(0.262) 在全部三个候选模型下都不可分（mpnet 下甚至 0.387 vs 0.412 倒挂）。这类歧义不是 embedding 能解的，需要用户画像/历史上下文（Phase 5 的画像正好提供这个信号）。recall@5 与 paraphrase 的达标线因此修订为：**93% / 80%（384d 端侧模型边界）**，升级路径（768d+ 模型或 API embedding）留作后续选项。
 
 ## 回放指引

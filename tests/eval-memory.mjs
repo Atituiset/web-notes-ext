@@ -29,20 +29,63 @@ execSync(
 const { memories, queries, makeNoise } = await import('./eval/dataset.mjs');
 
 // ---- node 侧 dense ranker（Phase 3 混合召回评测；产品侧走浏览器端侧 embedding，接口一致）----
-import { pipeline, env } from '@xenova/transformers';
-env.cacheDir = '/tmp/hf-cache';
-console.log('[dense] 加载 embedding 模型（paraphrase-multilingual-MiniLM-L12-v2）…');
-const embedder = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2', { quantized: true });
-console.log('[dense] 模型就绪');
+// A/B 通道：DENSE_CHANNEL=minilm（端侧，默认）| openrouter（liquid-350m，需 OR_KEY 环境变量）
+const DENSE_CHANNEL = process.env.DENSE_CHANNEL || 'minilm';
 const _vecCache = new Map(); // body → vector
-async function embed(text) {
-  if (_vecCache.has(text)) return _vecCache.get(text);
-  const out = await embedder(text, { pooling: 'mean', normalize: true });
-  const v = Array.from(out.data);
-  _vecCache.set(text, v);
-  return v;
+const norm = (v) => { const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map((x) => x / n); };
+
+let embed;
+if (DENSE_CHANNEL === 'openrouter') {
+  const OR_KEY = process.env.OR_KEY;
+  if (!OR_KEY) { console.error('DENSE_CHANNEL=openrouter 需要 OR_KEY 环境变量'); process.exit(2); }
+  const OR_MODEL = 'liquid/lfm-2.5-embedding-350m:free';
+  console.log('[dense] 通道 OpenRouter:', OR_MODEL);
+  // 批量 + 429 退避：免费模型有速率限制，input 数组一次最多 50 条
+  async function embedBatchApi(texts) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const resp = await fetch('https://openrouter.ai/api/v1/embeddings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OR_KEY },
+        body: JSON.stringify({ model: OR_MODEL, input: texts }),
+      });
+      if (resp.ok) return (await resp.json()).data.map((d) => norm(d.embedding));
+      if (resp.status === 429 && attempt < 2) {
+        console.log('  [dense] 429 限流，退避重试', attempt + 1);
+        await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+        continue;
+      }
+      throw new Error('OpenRouter embedding HTTP ' + resp.status);
+    }
+  }
+  embed = async (text) => {
+    if (_vecCache.has(text)) return _vecCache.get(text);
+    const [v] = await embedBatchApi([text]);
+    _vecCache.set(text, v);
+    return v;
+  };
+  // 批量补缓存：denseRankNode 每轮先把未缓存的候选一次批量嵌入
+  var prefetch = async (candidates) => {
+    const missing = candidates.map((c) => c.body).filter((b) => !_vecCache.has(b));
+    for (let i = 0; i < missing.length; i += 50) {
+      const vecs = await embedBatchApi(missing.slice(i, i + 50));
+      vecs.forEach((v, j) => _vecCache.set(missing[i + j], v));
+    }
+  };
+} else {
+  const { pipeline, env } = await import('@xenova/transformers');
+  env.cacheDir = '/tmp/hf-cache';
+  console.log('[dense] 通道端侧: paraphrase-multilingual-MiniLM-L12-v2');
+  const embedder = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2', { quantized: true });
+  embed = async (text) => {
+    if (_vecCache.has(text)) return _vecCache.get(text);
+    const v = Array.from((await embedder(text, { pooling: 'mean', normalize: true })).data);
+    _vecCache.set(text, v);
+    return v;
+  };
 }
+
 async function denseRankNode(query, candidates) {
+  if (typeof prefetch === 'function') await prefetch(candidates);
   const qv = await embed(query);
   const bodyVecs = await Promise.all(candidates.map((c) => embed(c.body)));
   return candidates
@@ -70,6 +113,16 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   // 噪声在 node 侧生成（函数无法穿越 evaluate 边界），页面内按需切片
   const noiseAll = makeNoise(Math.max(...LATENCY_SCALES) - memories.length);
 
+  if (process.env.SKIP_LATENCY === '1') await page.addInitScript(() => { globalThis.__skipLatency = true; });
+  // OpenRouter 通道：预热全部向量（批量 2 次调用），评测过程零 API；
+  // API 通道的延迟数据无意义（网络主导），默认跳过噪声延迟段
+  if (DENSE_CHANNEL === 'openrouter') {
+    console.log('[dense] 预热向量（语料+查询，批量调用）…');
+    await prefetch(memories.map((m) => ({ body: m.body })));
+    await prefetch(queries.map((q) => ({ body: q.q })));
+    if (process.env.SKIP_LATENCY !== '0') process.env.SKIP_LATENCY = '1';
+    console.log('[dense] 预热完成');
+  }
   await page.exposeFunction('__denseRankNode', (q, c) => denseRankNode(q, c));
 
   // 注入 OPFS 当 vault + 写入语料 + 跑全部查询（全部在页面内、走真实 memory.ts 管线）
@@ -139,6 +192,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
     }
 
     // 4. 延迟-规模曲线：注入噪声到各规模档，跑固定 query
+    if (!globalThis.__skipLatency) {
     const latency = [{ scale: memories.length, results: queryResults.map((r) => r.ms) }];
     let noiseCount = 0;
     for (const scale of LATENCY_SCALES) {
@@ -156,6 +210,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
       latency.push({ scale, results: rs });
     }
 
+    }
     return { queryResults, latency, idToFile };
   }, { memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll });
 
