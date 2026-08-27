@@ -48,6 +48,7 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 | 内容脚本（所有网站） | 划词工具条、笔记高亮需要在任意页面工作 |
 | 各 LLM 域名 | 调用你配置的服务商 API |
 | `localhost` / `127.0.0.1` | 本地 Ollama 模型与 Obsidian Local REST 插件 |
+| 可选站点权限（可选） | 仅在你主动提问且正文提取失败时，经你当场确认后用于提取该站正文 |
 
 ## 六、联系
 
@@ -105,6 +106,7 @@ Additionally, the settings page makes read-only requests to your configured prov
 | Content scripts (all sites) | The selection toolbar and note highlights must work on any page |
 | LLM API domains | Calls to the provider you configured |
 | `localhost` / `127.0.0.1` | Local Ollama and the Obsidian Local REST plugin |
+| Optional site access | Only used to extract page text when you explicitly ask and extraction fails; granted per-site with your consent |
 
 ## 6. Contact
 

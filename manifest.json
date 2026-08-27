@@ -8,6 +8,7 @@
   "homepage_url": "https://github.com/Atituiset/web-notes-ext",
   "minimum_chrome_version": "114",
   "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
   "host_permissions": [
     "http://localhost/*",
     "http://127.0.0.1/*",

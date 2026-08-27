@@ -64,6 +64,7 @@ following your browser language automatically.
 | Content scripts on all URLs | Core functionality — the selection toolbar and note highlights must work on any page the user reads. |
 | Host: LLM API domains | Calls the AI providers the user configures (BYOK) for chat completions and model listing. |
 | Host: `localhost` / `127.0.0.1` | Connects to a local Ollama instance (localhost:11434) and the Obsidian Local REST plugin (127.0.0.1:27123). |
+| Optional host access (http/https) | Requested at runtime, inside a user gesture, only when page-text extraction fails (e.g. the page predates the extension). Used solely to inject the extraction script on demand. |
 
 ## Data safety（英文答案）
 

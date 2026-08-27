@@ -29,6 +29,21 @@ export const BUDGET = {
 } as const;
 
 /**
+ * 为指定站点请求可选 host 权限（必须在用户手势内调用，如点击「发送」）。
+ * 授权后 scripting 注入与 tabs.url 访问不再依赖 activeTab ——
+ * 页面先于扩展打开（无 content script）时也能自动提取正文。
+ */
+export async function requestSitePermission(url: string): Promise<boolean> {
+  try {
+    const origin = new URL(url).origin + '/*';
+    if (await chrome.permissions.contains({ origins: [origin] })) return true;
+    return await chrome.permissions.request({ origins: [origin] });
+  } catch {
+    return false; /* 非手势上下文或用户拒绝 */
+  }
+}
+
+/**
  * 页面正文提取（受限页面返回 null）。
  *
  * 主路径：tabs.sendMessage → annotator.js（isolated world）的 page:get-text，

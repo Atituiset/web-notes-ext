@@ -10,6 +10,7 @@ import {
   buildLlmMessages,
   recentHistory,
   extractPageText,
+  requestSitePermission,
   saveAiQaNote,
   runStream,
 } from '../lib/chat-pipeline.js';
@@ -309,30 +310,44 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   const qEl = $('chat-q');
 
   // 先备料再动 UI：材料提取失败要能在不产生气泡/线程脏数据的情况下拦下
-  const info = await activeTabInfo();
-  const pageUrl = info ? normalizeUrl(info.url) : '';
-  const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
-  const notes = (r && r.notes) || [];
+  const wantPageText = scope !== 'selection';
+  const gather = async () => {
+    const info = await activeTabInfo();
+    const pageUrl = info ? normalizeUrl(info.url) : '';
+    const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
+    const notes = (r && r.notes) || [];
+    let pageText: string | null = null;
+    if (wantPageText && info && /^https?:/.test(info.url)) {
+      pageText = await extractPageText(info.tab.id as number);
+    }
+    return { info, pageUrl, notes, pageText };
+  };
+
+  let mat = await gather();
+  if (wantPageText && !mat.pageText) {
+    // 页面先于扩展打开（无 content script）或未授权：在点击手势内申请站点权限后
+    // 自动重试 —— 授权后注入提取脚本即可完成，无需用户手动刷新页面。
+    // url 可见则按站点申请（窄），不可见则申请 <all_urls>（一次性，装扩展时用户已接受过同等提示）
+    const granted = await requestSitePermission(
+      mat.info && /^https?:/.test(mat.info.url) ? mat.info.url : '<all_urls>'
+    );
+    if (granted) mat = await gather();
+  }
+
+  if (scope !== 'selection' && !mat.pageText) {
+    // 提不到材料就裸问，模型只会回答"你没有给我材料"——不如当场说明原因
+    appendError(t('extractFailed'));
+    return;
+  }
+
+  const { info, pageUrl, notes } = mat;
+  const pageText = scope === 'selection'
+    ? null
+    : (mat.pageText as string).slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
   // 页面「问 AI」带进来的选区优先（点击后页面选区可能已失焦清空，回读不可靠）
   const selection = scope === 'selection'
     ? ((selectionOverride || (info && info.selection) || '').trim() || null)
     : null;
-
-  // 整页正文提取
-  let pageText: string | null = null;
-  if (scope !== 'selection') {
-    // url 为空（无 activeTab 授权且 content script 未注入）也要拦 ——
-    // 否则同样把零材料的问题裸发给模型
-    if (info && /^https?:/.test(info.url)) {
-      pageText = await extractPageText(info.tab.id as number);
-    }
-    if (!pageText) {
-      // 提不到材料就裸问，模型只会回答"你没有给我材料"——不如当场说明原因
-      appendError(t('extractFailed'));
-      return;
-    }
-    pageText = pageText.slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
-  }
 
   qEl.value = '';
   clearMainIfFirstChat();

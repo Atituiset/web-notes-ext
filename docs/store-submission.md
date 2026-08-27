@@ -56,6 +56,7 @@ Markdown。长期记忆自动写入 Markpilot-Memory/，跨会话提问时按需
 | 内容脚本 `<all_urls>` | 核心功能是在任意网页上划词弹出笔记工具条、并对已记笔记的文本恢复高亮，必须在所有页面注入 |
 | host：各 LLM API 域名 | 调用用户自己配置的服务商 API 进行问答与模型列表拉取（BYOK） |
 | host：`localhost` / `127.0.0.1` | 连接本机 Ollama 模型（localhost:11434）与 Obsidian Local REST 插件（127.0.0.1:27123） |
+| optional host（http/https） | 用户主动提问但正文提取失败时（如页面先于扩展打开），在用户手势内经确认后用于按需注入提取脚本；CWS 推荐的可选权限模式 |
 
 ## 数据使用披露（Data safety 表单）
 
