@@ -1,0 +1,647 @@
+{
+  "ts": "2026-08-27T20:39:47.511Z",
+  "corpus": 40,
+  "metrics": {
+    "recall1": 0.030303030303030304,
+    "recall5": 0.9696969696969697,
+    "precision5": 0.6666666666666665,
+    "mrr": 0.46212121212121215,
+    "abstain": 1,
+    "knowledgeUpdate": 1,
+    "latency": [
+      {
+        "scale": 40,
+        "p50": 25.7,
+        "p95": 34,
+        "max": 53.1
+      },
+      {
+        "scale": 100,
+        "p50": 415.1,
+        "p95": 2287.9,
+        "max": 2287.9
+      },
+      {
+        "scale": 500,
+        "p50": 214.3,
+        "p95": 9672.1,
+        "max": 9672.1
+      },
+      {
+        "scale": 1000,
+        "p50": 434.9,
+        "p95": 12485.4,
+        "max": 12485.4
+      }
+    ]
+  },
+  "queries": [
+    {
+      "id": "q1",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f1"
+      ],
+      "ms": 53.099999997764826,
+      "expect": [
+        "f1"
+      ],
+      "relevant": [
+        "f1"
+      ]
+    },
+    {
+      "id": "q2",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f2",
+        "f3",
+        "k1",
+        "c8"
+      ],
+      "ms": 25.600000001490116,
+      "expect": [
+        "f2"
+      ],
+      "relevant": [
+        "f2",
+        "k1"
+      ]
+    },
+    {
+      "id": "q3",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f3",
+        "k6",
+        "k9"
+      ],
+      "ms": 34,
+      "expect": [
+        "f3"
+      ],
+      "relevant": [
+        "f3"
+      ]
+    },
+    {
+      "id": "q4",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f4"
+      ],
+      "ms": 29.300000000745058,
+      "expect": [
+        "f4"
+      ],
+      "relevant": [
+        "f4"
+      ]
+    },
+    {
+      "id": "q5",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f5",
+        "k10"
+      ],
+      "ms": 25.5,
+      "expect": [
+        "f5"
+      ],
+      "relevant": [
+        "f5"
+      ]
+    },
+    {
+      "id": "q6",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "f7"
+      ],
+      "ms": 25.399999998509884,
+      "expect": [
+        "f7"
+      ],
+      "relevant": [
+        "f7"
+      ]
+    },
+    {
+      "id": "q7",
+      "category": "preference-recall",
+      "hitIds": [
+        "p7",
+        "p1",
+        "p4"
+      ],
+      "ms": 27,
+      "expect": [
+        "p1",
+        "p4",
+        "p7"
+      ],
+      "relevant": [
+        "p1",
+        "p4",
+        "p7",
+        "p2"
+      ]
+    },
+    {
+      "id": "q8",
+      "category": "preference-recall",
+      "hitIds": [
+        "p7",
+        "p2"
+      ],
+      "ms": 25.699999999254942,
+      "expect": [
+        "p2"
+      ],
+      "relevant": [
+        "p2",
+        "p7"
+      ]
+    },
+    {
+      "id": "q9",
+      "category": "preference-recall",
+      "hitIds": [
+        "p7",
+        "k6",
+        "p5"
+      ],
+      "ms": 25.800000000745058,
+      "expect": [
+        "p5"
+      ],
+      "relevant": [
+        "p5",
+        "k9",
+        "c10"
+      ]
+    },
+    {
+      "id": "q10",
+      "category": "preference-recall",
+      "hitIds": [
+        "p7",
+        "p6",
+        "p3",
+        "k7"
+      ],
+      "ms": 25.300000000745058,
+      "expect": [
+        "p6"
+      ],
+      "relevant": [
+        "p6"
+      ]
+    },
+    {
+      "id": "q11",
+      "category": "knowledge-update",
+      "hitIds": [
+        "p7",
+        "c2",
+        "c1"
+      ],
+      "ms": 26.800000000745058,
+      "expect": [
+        "c2"
+      ],
+      "relevant": [
+        "c1",
+        "c2"
+      ],
+      "expectBefore": {
+        "newer": "c2",
+        "older": "c1"
+      }
+    },
+    {
+      "id": "q12",
+      "category": "knowledge-update",
+      "hitIds": [
+        "p7",
+        "f8",
+        "c7",
+        "c6"
+      ],
+      "ms": 27.699999999254942,
+      "expect": [
+        "c7",
+        "f8"
+      ],
+      "relevant": [
+        "c6",
+        "c7",
+        "f8"
+      ],
+      "expectBefore": {
+        "newer": "c7",
+        "older": "c6"
+      }
+    },
+    {
+      "id": "q13",
+      "category": "knowledge-update",
+      "hitIds": [
+        "p7",
+        "c3",
+        "c8"
+      ],
+      "ms": 25.699999999254942,
+      "expect": [
+        "c3"
+      ],
+      "relevant": [
+        "c3"
+      ]
+    },
+    {
+      "id": "q14",
+      "category": "tag-boost",
+      "hitIds": [
+        "p7",
+        "f1",
+        "p9"
+      ],
+      "ms": 24.699999999254942,
+      "expect": [
+        "f1"
+      ],
+      "relevant": [
+        "f1"
+      ]
+    },
+    {
+      "id": "q15",
+      "category": "tag-boost",
+      "hitIds": [
+        "p7",
+        "c9",
+        "f9"
+      ],
+      "ms": 26.900000002235174,
+      "expect": [
+        "f9",
+        "c9"
+      ],
+      "relevant": [
+        "f9",
+        "c9"
+      ]
+    },
+    {
+      "id": "q16",
+      "category": "tag-boost",
+      "hitIds": [
+        "p7",
+        "p9",
+        "p10"
+      ],
+      "ms": 27.699999999254942,
+      "expect": [
+        "p10"
+      ],
+      "relevant": [
+        "p10"
+      ]
+    },
+    {
+      "id": "q17",
+      "category": "abstain",
+      "hitIds": [
+        "p7"
+      ],
+      "ms": 25.399999998509884,
+      "expect": [],
+      "relevant": []
+    },
+    {
+      "id": "q18",
+      "category": "abstain",
+      "hitIds": [
+        "p7"
+      ],
+      "ms": 24.5,
+      "expect": [],
+      "relevant": []
+    },
+    {
+      "id": "q19",
+      "category": "abstain",
+      "hitIds": [
+        "p7"
+      ],
+      "ms": 23.600000001490116,
+      "expect": [],
+      "relevant": []
+    },
+    {
+      "id": "q20",
+      "category": "abstain",
+      "hitIds": [
+        "p7"
+      ],
+      "ms": 23.5,
+      "expect": [],
+      "relevant": []
+    },
+    {
+      "id": "q21",
+      "category": "en-mixed",
+      "hitIds": [
+        "p7",
+        "f9",
+        "c9"
+      ],
+      "ms": 26.099999997764826,
+      "expect": [
+        "f9"
+      ],
+      "relevant": [
+        "f9"
+      ]
+    },
+    {
+      "id": "q22",
+      "category": "en-mixed",
+      "hitIds": [
+        "p7",
+        "f10",
+        "k8",
+        "k2",
+        "f7"
+      ],
+      "ms": 26.600000001490116,
+      "expect": [
+        "f10"
+      ],
+      "relevant": [
+        "f10"
+      ]
+    },
+    {
+      "id": "q23",
+      "category": "en-mixed",
+      "hitIds": [
+        "p7",
+        "k10",
+        "k8",
+        "k7",
+        "k2"
+      ],
+      "ms": 26.199999999254942,
+      "expect": [
+        "k10"
+      ],
+      "relevant": [
+        "k10",
+        "k8"
+      ]
+    },
+    {
+      "id": "q26",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "k1",
+        "p1"
+      ],
+      "ms": 28.100000001490116,
+      "expect": [
+        "f2"
+      ],
+      "relevant": [
+        "f2",
+        "k1"
+      ]
+    },
+    {
+      "id": "q27",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "k10",
+        "f5"
+      ],
+      "ms": 25.699999999254942,
+      "expect": [
+        "f5"
+      ],
+      "relevant": [
+        "f5"
+      ]
+    },
+    {
+      "id": "q28",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "p4",
+        "p1"
+      ],
+      "ms": 24.800000000745058,
+      "expect": [
+        "p1"
+      ],
+      "relevant": [
+        "p1",
+        "p7"
+      ]
+    },
+    {
+      "id": "q29",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "p6",
+        "k3"
+      ],
+      "ms": 24.899999998509884,
+      "expect": [
+        "k3"
+      ],
+      "relevant": [
+        "k3",
+        "f6"
+      ]
+    },
+    {
+      "id": "q30",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "f9",
+        "c9"
+      ],
+      "ms": 24.300000000745058,
+      "expect": [
+        "f9"
+      ],
+      "relevant": [
+        "f9"
+      ]
+    },
+    {
+      "id": "q31",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "f10",
+        "f9",
+        "f8",
+        "f1"
+      ],
+      "ms": 26.199999999254942,
+      "expect": [
+        "f10"
+      ],
+      "relevant": [
+        "f10"
+      ]
+    },
+    {
+      "id": "q32",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "p9"
+      ],
+      "ms": 27.100000001490116,
+      "expect": [
+        "p9"
+      ],
+      "relevant": [
+        "p9"
+      ]
+    },
+    {
+      "id": "q33",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "k10",
+        "f5"
+      ],
+      "ms": 28.699999999254942,
+      "expect": [
+        "k10"
+      ],
+      "relevant": [
+        "k10",
+        "f5"
+      ]
+    },
+    {
+      "id": "q34",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "f6"
+      ],
+      "ms": 28.800000000745058,
+      "expect": [
+        "f6"
+      ],
+      "relevant": [
+        "f6",
+        "k3"
+      ]
+    },
+    {
+      "id": "q35",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "p4",
+        "p1"
+      ],
+      "ms": 22.800000000745058,
+      "expect": [
+        "p1"
+      ],
+      "relevant": [
+        "p1",
+        "p7"
+      ]
+    },
+    {
+      "id": "q36",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "k6",
+        "f3",
+        "k9"
+      ],
+      "ms": 24.299999997019768,
+      "expect": [
+        "k9"
+      ],
+      "relevant": [
+        "k9",
+        "c10",
+        "p5"
+      ]
+    },
+    {
+      "id": "q37",
+      "category": "paraphrase",
+      "hitIds": [
+        "p7",
+        "k6"
+      ],
+      "ms": 27.600000001490116,
+      "expect": [
+        "k6"
+      ],
+      "relevant": [
+        "k6"
+      ]
+    },
+    {
+      "id": "q24",
+      "category": "fact-recall",
+      "hitIds": [
+        "p7",
+        "c2",
+        "c1"
+      ],
+      "ms": 22.899999998509884,
+      "expect": [
+        "c1",
+        "c2"
+      ],
+      "relevant": [
+        "c1",
+        "c2"
+      ]
+    },
+    {
+      "id": "q25",
+      "category": "noise-robust",
+      "hitIds": [
+        "p7",
+        "f5",
+        "k10"
+      ],
+      "ms": 25.200000002980232,
+      "expect": [
+        "f5"
+      ],
+      "relevant": [
+        "f5"
+      ]
+    }
+  ]
+}
