@@ -156,6 +156,7 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
   await panel.goto(extOrigin + '/panel/panel.html');
   await panel.click('nav.tabs button[data-tab="chat"]');
   await panel.fill('#chat-q', '总结这篇文章的核心观点');
+  await page.bringToFront(); // activeTab 指向文章页（发问预检需要可提取的页面）
   await panel.click('#btn-send');
   await panel.waitForSelector('.msg.assistant.done', { timeout: 20000 });
   await panel.waitForTimeout(600);
