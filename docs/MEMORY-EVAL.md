@@ -92,8 +92,6 @@ preference / fact / correction / conclusion 四类均衡，**中文 70% + 英文
 
 ### v3（2026-08-28，混合召回：sparse 词法 + dense 端侧向量，真空门控加和融合）
 
-### v3（2026-08-28，混合召回：sparse 词法 + dense 端侧向量，真空门控加和融合）
-
 | 指标 | 数值 | 对比 v2 |
 |---|---|---|
 | recall@5 | **93.9%** | +11.1%（改述子集 3/8→10/12 驱动） |
@@ -107,8 +105,6 @@ preference / fact / correction / conclusion 四类均衡，**中文 70% + 英文
 - `setDenseRanker` 注入接口解耦稠密排序与 embedding 通道；模型 Xenova/paraphrase-multilingual-MiniLM-L12-v2（384d）——e5-small 与 mpnet-base-v2 均因「拒答噪声与真实命中 sim 不可分」被数据否决
 - 融合：真空门控加和（`maxSparse≥20` 时 dense 静默；词面真空时 dense 名次分档增益主导）
 - 已知模型边界：q26（语义跳跃）、q35（跨语种）在三个候选模型下均与拒答噪声不可分，非 embedding 可解
-
-### v2（2026-08-28，词法增强：停用词 + 词干归一 + IDF + mtime 缓存）
 
 ### v2（2026-08-28，词法增强：停用词 + 词干归一 + IDF + mtime 缓存）
 
