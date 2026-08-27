@@ -6,11 +6,11 @@
  */
 
 import { streamChat } from './llm/index.js';
-import { saveMemory } from './memory.js';
+import { saveMemoryDedup } from './memory.js';
 import { BUDGET } from './chat-pipeline.js';
 
 const COMPRESS_SYSTEM =
-  '你是记忆压缩器。从问答对中提炼值得跨会话记住的结论/偏好/事实，输出1-2句中文陈述句。' +
+  '你是记忆压缩器。从问答对中提炼值得跨会话记住的结论/偏好/事实，用与提问相同的语言输出1-2句陈述句。' +
   '只输出内容本身，不要任何前缀或解释。若无值得记的内容，只输出 NONE。';
 
 /** 忽略规则：命中则不产生记忆 */
@@ -23,12 +23,12 @@ export function shouldIgnore(question: string, answer: string): boolean {
   return false;
 }
 
-/** tag 启发式推断 */
+/** tag 启发式推断（中英双语模式） */
 export function guessTags(text: string): string[] {
   const tags = ['fact'];
-  if (/偏好|喜欢|习惯|不要|请用|希望/.test(text)) tags.push('preference');
-  if (/理解错|纠正|其实不是|正确的是/.test(text)) tags.push('correction');
-  if (/结论|所以|因此/.test(text)) tags.push('conclusion');
+  if (/偏好|喜欢|习惯|不要|请用|希望|prefer|always|never|don'?t|please use|i like/i.test(text)) tags.push('preference');
+  if (/理解错|纠正|其实不是|正确的是|actually|wrong|mistaken|correct is/i.test(text)) tags.push('correction');
+  if (/结论|所以|因此|conclusion|therefore|in short/i.test(text)) tags.push('conclusion');
   return tags;
 }
 
@@ -59,12 +59,11 @@ export async function extractAndStore(
 ): Promise<string> {
   const summary = await compressQA(settings, question, answer);
   if (!summary) throw new Error('该内容不值得记忆');
-  return saveMemory({
+  return saveMemoryDedup({
     scope: 'user',
     body: summary,
     tags: guessTags(question + ' ' + summary),
     confidence: 'high', // 用户手动触发
-    pinned: false,
     source: sourceUrl,
   });
 }
@@ -83,12 +82,11 @@ export async function proposeExtraction(
 
 /** 确认后落盘（UI 确认流第二步调用） */
 export async function storeProposed(summary: string, sourceUrl?: string): Promise<string> {
-  return saveMemory({
+  return saveMemoryDedup({
     scope: 'user',
     body: summary,
     tags: guessTags(summary),
     confidence: 'medium',
-    pinned: false,
     source: sourceUrl,
   });
 }

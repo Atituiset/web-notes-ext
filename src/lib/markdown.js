@@ -35,17 +35,31 @@ export function renderFrontmatter(meta) {
   return lines.join('\n');
 }
 
-/** 解析 `--- ... ---` frontmatter；无则返回 { attrs:{}, body:text } */
+/** 解析 `--- ... ---` frontmatter；无则返回 { attrs:{}, body:text }。
+ *  标量 → 字符串（带引号的 JSON 反转义）；`key:` 后跟 `  - item` 行 → 字符串数组 */
 export function parseFrontmatter(text) {
   const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
   if (!m) return { attrs: {}, body: text };
   const attrs = {};
+  let listKey = null;
+  const unquote = (v) => (/^".*"$/.test(v) ? JSON.parse(v) : v);
   for (const line of m[1].split(/\r?\n/)) {
+    const item = /^\s+-\s+(.*)$/.exec(line);
+    if (item && listKey) {
+      attrs[listKey].push(unquote(item[1].trim()));
+      continue;
+    }
+    listKey = null;
     const kv = /^([A-Za-z_][\w-]*):\s*(.*)$/.exec(line);
     if (!kv) continue;
-    let v = kv[2].trim();
-    if (/^".*"$/.test(v)) v = JSON.parse(v);
-    attrs[kv[1]] = v;
+    const v = kv[2].trim();
+    if (v === '') {
+      // 可能是 YAML 列表的开头（tags: 后跟 - 行），先按数组收集
+      attrs[kv[1]] = [];
+      listKey = kv[1];
+    } else {
+      attrs[kv[1]] = unquote(v);
+    }
   }
   return { attrs, body: text.slice(m[0].length) };
 }

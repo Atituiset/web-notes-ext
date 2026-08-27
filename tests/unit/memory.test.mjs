@@ -2,8 +2,9 @@
 // 运行方式: npm test （见 package.json，走 build.mjs 里的 test 步骤或直接 node --test）
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { tokenize, scoreMemory, isCold } from '../../src/lib/memory.js';
+import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody } from '../../src/lib/memory.js';
 import { shouldIgnore, guessTags } from '../../src/lib/memory-extract.js';
+import { parseFrontmatter } from '../../src/lib/markdown.js';
 
 test('tokenize: english words', () => {
   const t = tokenize('clangd protocol header file');
@@ -56,4 +57,63 @@ test('guessTags heuristics', () => {
   assert.ok(guessTags('我喜欢简洁的回答').includes('preference'));
   assert.ok(guessTags('我之前理解错了，正确的是X').includes('correction'));
   assert.ok(guessTags('这个协议的结论是Y').includes('conclusion'));
+});
+
+test('guessTags: english patterns', () => {
+  assert.ok(guessTags('I prefer concise answers').includes('preference'));
+  assert.ok(guessTags('I was wrong, the correct answer is X').includes('correction'));
+  assert.ok(guessTags('Therefore the protocol is Y').includes('conclusion'));
+});
+
+// 回归：记忆文件的 YAML 列表（tags）必须能被解析回来 —— 曾全部丢成 []
+test('parseFrontmatter: YAML 列表 tags 往返', () => {
+  const text = [
+    '---',
+    'type: memory',
+    'scope: user',
+    'created: 2026-08-25',
+    'updated: ' + new Date().toISOString().slice(0, 10),
+    'confidence: high',
+    'pinned: false',
+    'hits: 3',
+    'tags:',
+    '  - fact',
+    '  - preference',
+    '---',
+    '',
+    '用户偏好简洁回答。',
+    '',
+  ].join('\n');
+  const { attrs, body } = parseFrontmatter(text);
+  assert.deepEqual(attrs.tags, ['fact', 'preference']);
+  assert.equal(attrs.type, 'memory');
+  assert.equal(Number(attrs.hits), 3);
+  assert.ok(body.includes('用户偏好简洁回答'));
+  // 空列表写法 tags: [] 不报错
+  const empty = parseFrontmatter('---\ntags: []\n---\nx');
+  assert.ok(!Array.isArray(empty.attrs.tags));
+});
+
+test('overlapCount: tags 参与检索（tags 丢失曾导致此项恒为 0）', () => {
+  const m = { body: '一条没有关键词的正文', tags: ['clangd', 'preference'], domain: undefined };
+  assert.ok(overlapCount(m, new Set(tokenize('clangd'))) > 0);
+  assert.equal(overlapCount(m, new Set(tokenize('xyzzy'))), 0);
+});
+
+test('bodySimilarity: 复述高分 / 无关零分', () => {
+  assert.ok(bodySimilarity('用户偏好简洁的中文回答', '用户偏好简洁的中文回答') === 1);
+  assert.ok(bodySimilarity('用户偏好简洁的中文回答', '用户偏好简洁中文回答风格') > 0.7);
+  assert.equal(bodySimilarity('用户偏好简洁回答', 'clangd 的 Protocol.h 定义 LSP 结构'), 0);
+  assert.equal(bodySimilarity('', '任意内容'), 0);
+});
+
+test('enrichBody: 全覆盖不追加 / 有新信息才追加', () => {
+  const old = '用户偏好简洁的中文回答';
+  const dup = enrichBody(old, '偏好简洁的中文回答'); // 子串，bigram 全覆盖
+  assert.equal(dup.novel, false);
+  assert.equal(dup.body, old);
+  const add = enrichBody(old, '代码注释希望保留英文原文'); // 有新信息
+  assert.equal(add.novel, true);
+  assert.ok(add.body.includes('用户偏好简洁'));
+  assert.ok(add.body.includes('英文原文'));
 });

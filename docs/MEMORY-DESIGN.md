@@ -57,7 +57,7 @@ AI 回答完成 ──► 提取候选 ──► 打分 ──► 去重/合并 
 - **提取时机**：问答完成后异步进行（不阻塞 UI），用当前对话模型发一次结构化提取请求（JSON mode 或 prompt 约定），prompt 要求只提取"值得跨会话记住的内容"
 - **忽略规则**（存储决策树）：寒暄不记；纯页面转述不记；只记——用户显式表达的偏好/纠正、跨页面有价值的结论、"我原来理解错了→现在对了"这类认知修正
 - **打分**：MVP 用规则不用 LLM 打分——用户手动点「记住这条」直接入库（importance=max）；自动提取的默认 confidence=medium
-- **去重/合并**：写入前扫描同 domain 的已有记忆 frontmatter + 正文关键词重叠；命中则 enrich（追加+更新 updated），矛盾时保留两条并标 `contested: true`
+- **去重/合并**（✅ 已实现，`memory.ts saveMemoryDedup`）：写入前在同 scope 内做正文 bigram 相似度匹配（`bodySimilarity` ≥ 0.7）；命中则 enrich 原文件——新内容 token 被全覆盖仅刷新 `updated`，有新信息则追加到正文；合并 tags、保留 created/hits/pinned。矛盾标记 `contested` 留到 V2（MVP 不做矛盾检测）
 
 ### 1.3 读取管线（Read Pipeline → context.js 扩展）
 

@@ -120,6 +120,75 @@ export async function saveMemory(entry: {
   return file;
 }
 
+// ---------- 去重 / 合并（MEMORY-DESIGN §1.2）----------
+
+/** 两条记忆正文的词面相似度：重叠 token / 较小 token 集（导出供单测） */
+export function bodySimilarity(a: string, b: string): number {
+  const sa = new Set(tokenize(a));
+  const sb = new Set(tokenize(b));
+  if (!sa.size || !sb.size) return 0;
+  let inter = 0;
+  for (const t of sa) if (sb.has(t)) inter++;
+  return inter / Math.min(sa.size, sb.size);
+}
+
+/**
+ * enrich 合并决策（纯函数，导出供单测）：
+ * 新内容的所有 token 已被旧正文覆盖 → 不追加（仅调用方刷新 updated）；
+ * 否则把新正文作为补充追加到旧正文后。
+ */
+export function enrichBody(oldBody: string, newBody: string): { body: string; novel: boolean } {
+  const oldTokens = new Set(tokenize(oldBody));
+  const novel = [...new Set(tokenize(newBody))].some((t) => !oldTokens.has(t));
+  return { body: novel ? oldBody + '\n' + newBody : oldBody, novel };
+}
+
+/** 相似度阈值：达到则视为同一记忆的复述/补充 */
+const SIMILARITY_THRESHOLD = 0.7;
+
+/** 在同 scope 记忆里找与 body 最相似的一条（达到阈值才返回） */
+export async function findSimilar(
+  body: string,
+  scope: 'user' | 'domain' = 'user'
+): Promise<MemoryEntry | null> {
+  let best: MemoryEntry | null = null;
+  let bestSim = 0;
+  for (const m of await listMemories()) {
+    if (m.scope !== scope) continue;
+    const s = bodySimilarity(body, m.body);
+    if (s > bestSim) { bestSim = s; best = m; }
+  }
+  return bestSim >= SIMILARITY_THRESHOLD ? best : null;
+}
+
+/**
+ * 去重写入（记忆提取管线专用；pin/编辑走 saveMemory 显式 file 路径，不经此）：
+ * 存在高度重叠的已有记忆 → enrich 原文件（合并 tags、保留 created/hits/pinned），
+ * 否则新建。返回写入的文件名。
+ */
+export async function saveMemoryDedup(entry: {
+  scope: 'user' | 'domain';
+  domain?: string;
+  source?: string;
+  body: string;
+  tags?: string[];
+  confidence?: 'high' | 'medium' | 'low';
+}): Promise<string> {
+  const sim = await findSimilar(entry.body, entry.scope);
+  if (!sim) return saveMemory(entry);
+  const { body } = enrichBody(sim.body, entry.body);
+  return saveMemory({
+    scope: sim.scope,
+    domain: sim.domain,
+    source: entry.source || sim.source,
+    body,
+    tags: [...new Set([...sim.tags, ...(entry.tags || [])])],
+    confidence: entry.confidence || sim.confidence,
+    pinned: sim.pinned,
+    file: sim.file,
+  });
+}
+
 /** 列出全部记忆。vault 未授权返回 []。 */
 export async function listMemories(): Promise<MemoryEntry[]> {
   const dir = await memDir();
@@ -141,7 +210,7 @@ export async function listMemories(): Promise<MemoryEntry[]> {
         confidence: (parsed.attrs.confidence as any) || 'medium',
         pinned: parsed.attrs.pinned === true || parsed.attrs.pinned === 'true',
         hits: Number(parsed.attrs.hits) || 0,
-        tags: Array.isArray((parsed.attrs as any)._tags) ? (parsed.attrs as any)._tags : [],
+        tags: Array.isArray(parsed.attrs.tags) ? parsed.attrs.tags.map(String) : [],
         file: name,
         body: parsed.body.trim(),
       });
@@ -199,8 +268,10 @@ export async function searchMemories(
   const now = Date.now();
 
   const scored = (await listMemories())
-    .map((m) => ({ m, score: scoreMemory(m, qTokens, now) }))
-    .filter((x) => x.score > 5 || x.m.pinned)
+    .map((m) => ({ m, score: scoreMemory(m, qTokens, now), overlap: overlapCount(m, qTokens) }))
+    // pinned 永远注入；其余必须有实际词面重叠 —— 否则新记忆仅靠 recency 就会
+    // 越过阈值挤进每次提问的上下文（零相关也注入，污染 prompt）
+    .filter((x) => x.m.pinned || x.overlap > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, k);
 
@@ -221,19 +292,33 @@ export async function searchMemories(
   return { memories: picked, touchedFiles: touched };
 }
 
+/** 记忆的全部可检索 token（正文 + tags + domain） */
+function memoryTokenSet(m: Pick<MemoryEntry, 'body' | 'tags' | 'domain'>): Set<string> {
+  return new Set([
+    ...tokenize(m.body),
+    ...tokenize(m.tags.join(' ')),
+    ...tokenize(m.domain || ''),
+  ]);
+}
+
+/** 查询与记忆的词面重叠数（导出供单测） */
+export function overlapCount(
+  m: Pick<MemoryEntry, 'body' | 'tags' | 'domain'>,
+  queryTokens: Set<string>
+): number {
+  const mTokens = memoryTokenSet(m);
+  let n = 0;
+  for (const t of queryTokens) if (mTokens.has(t)) n++;
+  return n;
+}
+
 /** 单条记忆打分（导出供单测） */
 export function scoreMemory(
   m: Pick<MemoryEntry, 'body' | 'tags' | 'domain' | 'pinned' | 'hits' | 'updated'>,
   queryTokens: Set<string>,
   now: number
 ): number {
-  const mTokens = new Set([
-    ...tokenize(m.body),
-    ...tokenize(m.tags.join(' ')),
-    ...tokenize(m.domain || ''),
-  ]);
-  let overlap = 0;
-  for (const t of queryTokens) if (mTokens.has(t)) overlap++;
+  const overlap = overlapCount(m, queryTokens);
   const relevance = queryTokens.size ? overlap / Math.sqrt(queryTokens.size) : 0;
   const ageDays = Math.max(0, (now - new Date(m.updated).getTime()) / 86400000);
   const recency = Math.exp(-ageDays / 30);
