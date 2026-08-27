@@ -1,124 +1,365 @@
 {
-  "extName": { "message": "Markpilot — Web Notes to Obsidian & AI" },
-  "extDesc": { "message": "Highlight notes → local Obsidian → LLM Q&A in context, with long-term memory" },
-
-  "btnNote": { "message": "📝 Note" },
-  "btnAsk": { "message": "🤖 Ask AI" },
-  "noteSaved": { "message": "Saved" },
-  "noteEmptyWarn": { "message": "Write something before saving" },
-  "sentToPanel": { "message": "Sent to side panel" },
-  "sendFailedHint": { "message": "Failed to send. Click the toolbar icon to open the side panel" },
-  "selQuotePrefix": { "message": "Selected: \"$1\"", "description": "Quote prefix, $1 is the selected text" },
-  "notePlaceholder": { "message": "Write your thoughts… (Markdown supported)" },
-  "untitledPage": { "message": "Untitled page" },
-  "btnSave": { "message": "Save" },
-  "btnCancel": { "message": "Cancel" },
-
-  "newChat": { "message": "✚ New chat" },
-  "newChatTitle": { "message": "Clear current conversation and start a new one" },
-  "threadsTitle": { "message": "Chat history" },
-  "exportPage": { "message": "⬇ Export page" },
-  "tabNotes": { "message": "Notes" },
-  "tabChat": { "message": "Ask AI" },
-  "chatPlaceholder": { "message": "Ask anything… (page content + your notes + selection included)" },
-  "scopePage": { "message": "Full page context" },
-  "scopeSelection": { "message": "Selection + notes only" },
-  "sendBtn": { "message": "Send" },
-  "stopBtn": { "message": "Stop" },
-  "scrollBottomTitle": { "message": "Scroll to bottom" },
-
-  "exportPageCount": { "message": "⬇ Export page ($1)", "description": "$1 is the note count" },
-  "noActiveTab": { "message": "Cannot access the active tab" },
-  "noNotesYet": { "message": "No notes on this page yet — select some text to add one" },
-  "copied": { "message": "Copied" },
-  "pageNotExportable": { "message": "This page cannot be exported" },
-  "exportOk": { "message": "Written to vault: $1", "description": "$1 is the file name" },
-  "exportFailed": { "message": "Export failed: $1" },
-  "exportAuthFailed": { "message": "Authorization/export failed: $1\n(you can fall back to the obsidian:// URI)" },
-  "starter1": { "message": "Summarize the key points of this article" },
-  "starter2": { "message": "List and explain terms I might not understand" },
-  "starter3": { "message": "Point out possible misunderstandings in my notes" },
-  "starter4": { "message": "Explain this page to me with the Feynman method" },
-  "chatWelcome": { "message": "Ask anything — page content, your notes, and selection are included" },
-  "modelNotConfigured": { "message": "(not configured)" },
-  "untitledThread": { "message": "(untitled)" },
-  "deleteThreadTitle": { "message": "Delete this conversation" },
-  "streamingWait": { "message": "Streaming — stop it or wait for completion" },
-  "thinkingSummary": { "message": "💭 Thinking" },
-  "stopped": { "message": "Stopped" },
-  "copyBtn": { "message": "Copy" },
-  "answerCopied": { "message": "Answer copied" },
-  "rememberBtn": { "message": "🧠 Remember" },
-  "rememberTitle": { "message": "Save this conclusion as long-term memory" },
-  "remembering": { "message": "Extracting…" },
-  "remembered": { "message": "✓ Saved" },
-  "rememberOk": { "message": "Saved to Markpilot-Memory" },
-  "rememberFailed": { "message": "Memory failed: $1" },
-  "retryBtn": { "message": "Retry" },
-  "streamingShort": { "message": "Streaming" },
-  "memBadge": { "message": "🧠 $1 memorable", "description": "$1 is the candidate count" },
-  "memBadgeTitle": { "message": "Click to review and save auto-discovered memories" },
-  "confirmRemember": { "message": "Remember this?\n\n$1" },
-  "followupExpand": { "message": "Expand on \"$1\"", "description": "$1 is a heading from the answer" },
-  "followupCode": { "message": "Explain the code above line by line" },
-  "followupExample": { "message": "Give a concrete example" },
-  "followupSummarize": { "message": "Summarize into 3 key points" },
-  "followupConflict": { "message": "Does this conflict with my notes?" },
-  "confirmNewChat": { "message": "Clear this conversation? Saved notes are not affected." },
-  "roleYou": { "message": "You" },
-  "aiTag": { "message": "[AI]" },
-  "askAboutSelection": { "message": "Explain this: \"$1\"", "description": "Auto question from page Ask AI, $1 is the selected text" },
-
-  "optionsTitle": { "message": "Markpilot Settings" },
-  "labelBaseUrl": { "message": "Base URL (leave empty for provider preset; fill for custom proxy/vLLM)" },
-  "baseUrlPh": { "message": "Empty = preset / or http://localhost:11434/v1" },
-  "labelModel": { "message": "Model" },
-  "modelPh": { "message": "Type to filter, or click \"Fetch models\"" },
-  "btnModels": { "message": "Fetch models" },
-  "btnTest": { "message": "Test" },
-  "openrouterHint": { "message": "OpenRouter lists models without a key; free models are marked ⭐." },
-  "labelApiKey": { "message": "API Key (stored only in local IndexedDB, never uploaded)" },
-  "apiKeyPh": { "message": "Not needed for local models" },
-  "keyWarn": { "message": "Keys stay in this browser. The Anthropic direct-browser-access header is added automatically." },
-  "labelSystemPrompt": { "message": "System prompt for Q&A (clear it to send no system message)" },
-  "btnPromptReset": { "message": "Reset to default" },
-  "systemPromptHint": { "message": "Page content, notes and selection are always sent; this only controls the persona." },
-  "btnPickVault": { "message": "Authorize vault folder…" },
-  "labelDirTemplate": { "message": "Export subdirectory template" },
-  "labelExportAiQA": { "message": "Also export AI Q&A (default off)" },
-  "secMemory": { "message": "🧠 Long-term memory" },
-  "labelMemoryInject": { "message": "Inject relevant memories when asking (default on)" },
-  "labelAutoMemory": { "message": "Auto-extract memory candidates (default off; badge for your confirmation)" },
-  "btnMemMgr": { "message": "Manage memories…" },
-  "btnSaveSettings": { "message": "Save settings" },
-
-  "vaultNoHandle": { "message": "Not authorized" },
-  "vaultGranted": { "message": "✓ Authorized" },
-  "vaultNeedPrompt": { "message": "Folder selected — click once to restore permission" },
-  "modelFetching": { "message": "Fetching…" },
-  "modelsFetched": { "message": "Fetched $1 models", "description": "$1 is the model count" },
-  "modelsFetchedFree": { "message": ", $1 free (marked ⭐)", "description": "$1 is the free model count" },
-  "modelsFetchedTail": { "message": " — click the model input to pick one." },
-  "modelsFetchFailed": { "message": "Fetch failed: $1" },
-  "modelsManualHint": { "message": "(or type the model name manually)" },
-  "modelNoMatch": { "message": "No matching model" },
-  "modelEmptyList": { "message": "No list yet — click \"Fetch models\" or type manually" },
-  "freeTag": { "message": "⭐ Free" },
-  "vaultAuthFailed": { "message": "Authorization failed: $1" },
-  "savedOk": { "message": "Saved ✓" },
-  "testing": { "message": "Testing $1 …", "description": "$1 is the model name" },
-  "testOk": { "message": "✓ $1 works ($2s)", "description": "$1 is the model name, $2 is seconds" },
-  "testEmpty": { "message": "⚠ $1 connected but returned nothing — try another" },
-  "testTimeout": { "message": "✗ $1 no response in 30s (upstream may be down — try another)" },
-  "testFailed": { "message": "✗ $1 unavailable: $2", "description": "$1 is the model name, $2 is the error detail" },
-  "memCount": { "message": "$1 memories", "description": "$1 is the memory count" },
-  "pinBtn": { "message": "📌 Pin" },
-  "unpinBtn": { "message": "Unpin" },
-  "coldTag": { "message": "cold (unused 90d)" },
-  "editBtn": { "message": "Edit" },
-  "editMemoryPrompt": { "message": "Edit memory:" },
-  "deleteBtn": { "message": "Delete" },
-  "confirmDeleteMemory": { "message": "Delete this memory?" },
-
-  "modelNotConfiguredError": { "message": "No model configured — set it in the settings page" }
+  "extName": {
+    "message": "Markpilot — Web Notes to Obsidian & AI"
+  },
+  "extDesc": {
+    "message": "Highlight notes → local Obsidian → LLM Q&A in context, with long-term memory"
+  },
+  "btnNote": {
+    "message": "📝 Note"
+  },
+  "btnAsk": {
+    "message": "🤖 Ask AI"
+  },
+  "noteSaved": {
+    "message": "Saved"
+  },
+  "noteEmptyWarn": {
+    "message": "Write something before saving"
+  },
+  "sentToPanel": {
+    "message": "Sent to side panel"
+  },
+  "sendFailedHint": {
+    "message": "Failed to send. Click the toolbar icon to open the side panel"
+  },
+  "selQuotePrefix": {
+    "message": "Selected: \"$1\"",
+    "description": "Quote prefix, $1 is the selected text"
+  },
+  "notePlaceholder": {
+    "message": "Write your thoughts… (Markdown supported)"
+  },
+  "untitledPage": {
+    "message": "Untitled page"
+  },
+  "btnSave": {
+    "message": "Save"
+  },
+  "btnCancel": {
+    "message": "Cancel"
+  },
+  "newChat": {
+    "message": "✚ New chat"
+  },
+  "newChatTitle": {
+    "message": "Clear current conversation and start a new one"
+  },
+  "threadsTitle": {
+    "message": "Chat history"
+  },
+  "exportPage": {
+    "message": "⬇ Export page"
+  },
+  "tabNotes": {
+    "message": "Notes"
+  },
+  "tabChat": {
+    "message": "Ask AI"
+  },
+  "chatPlaceholder": {
+    "message": "Ask anything… (page content + your notes + selection included)"
+  },
+  "scopePage": {
+    "message": "Full page context"
+  },
+  "scopeSelection": {
+    "message": "Selection + notes only"
+  },
+  "sendBtn": {
+    "message": "Send"
+  },
+  "stopBtn": {
+    "message": "Stop"
+  },
+  "scrollBottomTitle": {
+    "message": "Scroll to bottom"
+  },
+  "exportPageCount": {
+    "message": "⬇ Export page ($1)",
+    "description": "$1 is the note count"
+  },
+  "noActiveTab": {
+    "message": "Cannot access the active tab"
+  },
+  "noNotesYet": {
+    "message": "No notes on this page yet — select some text to add one"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "pageNotExportable": {
+    "message": "This page cannot be exported"
+  },
+  "exportOk": {
+    "message": "Written to vault: $1",
+    "description": "$1 is the file name"
+  },
+  "exportFailed": {
+    "message": "Export failed: $1"
+  },
+  "exportAuthFailed": {
+    "message": "Authorization/export failed: $1\n(you can fall back to the obsidian:// URI)"
+  },
+  "starter1": {
+    "message": "Summarize the key points of this article"
+  },
+  "starter2": {
+    "message": "List and explain terms I might not understand"
+  },
+  "starter3": {
+    "message": "Point out possible misunderstandings in my notes"
+  },
+  "starter4": {
+    "message": "Explain this page to me with the Feynman method"
+  },
+  "chatWelcome": {
+    "message": "Ask anything — page content, your notes, and selection are included"
+  },
+  "modelNotConfigured": {
+    "message": "(not configured)"
+  },
+  "untitledThread": {
+    "message": "(untitled)"
+  },
+  "deleteThreadTitle": {
+    "message": "Delete this conversation"
+  },
+  "streamingWait": {
+    "message": "Streaming — stop it or wait for completion"
+  },
+  "thinkingSummary": {
+    "message": "💭 Thinking"
+  },
+  "stopped": {
+    "message": "Stopped"
+  },
+  "copyBtn": {
+    "message": "Copy"
+  },
+  "answerCopied": {
+    "message": "Answer copied"
+  },
+  "rememberBtn": {
+    "message": "🧠 Remember"
+  },
+  "rememberTitle": {
+    "message": "Save this conclusion as long-term memory"
+  },
+  "remembering": {
+    "message": "Extracting…"
+  },
+  "remembered": {
+    "message": "✓ Saved"
+  },
+  "rememberOk": {
+    "message": "Saved to Markpilot-Memory"
+  },
+  "rememberFailed": {
+    "message": "Memory failed: $1"
+  },
+  "retryBtn": {
+    "message": "Retry"
+  },
+  "streamingShort": {
+    "message": "Streaming"
+  },
+  "memBadge": {
+    "message": "🧠 $1 memorable",
+    "description": "$1 is the candidate count"
+  },
+  "memBadgeTitle": {
+    "message": "Click to review and save auto-discovered memories"
+  },
+  "confirmRemember": {
+    "message": "Remember this?\n\n$1"
+  },
+  "followupExpand": {
+    "message": "Expand on \"$1\"",
+    "description": "$1 is a heading from the answer"
+  },
+  "followupCode": {
+    "message": "Explain the code above line by line"
+  },
+  "followupExample": {
+    "message": "Give a concrete example"
+  },
+  "followupSummarize": {
+    "message": "Summarize into 3 key points"
+  },
+  "followupConflict": {
+    "message": "Does this conflict with my notes?"
+  },
+  "confirmNewChat": {
+    "message": "Clear this conversation? Saved notes are not affected."
+  },
+  "roleYou": {
+    "message": "You"
+  },
+  "aiTag": {
+    "message": "[AI]"
+  },
+  "askAboutSelection": {
+    "message": "Explain this: \"$1\"",
+    "description": "Auto question from page Ask AI, $1 is the selected text"
+  },
+  "optionsTitle": {
+    "message": "Markpilot Settings"
+  },
+  "labelBaseUrl": {
+    "message": "Base URL (leave empty for provider preset; fill for custom proxy/vLLM)"
+  },
+  "baseUrlPh": {
+    "message": "Empty = preset / or http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "Model"
+  },
+  "modelPh": {
+    "message": "Type to filter, or click \"Fetch models\""
+  },
+  "btnModels": {
+    "message": "Fetch models"
+  },
+  "btnTest": {
+    "message": "Test"
+  },
+  "openrouterHint": {
+    "message": "OpenRouter lists models without a key; free models are marked ⭐."
+  },
+  "labelApiKey": {
+    "message": "API Key (stored only in local IndexedDB, never uploaded)"
+  },
+  "apiKeyPh": {
+    "message": "Not needed for local models"
+  },
+  "keyWarn": {
+    "message": "Keys stay in this browser. The Anthropic direct-browser-access header is added automatically."
+  },
+  "labelSystemPrompt": {
+    "message": "System prompt for Q&A (clear it to send no system message)"
+  },
+  "btnPromptReset": {
+    "message": "Reset to default"
+  },
+  "systemPromptHint": {
+    "message": "Page content, notes and selection are always sent; this only controls the persona."
+  },
+  "btnPickVault": {
+    "message": "Authorize vault folder…"
+  },
+  "labelDirTemplate": {
+    "message": "Export subdirectory template"
+  },
+  "labelExportAiQA": {
+    "message": "Also export AI Q&A (default off)"
+  },
+  "secMemory": {
+    "message": "🧠 Long-term memory"
+  },
+  "labelMemoryInject": {
+    "message": "Inject relevant memories when asking (default on)"
+  },
+  "labelAutoMemory": {
+    "message": "Auto-extract memory candidates (default off; badge for your confirmation)"
+  },
+  "btnMemMgr": {
+    "message": "Manage memories…"
+  },
+  "btnSaveSettings": {
+    "message": "Save settings"
+  },
+  "vaultNoHandle": {
+    "message": "Not authorized"
+  },
+  "vaultGranted": {
+    "message": "✓ Authorized"
+  },
+  "vaultNeedPrompt": {
+    "message": "Folder selected — click once to restore permission"
+  },
+  "modelFetching": {
+    "message": "Fetching…"
+  },
+  "modelsFetched": {
+    "message": "Fetched $1 models",
+    "description": "$1 is the model count"
+  },
+  "modelsFetchedFree": {
+    "message": ", $1 free (marked ⭐)",
+    "description": "$1 is the free model count"
+  },
+  "modelsFetchedTail": {
+    "message": " — click the model input to pick one."
+  },
+  "modelsFetchFailed": {
+    "message": "Fetch failed: $1"
+  },
+  "modelsManualHint": {
+    "message": "(or type the model name manually)"
+  },
+  "modelNoMatch": {
+    "message": "No matching model"
+  },
+  "modelEmptyList": {
+    "message": "No list yet — click \"Fetch models\" or type manually"
+  },
+  "freeTag": {
+    "message": "⭐ Free"
+  },
+  "vaultAuthFailed": {
+    "message": "Authorization failed: $1"
+  },
+  "savedOk": {
+    "message": "Saved ✓"
+  },
+  "testing": {
+    "message": "Testing $1 …",
+    "description": "$1 is the model name"
+  },
+  "testOk": {
+    "message": "✓ $1 works ($2s)",
+    "description": "$1 is the model name, $2 is seconds"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 connected but returned nothing — try another"
+  },
+  "testTimeout": {
+    "message": "✗ $1 no response in 30s (upstream may be down — try another)"
+  },
+  "testFailed": {
+    "message": "✗ $1 unavailable: $2",
+    "description": "$1 is the model name, $2 is the error detail"
+  },
+  "memCount": {
+    "message": "$1 memories",
+    "description": "$1 is the memory count"
+  },
+  "pinBtn": {
+    "message": "📌 Pin"
+  },
+  "unpinBtn": {
+    "message": "Unpin"
+  },
+  "coldTag": {
+    "message": "cold (unused 90d)"
+  },
+  "editBtn": {
+    "message": "Edit"
+  },
+  "editMemoryPrompt": {
+    "message": "Edit memory:"
+  },
+  "deleteBtn": {
+    "message": "Delete"
+  },
+  "confirmDeleteMemory": {
+    "message": "Delete this memory?"
+  },
+  "modelNotConfiguredError": {
+    "message": "No model configured — set it in the settings page"
+  },
+  "extractFailed": {
+    "message": "Couldn't extract page text — this page may have been opened before the extension was installed or updated. Refresh the page and try again (restricted pages like chrome:// are unsupported)."
+  }
 }

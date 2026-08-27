@@ -307,11 +307,8 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   if (!question) return;
   if (streaming) return; // 流式中不接受新提问
   const qEl = $('chat-q');
-  qEl.value = '';
 
-  clearMainIfFirstChat();
-  addMsg('user', question);
-
+  // 先备料再动 UI：材料提取失败要能在不产生气泡/线程脏数据的情况下拦下
   const info = await activeTabInfo();
   const pageUrl = info ? normalizeUrl(info.url) : '';
   const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
@@ -325,8 +322,17 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   let pageText: string | null = null;
   if (scope !== 'selection' && info && /^https?:/.test(info.url)) {
     pageText = await extractPageText(info.tab.id as number);
-    if (pageText) pageText = pageText.slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
+    if (!pageText) {
+      // 提不到材料就裸问，模型只会回答"你没有给我材料"——不如当场说明原因
+      appendError(t('extractFailed'));
+      return;
+    }
+    pageText = pageText.slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
   }
+
+  qEl.value = '';
+  clearMainIfFirstChat();
+  addMsg('user', question);
 
   const settings = await getSettings();
   // 多轮记忆：把本线程此前的问答一并送入上下文
