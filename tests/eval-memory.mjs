@@ -1,0 +1,237 @@
+// Memory 检索评测 harness — 在真实代码路径上评测（OPFS 当 vault，零 LLM 调用）
+//
+// 指标：recall@1/@5、precision@5、MRR、拒答正确率、知识更新正确率、
+//       检索延迟（p50/p95/max + 100/500/1000 条规模曲线）
+// 报告：console 表格 + /tmp/memory-eval-report.json（逐 query 明细）
+//
+// 运行：node tests/eval-memory.cjs（需先 npm run build；headed）
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
+import { chromium } from '/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright/index.mjs';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+
+// ---- staging：dist + manifest + icons + _locales + memory.ts 的 ESM 单文件 ----
+const EXT_DIR = '/tmp/wne-ext-staging';
+fs.rmSync(EXT_DIR, { recursive: true, force: true });
+fs.mkdirSync(EXT_DIR, { recursive: true });
+fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
+fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
+fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
+fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
+fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
+execSync(
+  `npx esbuild ${path.join(ROOT, 'src/lib/memory.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval/memory.mjs')}`,
+  { stdio: 'inherit' }
+);
+
+const { memories, queries, makeNoise } = await import('./eval/dataset.mjs');
+
+const LATENCY_SCALES = [100, 500, 1000];
+const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'SQLite JSON 查询', '怎么做酸面包', 'memory hits ranking'];
+
+(async () => {
+  const ctx = await chromium.launchPersistentContext('/tmp/wne-eval-profile-' + Date.now(), {
+    headless: false,
+    locale: 'zh-CN',
+    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run', '--lang=zh-CN'],
+  });
+  let sw = ctx.serviceWorkers()[0];
+  if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 10000 });
+  const extOrigin = 'chrome-extension://' + new URL(sw.url()).host;
+
+  const page = await ctx.newPage();
+  page.on('pageerror', (e) => console.log('PAGEERROR:', String(e).slice(0, 300)));
+  await page.goto(extOrigin + '/panel/panel.html');
+
+  // 噪声在 node 侧生成（函数无法穿越 evaluate 边界），页面内按需切片
+  const noiseAll = makeNoise(Math.max(...LATENCY_SCALES) - memories.length);
+
+  // 注入 OPFS 当 vault + 写入语料 + 跑全部查询（全部在页面内、走真实 memory.ts 管线）
+  const evalResult = await page.evaluate(async ({ memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll }) => {
+    // 1. IDB：建库 + OPFS root 写入 handles/vault
+    await new Promise((res, rej) => {
+      const req = indexedDB.open('web-notes-ext', 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'url' });
+        if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' }).createIndex('url', 'url');
+        if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles', { keyPath: 'name' });
+        if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('threads')) db.createObjectStore('threads', { keyPath: 'id' }).createIndex('updatedAt', 'updatedAt');
+      };
+      req.onsuccess = res; req.onerror = rej;
+    });
+    const opfsRoot = await navigator.storage.getDirectory();
+    await new Promise((res, rej) => {
+      const req = indexedDB.open('web-notes-ext', 2);
+      req.onsuccess = () => {
+        const t = req.result.transaction('handles', 'readwrite');
+        t.objectStore('handles').put({ name: 'vault', handle: opfsRoot });
+        t.oncomplete = res; t.onerror = rej;
+      };
+      req.onerror = rej;
+    });
+
+    const mem = await import(chrome.runtime.getURL('eval/memory.mjs'));
+
+
+    // 2. 写入语料并按 daysOld 回填日期
+    const dateOf = (daysOld) => new Date(Date.now() - daysOld * 86400000).toISOString().slice(0, 10);
+    const fileToId = {};
+    const idToFile = {};
+    async function seedOne(m, id) {
+      const file = await mem.saveMemory({
+        scope: m.scope, body: m.body, tags: m.tags,
+        confidence: m.confidence, pinned: m.pinned,
+      });
+      if (m.daysOld > 0) {
+        const dir = await opfsRoot.getDirectoryHandle('Markpilot-Memory');
+        const fh = await dir.getFileHandle(file);
+        let text = await (await fh.getFile()).text();
+        const d = dateOf(m.daysOld);
+        text = text.replace(/^created: .*$/m, 'created: ' + d).replace(/^updated: .*$/m, 'updated: ' + d);
+        const w = await fh.createWritable();
+        await w.write(text);
+        await w.close();
+      }
+      if (id) { fileToId[file] = id; idToFile[id] = file; }
+    }
+    for (const m of memories) await seedOne(m, m.id);
+
+    // 3. 逐条查询（计时）
+    const queryResults = [];
+    for (const q of queries) {
+      const t0 = performance.now();
+      const { memories: hits } = await mem.searchMemories(q.q, { k: 5 });
+      const ms = performance.now() - t0;
+      queryResults.push({
+        id: q.id, category: q.category,
+        hitIds: hits.map((h) => fileToId[h.file] || h.file),
+        ms,
+      });
+    }
+
+    // 4. 延迟-规模曲线：注入噪声到各规模档，跑固定 query
+    const latency = [{ scale: memories.length, results: queryResults.map((r) => r.ms) }];
+    let noiseCount = 0;
+    for (const scale of LATENCY_SCALES) {
+      const need = scale - memories.length - noiseCount;
+      if (need > 0) {
+        for (const nm of noiseAll.slice(noiseCount, noiseCount + need)) await seedOne(nm, null);
+        noiseCount += need;
+      }
+      const rs = [];
+      for (const q of LATENCY_QUERIES) {
+        const t0 = performance.now();
+        await mem.searchMemories(q, { k: 5 });
+        rs.push(performance.now() - t0);
+      }
+      latency.push({ scale, results: rs });
+    }
+
+    return { queryResults, latency, idToFile };
+  }, { memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll });
+
+  await ctx.close();
+
+  // ---------- 指标计算（node 侧）----------
+  const expectMap = Object.fromEntries(queries.map((q) => [q.id, q]));
+  const ranked = evalResult.queryResults.map((r) => ({ ...r, expect: expectMap[r.id].expect, expectBefore: expectMap[r.id].expectBefore }));
+  const answerable = ranked.filter((r) => r.expect.length > 0);
+
+  const recallAt = (k) =>
+    answerable.filter((r) => r.hitIds.slice(0, k).some((id) => r.expect.includes(id))).length / answerable.length;
+  const precision5 =
+    answerable.reduce((acc, r) => acc + r.hitIds.slice(0, 5).filter((id) => r.expect.includes(id)).length / 5, 0) /
+    answerable.length;
+  const mrr = answerable.reduce((acc, r) => {
+    const idx = r.hitIds.findIndex((id) => r.expect.includes(id));
+    return acc + (idx >= 0 ? 1 / (idx + 1) : 0);
+  }, 0) / answerable.length;
+  // 拒答口径：pinned 记忆永远注入是设计特性（MEMORY-DESIGN §1.4），不计入拒答失败
+  const abstainQs = ranked.filter((r) => r.expect.length === 0);
+  const nonPinned = (r) => r.hitIds.filter((id) => !memories.find((m) => m.id === id && m.pinned));
+  const abstain = abstainQs.filter((r) => nonPinned(r).length === 0).length / abstainQs.length;
+  const kuQs = ranked.filter((r) => r.expectBefore);
+  const ku = kuQs.filter((r) => {
+    const n = r.hitIds.indexOf(r.expectBefore.newer);
+    const o = r.hitIds.indexOf(r.expectBefore.older);
+    return n >= 0 && (o < 0 || n < o);
+  }).length / kuQs.length;
+
+  const pct = (arr, p) => {
+    const s = [...arr].sort((a, b) => a - b);
+    return s[Math.min(s.length - 1, Math.floor(s.length * p))].toFixed(1);
+  };
+
+  // ---------- 报告 ----------
+  const line = (k, v) => console.log('  ' + k.padEnd(28) + v);
+  console.log('\n======== Memory 检索评测报告 ========');
+  console.log(`语料 ${memories.length} 条 / 查询 ${queries.length} 条（可答 ${answerable.length} / 拒答 ${abstainQs.length}）\n`);
+  line('recall@1', (recallAt(1) * 100).toFixed(1) + '%');
+  line('recall@5', (recallAt(5) * 100).toFixed(1) + '%' + ``);
+  line('precision@5', (precision5 * 100).toFixed(1) + '%');
+  line('MRR', mrr.toFixed(3));
+  line('拒答正确率', (abstain * 100).toFixed(1) + '%' + ``);
+  line('知识更新正确率', (ku * 100).toFixed(1) + '%');
+  console.log('\n延迟（searchMemories k=5）:');
+  for (const l of evalResult.latency) {
+    line(`  ${l.scale} 条规模`, `p50=${pct(l.results, 0.5)}ms  p95=${pct(l.results, 0.95)}ms  max=${Math.max(...l.results).toFixed(1)}ms`);
+  }
+
+  const byCat = {};
+  for (const r of ranked) {
+    byCat[r.category] = byCat[r.category] || { total: 0, hit: 0 };
+    byCat[r.category].total++;
+    if (r.expect.length === 0 ? nonPinned(r).length === 0 : r.hitIds.slice(0, 5).some((id) => r.expect.includes(id))) byCat[r.category].hit++;
+  }
+  console.log('\n分类明细:');
+  for (const [c, v] of Object.entries(byCat)) line('  ' + c, `${v.hit}/${v.total}`);
+  console.log('\n失败 query 明细（拒答类已排除 pinned）:');
+  for (const r of ranked) {
+    const ok = r.expect.length === 0 ? nonPinned(r).length === 0 : r.hitIds.slice(0, 5).some((id) => r.expect.includes(id));
+    if (!ok) console.log(`  ${r.id} [${r.category}] expect=${JSON.stringify(r.expect)} got=${JSON.stringify(r.hitIds)}`);
+  }
+
+  fs.writeFileSync('/tmp/memory-eval-report.json', JSON.stringify({
+    ts: new Date().toISOString(),
+    corpus: memories.length,
+    metrics: {
+      recall1: recallAt(1), recall5: recallAt(5), precision5, mrr,
+      abstain, knowledgeUpdate: ku,
+      latency: evalResult.latency.map((l) => ({
+        scale: l.scale,
+        p50: +pct(l.results, 0.5), p95: +pct(l.results, 0.95), max: +Math.max(...l.results).toFixed(1),
+      })),
+    },
+    queries: ranked,
+  }, null, 2));
+  console.log('\n明细报告: /tmp/memory-eval-report.json');
+
+  // 基线对比：node tests/eval-memory.mjs --write-baseline 记录基线；之后自动做回归对比
+  const BASELINE = path.join(ROOT, 'tests/eval/baseline.json');
+  const metricsNow = { recall1: recallAt(1), recall5: recallAt(5), precision5, mrr, abstain, knowledgeUpdate: ku };
+  if (process.argv.includes('--write-baseline')) {
+    fs.writeFileSync(BASELINE, JSON.stringify(metricsNow, null, 2));
+    console.log('\n基线已写入 tests/eval/baseline.json');
+    process.exit(0);
+  }
+  let pass = true;
+  if (fs.existsSync(BASELINE)) {
+    const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+    console.log('\n对比基线:');
+    for (const [k, v] of Object.entries(metricsNow)) {
+      const b = base[k] ?? 0;
+      const d = v - b;
+      const flag = d < -0.01 ? ' ← 回归!' : '';
+      if (d < -0.01) pass = false;
+      line('  ' + k, `${(v * 100).toFixed(1)}%  (基线 ${(b * 100).toFixed(1)}%, ${d >= 0 ? '+' : ''}${(d * 100).toFixed(1)}%)${flag}`);
+    }
+  } else {
+    console.log('\n（无基线，--write-baseline 可记录）');
+  }
+  console.log(`\n== ${pass ? 'PASS' : 'FAIL'}${fs.existsSync(BASELINE) ? '（基线回归对比）' : ''} ==`);
+  process.exit(pass ? 0 : 1);
+})().catch((e) => { console.error('ERR:', e); process.exit(2); });
