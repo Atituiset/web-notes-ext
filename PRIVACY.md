@@ -55,6 +55,57 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 
 ---
 
-## English Summary
+# Privacy Policy (English)
 
-Markpilot stores everything (notes, threads, API keys, settings) **locally** — in your browser's IndexedDB and your own Obsidian vault. We operate **no servers** and collect **nothing**. Page content, your notes, and your question are transmitted over HTTPS **only when you explicitly ask the AI**, and only to the LLM provider **you** configured (or to a local model like Ollama, in which case nothing leaves your machine). No analytics, no tracking, no accounts. Uninstalling removes all local data.
+**Effective date: 2026-08-27**
+
+Markpilot ("the extension") is a highlight-and-note tool with AI Q&A. Core principle: **your data stays on your device by default. We run no servers and collect nothing.**
+
+## 1. Data storage (local only)
+
+The following data is stored only in your browser's IndexedDB and in the Obsidian vault directory you explicitly authorize:
+
+- Your notes, along with the URLs and titles of the pages they belong to
+- AI conversation threads
+- Long-term memory files (written to the vault directory you chose)
+- Extension settings, including **API keys** (local only; never uploaded to any server — we have none)
+
+## 2. Data transmission (only on your explicit action)
+
+Only when **you actively click "Ask AI" or send a question** is the following transmitted over HTTPS to the LLM provider **you configured**, solely to generate that answer:
+
+- Extracted text of the current page (or only your selection, depending on the context scope you choose)
+- Your notes on that page
+- Your question
+
+Possible third-party providers (whichever you actually configure): DeepSeek, Zhipu GLM, Moonshot Kimi, Alibaba Qwen, OpenRouter, Anthropic, OpenAI-compatible endpoints, opencode.ai, or a self-hosted local model (Ollama — in which case nothing leaves your machine). These transfers are governed by the respective provider's privacy policy; we never touch or retain this data.
+
+Additionally, the settings page makes read-only requests to your configured provider to list available models, and fetches a public documentation page from opencode.ai to enrich model search (data only — no remote code is ever executed).
+
+## 3. What we never do
+
+- No data is collected or transmitted to any server of ours (we have none)
+- No analytics, no behavioral tracking, no advertising profiles
+- No accounts
+- No silent background reading or uploading of page content — page content is read and sent only when you explicitly ask a question
+
+## 4. Your control
+
+- Delete any note or conversation individually in the side panel
+- Long-term memories are plain Markdown files in your own vault — manage them directly
+- Uninstalling the extension removes all local data (IndexedDB is deleted on uninstall; files in your vault remain yours to keep or delete)
+
+## 5. Permissions
+
+| Permission | Purpose |
+|---|---|
+| `storage` | Settings and transient state |
+| `sidePanel` | The extension's side panel UI |
+| `activeTab` + `scripting` | Extract current page text when you explicitly ask or export (fallback channel) |
+| Content scripts (all sites) | The selection toolbar and note highlights must work on any page |
+| LLM API domains | Calls to the provider you configured |
+| `localhost` / `127.0.0.1` | Local Ollama and the Obsidian Local REST plugin |
+
+## 6. Contact
+
+Issues and feedback: https://github.com/Atituiset/web-notes-ext/issues
