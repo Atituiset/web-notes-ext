@@ -2,7 +2,7 @@
 // 运行方式: npm test （见 package.json，走 build.mjs 里的 test 步骤或直接 node --test）
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody } from '../../src/lib/memory.js';
+import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody, naiveStem } from '../../src/lib/memory.js';
 import { shouldIgnore, guessTags } from '../../src/lib/memory-extract.js';
 import { parseFrontmatter } from '../../src/lib/markdown.js';
 
@@ -116,4 +116,32 @@ test('enrichBody: 全覆盖不追加 / 有新信息才追加', () => {
   assert.equal(add.novel, true);
   assert.ok(add.body.includes('用户偏好简洁'));
   assert.ok(add.body.includes('英文原文'));
+});
+
+test('tokenize: 英文停用词被过滤', () => {
+  const t = tokenize('the query is querying the json');
+  assert.ok(!t.includes('the'));
+  assert.ok(!t.includes('is'));
+  assert.ok(t.includes('query'));
+  assert.ok(t.includes('json'));
+});
+
+test('naiveStem: 词形归一对齐（评测发现 #1）', () => {
+  assert.equal(naiveStem('querying'), 'query');
+  assert.equal(naiveStem('functions'), 'function');
+  assert.equal(naiveStem('json1'), 'json');
+  assert.equal(naiveStem('needed'), 'need');
+  // 查询与记忆两侧一致应用后能对齐
+  assert.deepEqual(tokenize('querying'), tokenize('query'));
+  assert.ok(tokenize('json1 functions').includes('json'));
+});
+
+test('scoreMemory: IDF 加权下稀有 token 得分更高', () => {
+  const now = Date.now();
+  const m = { body: 'sqlite json 查询', tags: [], domain: undefined, pinned: false, hits: 0, updated: new Date(now).toISOString() };
+  const df = { sqlite: 1, json: 1, 模型: 40 }; // 模型在 40 条语料里出现 = 高频
+  const idf = (t) => Math.log(1 + 40 / (df[t] || 1));
+  const rare = scoreMemory(m, new Set(['sqlite']), now, idf);
+  const common = scoreMemory(m, new Set(['模型']), now, idf);
+  assert.ok(rare > common);
 });

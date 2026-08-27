@@ -2,7 +2,7 @@
   "recall1": 0.047619047619047616,
   "recall5": 1,
   "precision5": 0.24761904761904768,
-  "mrr": 0.5015873015873016,
-  "abstain": 0.5,
-  "knowledgeUpdate": 0.5
+  "mrr": 0.4920634920634921,
+  "abstain": 0.75,
+  "knowledgeUpdate": 1
 }

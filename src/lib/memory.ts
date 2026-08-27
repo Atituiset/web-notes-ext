@@ -189,18 +189,29 @@ export async function saveMemoryDedup(entry: {
   });
 }
 
-/** 列出全部记忆。vault 未授权返回 []。 */
+/**
+ * 列出全部记忆。vault 未授权返回 []。
+ * mtime 缓存：评测发现 #3——每次查询全量读文件+解析是延迟大头（1000 条 p50>1s）。
+ * getFile() 只取元数据不读全文，mtime 未变直接用缓存条目；
+ * 写入侧（saveMemory/bumpHits/delete）靠 mtime 变化与目录核对自然失效，无需显式清缓存。
+ */
+const _entryCache = new Map<string, { mtime: number; entry: MemoryEntry }>();
+
 export async function listMemories(): Promise<MemoryEntry[]> {
   const dir = await memDir();
-  if (!dir) return [];
+  if (!dir) { _entryCache.clear(); return []; }
   const out: MemoryEntry[] = [];
+  const seen = new Set<string>();
   for await (const [name, handle] of (dir as any).entries()) {
     if (handle.kind !== 'file' || !name.endsWith('.md')) continue;
+    seen.add(name);
     try {
-      const text = await (await (handle as FileSystemFileHandle).getFile()).text();
-      const parsed = parseFrontmatter(text);
-      if (parsed.attrs.type !== 'memory') continue;
-      out.push({
+      const f = await (handle as FileSystemFileHandle).getFile(); // 元数据，不读全文
+      const cached = _entryCache.get(name);
+      if (cached && cached.mtime === f.lastModified) { out.push(cached.entry); continue; }
+      const parsed = parseFrontmatter(await f.text());
+      if (parsed.attrs.type !== 'memory') { _entryCache.delete(name); continue; }
+      const entry: MemoryEntry = {
         type: 'memory',
         scope: (parsed.attrs.scope as any) || 'user',
         domain: parsed.attrs.domain || undefined,
@@ -213,9 +224,13 @@ export async function listMemories(): Promise<MemoryEntry[]> {
         tags: Array.isArray(parsed.attrs.tags) ? parsed.attrs.tags.map(String) : [],
         file: name,
         body: parsed.body.trim(),
-      });
+      };
+      _entryCache.set(name, { mtime: f.lastModified, entry });
+      out.push(entry);
     } catch { /* 跳过坏文件 */ }
   }
+  // 清理已删除文件的缓存
+  for (const key of _entryCache.keys()) if (!seen.has(key)) _entryCache.delete(key);
   return out;
 }
 
@@ -240,7 +255,38 @@ export async function pinMemory(file: string, pinned: boolean): Promise<void> {
 
 // ---------- 检索 ----------
 
-/** 中文按字、英文按词的极简分词（导出供单测） */
+/** 英文停用词：零区分度，不过滤会让任何共享 the/to/do 的记忆蒙混过 overlap>0（评测发现 #2） */
+const STOPWORDS_EN = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'of', 'to', 'in', 'on', 'for', 'with', 'at', 'by',
+  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'it', 'its', 'this', 'that', 'these', 'those',
+  'do', 'does', 'did', 'how', 'what', 'when', 'where', 'who', 'why', 'which',
+  'can', 'could', 'should', 'would', 'will', 'shall', 'may', 'might', 'must',
+  'not', 'no', 'yes', 'right', 'ok',
+  'i', 'you', 'he', 'she', 'we', 'they', 'me', 'him', 'her', 'us', 'them',
+  'my', 'your', 'his', 'their', 'our', 'as', 'so', 'if', 'than', 'then', 'there', 'here',
+]);
+
+/**
+ * 极简词干归一（导出供单测）：
+ * 覆盖评测发现 #1 的失配类型（json/json1、query/querying），不做完整 Porter——
+ * 个人语料规模下收益/复杂度比最高的几条规则，查询与记忆两侧一致应用即可对齐。
+ */
+export function naiveStem(w: string): string {
+  if (!/^[a-z0-9]+$/.test(w)) return w;
+  // 尾数字：json1 → json（剩余不足 4 字符不动，避免误伤）
+  if (w.length > 4 && /\d+$/.test(w)) {
+    const s = w.replace(/\d+$/, '');
+    if (s.length >= 4) return s;
+  }
+  if (w.length > 5 && w.endsWith('ing')) return w.slice(0, -3);      // querying → query
+  if (w.length > 4 && w.endsWith('ed')) return w.slice(0, -2);       // needed → need
+  if (w.length > 3 && w.endsWith('s') && !w.endsWith('ss') && !w.endsWith('us') && !w.endsWith('is')) {
+    return w.slice(0, -1);                                            // functions → function
+  }
+  return w;
+}
+
+/** 中文 bigram、英文按词 + 停用词过滤 + 词干归一（导出供单测） */
 export function tokenize(text: string): string[] {
   const tokens: string[] = [];
   for (const w of String(text || '').toLowerCase().split(/[^a-z0-9\u4e00-\u9fff]+/)) {
@@ -248,15 +294,15 @@ export function tokenize(text: string): string[] {
     if (/^[\u4e00-\u9fff]+$/.test(w) && w.length > 2) {
       // 中文二元组
       for (let i = 0; i < w.length - 1; i++) tokens.push(w.slice(i, i + 2));
-    } else if (w.length > 1) {
-      tokens.push(w);
+    } else if (w.length > 1 && !STOPWORDS_EN.has(w)) {
+      tokens.push(naiveStem(w));
     }
   }
   return tokens;
 }
 
 /**
- * 检索 top-K 记忆（词面重叠 + pin/hits/recency 排序）。
+ * 检索 top-K 记忆（IDF 加权词面重叠 + pin/hits/recency 排序）。
  * 命中的记忆后台 hits++（复述效应）。
  */
 export async function searchMemories(
@@ -267,8 +313,16 @@ export async function searchMemories(
   const qTokens = new Set(tokenize(query));
   const now = Date.now();
 
-  const scored = (await listMemories())
-    .map((m) => ({ m, score: scoreMemory(m, qTokens, now), overlap: overlapCount(m, qTokens) }))
+  const all = await listMemories();
+  // IDF：稀有 token 的区分度高（"模型"vs"json1"），抑制语料高频词的伪相关（评测发现 #2）
+  const df = new Map<string, number>();
+  const tokenSets = all.map((m) => memoryTokenSet(m));
+  for (const ts of tokenSets) for (const t of ts) df.set(t, (df.get(t) || 0) + 1);
+  const N = Math.max(1, all.length);
+  const idf = (t: string) => Math.log(1 + N / (df.get(t) || 1));
+
+  const scored = all
+    .map((m, i) => ({ m, score: scoreMemory(m, qTokens, now, idf), overlap: overlapCount(m, qTokens, tokenSets[i]) }))
     // pinned 永远注入；其余必须有实际词面重叠 —— 否则新记忆仅靠 recency 就会
     // 越过阈值挤进每次提问的上下文（零相关也注入，污染 prompt）
     .filter((x) => x.m.pinned || x.overlap > 0)
@@ -301,25 +355,43 @@ function memoryTokenSet(m: Pick<MemoryEntry, 'body' | 'tags' | 'domain'>): Set<s
   ]);
 }
 
-/** 查询与记忆的词面重叠数（导出供单测） */
+/** 查询与记忆的词面重叠数（导出供单测）；tokenSets 复用外部算好的记忆 token 集 */
 export function overlapCount(
   m: Pick<MemoryEntry, 'body' | 'tags' | 'domain'>,
-  queryTokens: Set<string>
+  queryTokens: Set<string>,
+  mTokens?: Set<string>
 ): number {
-  const mTokens = memoryTokenSet(m);
+  const ts = mTokens || memoryTokenSet(m);
   let n = 0;
-  for (const t of queryTokens) if (mTokens.has(t)) n++;
+  for (const t of queryTokens) if (ts.has(t)) n++;
   return n;
 }
 
-/** 单条记忆打分（导出供单测） */
+/**
+ * 单条记忆打分（导出供单测）。
+ * idfFn 提供时相关性按 IDF 加权（Σidf(重叠) / Σidf(查询)，0..1），
+ * 否则退化为重叠数 / √查询大小（保持旧行为与单测兼容）。
+ */
 export function scoreMemory(
   m: Pick<MemoryEntry, 'body' | 'tags' | 'domain' | 'pinned' | 'hits' | 'updated'>,
   queryTokens: Set<string>,
-  now: number
+  now: number,
+  idfFn?: (t: string) => number
 ): number {
-  const overlap = overlapCount(m, queryTokens);
-  const relevance = queryTokens.size ? overlap / Math.sqrt(queryTokens.size) : 0;
+  let relevance: number;
+  if (idfFn) {
+    const mTokens = memoryTokenSet(m);
+    let hit = 0, total = 0;
+    for (const t of queryTokens) {
+      const w = idfFn(t);
+      total += w;
+      if (mTokens.has(t)) hit += w;
+    }
+    relevance = total ? hit / total : 0;
+  } else {
+    const overlap = overlapCount(m, queryTokens);
+    relevance = queryTokens.size ? overlap / Math.sqrt(queryTokens.size) : 0;
+  }
   const ageDays = Math.max(0, (now - new Date(m.updated).getTime()) / 86400000);
   const recency = Math.exp(-ageDays / 30);
   return (m.pinned ? 1000 : 0) + m.hits * 2 + recency * 10 + relevance * 50;
