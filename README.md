@@ -16,3 +16,16 @@
 - `src/lib/obsidian.js` — 三通道导出（fs-access 主 / obsidian:// 兜底 / REST API）
 - `src/lib/llm/` — provider 抽象 + SSE 流式 + 上下文构建器
 - `src/panel/` — side panel 笔记列表 + 聊天
+
+## Memory 系统与检索评测
+
+长期记忆（Markdown 文件存 vault）+ 混合检索（词法 sparse + 端侧向量 dense）。设计文档见 [docs/MEMORY-DESIGN.md](docs/MEMORY-DESIGN.md) / [docs/MEMORY-EVAL.md](docs/MEMORY-EVAL.md)。
+
+检索系统带一套**自动化评测体系**（40 条记忆语料 + 37 条标注查询，recall@5 97.0% / precision@5 66.7% / 拒答 100%）：
+
+- [docs/MEMORY-EVAL-PLAYBOOK.md](docs/MEMORY-EVAL-PLAYBOOK.md) — 评测方法论与复刻指南（怎么建数据集、怎么跑、指标口径）
+- [archive/memory-eval/JOURNAL.md](archive/memory-eval/JOURNAL.md) — **全程工程日志**：优化过程的完整回放（每个决策的证据、被数据否决的 6 个方案）
+- [docs/plans/memory-opt-roadmap.md](docs/plans/memory-opt-roadmap.md) — 分阶段优化路线图与达标记录
+- [archive/memory-eval/](archive/memory-eval/) — 执行报告与模型选型探针脚本
+
+复跑评测：`npm run build && node tests/eval-memory.mjs`（端侧模型免 key；A/B 通道见 PLAYBOOK）
