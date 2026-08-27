@@ -320,8 +320,12 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
 
   // 整页正文提取
   let pageText: string | null = null;
-  if (scope !== 'selection' && info && /^https?:/.test(info.url)) {
-    pageText = await extractPageText(info.tab.id as number);
+  if (scope !== 'selection') {
+    // url 为空（无 activeTab 授权且 content script 未注入）也要拦 ——
+    // 否则同样把零材料的问题裸发给模型
+    if (info && /^https?:/.test(info.url)) {
+      pageText = await extractPageText(info.tab.id as number);
+    }
     if (!pageText) {
       // 提不到材料就裸问，模型只会回答"你没有给我材料"——不如当场说明原因
       appendError(t('extractFailed'));
