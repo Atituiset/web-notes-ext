@@ -102,6 +102,10 @@ export const queries = [
   { id: 'q31', q: 'why does my assistant fail when a question needs two facts at once?', expect: ['f10'], category: 'paraphrase', relevant: ['f10'] },
   { id: 'q32', q: "don't just dump commands on me, tell me what each part does", expect: ['p9'], category: 'paraphrase', relevant: ['p9'] },
   { id: 'q33', q: '我记的东西下次还能被想起来吗，还是说过段时间就沉底了？', expect: ['k10'], category: 'paraphrase', relevant: ['k10', 'f5'] },
+  { id: 'q34', q: '怎么判断自己是不是真的学会了一个东西？', expect: ['f6'], category: 'paraphrase', relevant: ['f6', 'k3'] },
+  { id: 'q35', q: 'I want my answers short and to the point from now on', expect: ['p1'], category: 'paraphrase', relevant: ['p1', 'p7'] },
+  { id: 'q36', q: '东西存到本地而不是云上，有什么好处？', expect: ['k9'], category: 'paraphrase', relevant: ['k9', 'c10', 'p5'] },
+  { id: 'q37', q: '这个划线工具刷新之后标记还在吗？', expect: ['k6'], category: 'paraphrase', relevant: ['k6'] },
 
   // ---- noise-robust ×2（词面高重合但语义无关，不应被误导）----
   { id: 'q24', q: 'CSS 盒模型里 padding 指什么？', expect: ['c1', 'c2'], category: 'fact-recall', relevant: ['c1', 'c2'] },

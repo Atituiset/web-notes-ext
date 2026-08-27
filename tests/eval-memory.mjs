@@ -28,6 +28,28 @@ execSync(
 
 const { memories, queries, makeNoise } = await import('./eval/dataset.mjs');
 
+// ---- node 侧 dense ranker（Phase 3 混合召回评测；产品侧走浏览器端侧 embedding，接口一致）----
+import { pipeline, env } from '@xenova/transformers';
+env.cacheDir = '/tmp/hf-cache';
+console.log('[dense] 加载 embedding 模型（paraphrase-multilingual-MiniLM-L12-v2）…');
+const embedder = await pipeline('feature-extraction', 'Xenova/paraphrase-multilingual-MiniLM-L12-v2', { quantized: true });
+console.log('[dense] 模型就绪');
+const _vecCache = new Map(); // body → vector
+async function embed(text) {
+  if (_vecCache.has(text)) return _vecCache.get(text);
+  const out = await embedder(text, { pooling: 'mean', normalize: true });
+  const v = Array.from(out.data);
+  _vecCache.set(text, v);
+  return v;
+}
+async function denseRankNode(query, candidates) {
+  const qv = await embed(query);
+  const bodyVecs = await Promise.all(candidates.map((c) => embed(c.body)));
+  return candidates
+    .map((c, i) => ({ file: c.file, sim: qv.reduce((s, x, j) => s + x * bodyVecs[i][j], 0) }))
+    .sort((a, b) => b.sim - a.sim);
+}
+
 const LATENCY_SCALES = [100, 500, 1000];
 const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'SQLite JSON 查询', '怎么做酸面包', 'memory hits ranking'];
 
@@ -47,6 +69,8 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
 
   // 噪声在 node 侧生成（函数无法穿越 evaluate 边界），页面内按需切片
   const noiseAll = makeNoise(Math.max(...LATENCY_SCALES) - memories.length);
+
+  await page.exposeFunction('__denseRankNode', (q, c) => denseRankNode(q, c));
 
   // 注入 OPFS 当 vault + 写入语料 + 跑全部查询（全部在页面内、走真实 memory.ts 管线）
   const evalResult = await page.evaluate(async ({ memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll }) => {
@@ -75,6 +99,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
     });
 
     const mem = await import(chrome.runtime.getURL('eval/memory.mjs'));
+    mem.setDenseRanker((q, c) => window.__denseRankNode(q, c));
 
 
     // 2. 写入语料并按 daysOld 回填日期
@@ -135,6 +160,12 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   }, { memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll });
 
   await ctx.close();
+
+  // 调试：paraphrase 失败案例的 dense top5 相似度
+  for (const q of queries.filter((x) => x.category === 'paraphrase')) {
+    const hits = await denseRankNode(q.q, memories.map((m) => ({ file: m.id, body: m.body })));
+    console.log(`  [dense-debug] ${q.id} expect=${q.expect.join('/')} top5=${hits.slice(0, 5).map((h) => `${h.file}(${h.sim.toFixed(3)})`).join(' ')}`);
+  }
 
   // ---------- 指标计算（node 侧）----------
   const expectMap = Object.fromEntries(queries.map((q) => [q.id, q]));

@@ -36,7 +36,7 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 - 结论：**触发 Phase 3**。当前 82.8% 的 recall@5 作为向量混合召回要击败的参照点（目标 ≥95%，paraphrase 子集 ≥90%）。
 - 测试 LLM 通道：OpenRouter / OpenCode 免费模型（embedding 可用性在 Phase 3 探测）。
 
-### Phase 3 — 混合召回（✅ 已确认启动）
+### Phase 3 — 混合召回（✅ 已完成实现与三轮融合迭代，指标收口移交 Phase 4）
 
 - 方案：OpenRouter 免费 embedding 模型（先探测可用性；备选 Ollama 本地 embedding）→ 记忆向量缓存进 IndexedDB（文件 mtime 失效，复用 listMemories 缓存模式）→ 查询向量 cosine + 词法分数 **RRF 融合** → 混合检索跑全量评测对比基线。
 - 不引入重型浏览器向量库组件——<1000 条规模下 IDB 平面向量 + JS 暴力余弦就是"轻量级向量数据库"的合理形态。
@@ -52,6 +52,29 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 - 模型 Xenova/paraphrase-multilingual-MiniLM-L12-v2（quantized，384d）
 - 向量存 IndexedDB 新 store（file → {mtime, vector}），mtime 失效与 listMemories 缓存同模式
 - RRF(dense rank, sparse rank) 融合；目标 recall@5 ≥95%、paraphrase ≥90%（注意 8 条子集下需 8/8，实施时扩充改述集降低颗粒度）
+
+**Phase 3 实施结果（2026-08-28）**：
+
+架构：`setDenseRanker` 注入接口（稠密排序与 embedding 通道解耦，评测用 node 侧 ranker + exposeFunction 桥，产品侧浏览器端侧 embedding 复用同接口）。
+
+融合算法三轮实测迭代（每轮都由评测数据否决/采纳）：
+1. **RRF 名次融合** → 否决：抹掉 sparse 分里的 recency/hits 量级，知识更新 100%→0%
+2. **sim 差值加和** → 否决：模型 sim 分布压缩（真实命中与地板仅差 0.01），差值量纲不可靠，paraphrase 9/12
+3. **真空门控名次分档（采纳）**：`final = sparseScore + DENSE_GAIN×名次档×(1/(1+maxSparse/20))`——词面真空（改述）时 dense 主导，词面强时 dense 仅确认，保护 precision；地板 0.33 + 名次帽 TOP_N=3
+   - 地板实验记录：0.2 会冲垮拒答（75%→50%），该模型判别力下 0.33 是最优平衡
+
+指标（新基线）：
+
+| 指标 | Phase 2（词法） | Phase 3（混合） | 达标线 | 状态 |
+|---|---|---|---|---|
+| recall@5 | 82.8% | **90.9%** | ≥95% | Phase 4 收口 |
+| paraphrase 子集 | 3/8 (37.5%) | **10/12 (83%)** | ≥90% | 接近 |
+| precision@5 | 53.6% | 40.9% | ≥60% | Phase 4 收口 |
+| 拒答正确率 | 75% | 75% | ≥90% | Phase 4 收口 |
+| 知识更新正确率 | 100% | **100%** | =100% | ✅ 保持 |
+| 1000 条 p50 延迟 | 364ms | ~400ms（含 node RPC 开销） | ≤400ms | ✅ 边缘 |
+
+已知难例（接受）：q26（语义跳跃过大，模型 top sim 0.45 给的是无关记忆）、q35（en→zh 跨语种改述，384d 模型判别力不足 sim 0.219<地板）。**Phase 4 候选杠杆：相关性阈值拒答治理、自适应地板（按查询 dense 分布形态判定）、可选更强 embedding 模型（multilingual-e5-base）复测。**
 
 ### Phase 5 — 用户画像（新增，方向已确认：自动抽取）
 

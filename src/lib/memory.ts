@@ -301,8 +301,67 @@ export function tokenize(text: string): string[] {
   return tokens;
 }
 
+// ---------- 混合召回（sparse 词法 + dense 向量，RRF 名次融合） ----------
+
+export interface DenseHit { file: string; sim: number; }
+export interface DenseCandidate { file: string; body: string; }
 /**
- * 检索 top-K 记忆（IDF 加权词面重叠 + pin/hits/recency 排序）。
+ * 稠密排序器：由 embedding 通道（浏览器端侧模型 / Ollama / API）注入。
+ * 返回按相似度降序的命中；sim 用于地板过滤（DENSE_SIM_FLOOR）。
+ */
+export type DenseRanker = (query: string, candidates: DenseCandidate[]) => Promise<DenseHit[]>;
+
+let _denseRanker: DenseRanker | null = null;
+
+/** 注入稠密排序器；传 null 退回纯词法检索 */
+export function setDenseRanker(fn: DenseRanker | null): void {
+  _denseRanker = fn;
+}
+
+/** dense 相似度地板：实测拒答类 top sim 最高 ~0.25、真实命中 ≥0.34 居多，
+ *  0.33 是当前模型判别力下的最优平衡（0.2 已验证会冲垮拒答与 precision） */
+export const DENSE_SIM_FLOOR = 0.33;
+/** dense 注入名次帽：只给 top-N 语义命中加分，rank 4+ 的边缘命中是 precision 噪声源 */
+export const DENSE_TOP_N = 3;
+/** dense 加成分档：top1/2/3 分别得 GAIN × (3/3, 2/3, 1/3) */
+export const DENSE_GAIN = 40;
+
+/**
+ * 融合（纯函数，导出供单测）：
+ *   final = pinned 置顶 + sparseScore + denseGain(rank) × sparseVacuum
+ *   sparseVacuum = 1 / (1 + maxSparseScore / 20)
+ * 候选集 = pinned ∪ 词面重叠 ∪ dense 过地板命中。
+ *
+ * 设计要点（均由评测数据驱动）：
+ * - 不用 RRF 名次融合：RRF 抹掉 sparse 分里的 recency/hits 量级，知识更新场景
+ *   新旧版仅凭语义排错序（实测 knowledgeUpdate 100%→0%）。加和保留时间信号。
+ * - dense 加分按名次分档而非 sim 差值：该模型 sim 分布压缩（相关 0.34-0.58、
+ *   零相关 <0.2），top1 真实命中与地板只差 0.01，差值量纲不可靠。
+ * - sparseVacuum 真空门控：词面证据强时 dense 只作确认（小加分），词面真空
+ *   （改述场景）时 dense 主导——防止语义邻近噪声顶掉强词面命中（precision 保护）。
+ * @param sparseScored 词法打分后的全量列表（未过滤，含 score/overlap）
+ * @param denseHits    dense 命中（file → sim，已过地板且名次在 DENSE_TOP_N 内）
+ */
+export function fuseWeighted(
+  sparseScored: { m: MemoryEntry; score: number; overlap: number }[],
+  denseHits: Map<string, number>
+): { m: MemoryEntry; score: number; overlap: number; final: number }[] {
+  const maxSparse = Math.max(0, ...sparseScored.map((x) => x.score));
+  const vacuum = 1 / (1 + maxSparse / 20);
+  // dense 名次（sim 降序）
+  const ranked = [...denseHits.entries()].sort((a, b) => b[1] - a[1]);
+  const gainOf = new Map(ranked.map(([f], i) => [f, (DENSE_GAIN * (DENSE_TOP_N - i)) / DENSE_TOP_N]));
+  return sparseScored
+    .filter((x) => x.m.pinned || x.overlap > 0 || denseHits.has(x.m.file))
+    .map((x) => ({
+      ...x,
+      final: (x.m.pinned ? 1e9 : 0) + x.score + (gainOf.get(x.m.file) || 0) * vacuum,
+    }))
+    .sort((a, b) => b.final - a.final);
+}
+
+/**
+ * 检索 top-K 记忆（词法 sparse + 可选 dense 混合，RRF 融合）。
  * 命中的记忆后台 hits++（复述效应）。
  */
 export async function searchMemories(
@@ -321,19 +380,31 @@ export async function searchMemories(
   const N = Math.max(1, all.length);
   const idf = (t: string) => Math.log(1 + N / (df.get(t) || 1));
 
-  const scored = all
-    .map((m, i) => ({ m, score: scoreMemory(m, qTokens, now, idf), overlap: overlapCount(m, qTokens, tokenSets[i]) }))
-    // pinned 永远注入；其余必须有实际词面重叠 —— 否则新记忆仅靠 recency 就会
-    // 越过阈值挤进每次提问的上下文（零相关也注入，污染 prompt）
-    .filter((x) => x.m.pinned || x.overlap > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, k);
+  const scored = all.map((m, i) => ({
+    m,
+    score: scoreMemory(m, qTokens, now, idf),
+    overlap: overlapCount(m, qTokens, tokenSets[i]),
+  }));
+  // dense 命中（注入的 ranker 不可用时静默退回纯词法）
+  let denseSim = new Map<string, number>();
+  if (_denseRanker && all.length) {
+    try {
+      const hits = await _denseRanker(query, all.map((m) => ({ file: m.file, body: m.body })));
+      denseSim = new Map(
+        hits
+          .filter((h, i) => h.sim >= DENSE_SIM_FLOOR && i < DENSE_TOP_N)
+          .map((h) => [h.file, h.sim] as [string, number])
+      );
+    } catch { /* embedding 不可用 → 纯词法 */ }
+  }
+
+  const fused = fuseWeighted(scored, denseSim).slice(0, k);
 
   // token 预算截断（chars/2.5 折算）
   let budget = opts.tokenBudget ?? 1500;
   const picked: MemoryEntry[] = [];
   const touched: string[] = [];
-  for (const { m } of scored) {
+  for (const { m } of fused) {
     const cost = Math.ceil(m.body.length / 2.5);
     if (cost > budget) continue;
     budget -= cost;
