@@ -322,7 +322,7 @@ export function setDenseRanker(fn: DenseRanker | null): void {
  *  0.33 是当前模型判别力下的最优平衡（0.2 已验证会冲垮拒答与 precision） */
 export const DENSE_SIM_FLOOR = 0.33;
 /** dense 注入名次帽：只给 top-N 语义命中加分，rank 4+ 的边缘命中是 precision 噪声源 */
-export const DENSE_TOP_N = 3;
+export const DENSE_TOP_N = 2;
 /** dense 加成分档：top1/2/3 分别得 GAIN × (3/3, 2/3, 1/3) */
 export const DENSE_GAIN = 40;
 
@@ -342,20 +342,26 @@ export const DENSE_GAIN = 40;
  * @param sparseScored 词法打分后的全量列表（未过滤，含 score/overlap）
  * @param denseHits    dense 命中（file → sim，已过地板且名次在 DENSE_TOP_N 内）
  */
+/** dense 激活门限：maxSparse ≥ 20 时 dense 完全静默（词面证据足够，dense 只添噪声） */
+export const DENSE_VACUUM_MAX_SPARSE = 20;
+
 export function fuseWeighted(
-  sparseScored: { m: MemoryEntry; score: number; overlap: number }[],
+  sparseScored: { m: MemoryEntry; score: number; overlap: number; tagOverlap: number }[],
   denseHits: Map<string, number>
-): { m: MemoryEntry; score: number; overlap: number; final: number }[] {
+): { m: MemoryEntry; score: number; overlap: number; tagOverlap: number; final: number }[] {
   const maxSparse = Math.max(0, ...sparseScored.map((x) => x.score));
   const vacuum = 1 / (1 + maxSparse / 20);
+  const denseActive = maxSparse < DENSE_VACUUM_MAX_SPARSE;
   // dense 名次（sim 降序）
   const ranked = [...denseHits.entries()].sort((a, b) => b[1] - a[1]);
   const gainOf = new Map(ranked.map(([f], i) => [f, (DENSE_GAIN * (DENSE_TOP_N - i)) / DENSE_TOP_N]));
   return sparseScored
-    .filter((x) => x.m.pinned || x.overlap > 0 || denseHits.has(x.m.file))
+    // 过滤：重叠 ≥2（词面证据足）∪ 单重叠但命中 tags/domain（人工标注信号强）
+    // —— 正文单 bigram 偶然命中（「世界杯」撞「隔离世界」）不再算证据
+    .filter((x) => x.m.pinned || x.overlap >= 2 || x.tagOverlap >= 1 || denseHits.has(x.m.file))
     .map((x) => ({
       ...x,
-      final: (x.m.pinned ? 1e9 : 0) + x.score + (gainOf.get(x.m.file) || 0) * vacuum,
+      final: (x.m.pinned ? 1e9 : 0) + x.score + (denseActive ? (gainOf.get(x.m.file) || 0) * vacuum : 0),
     }))
     .sort((a, b) => b.final - a.final);
 }
@@ -380,10 +386,12 @@ export async function searchMemories(
   const N = Math.max(1, all.length);
   const idf = (t: string) => Math.log(1 + N / (df.get(t) || 1));
 
+  const tagSets = all.map((m) => new Set([...tokenize(m.tags.join(' ')), ...tokenize(m.domain || '')]));
   const scored = all.map((m, i) => ({
     m,
     score: scoreMemory(m, qTokens, now, idf),
     overlap: overlapCount(m, qTokens, tokenSets[i]),
+    tagOverlap: overlapCount(m, qTokens, tagSets[i] as Set<string>),
   }));
   // dense 命中（注入的 ranker 不可用时静默退回纯词法）
   let denseSim = new Map<string, number>();

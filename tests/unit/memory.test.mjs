@@ -2,7 +2,7 @@
 // 运行方式: npm test （见 package.json，走 build.mjs 里的 test 步骤或直接 node --test）
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody, naiveStem, fuseWeighted, DENSE_SIM_FLOOR, DENSE_GAIN, DENSE_TOP_N } from '../../src/lib/memory.js';
+import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody, naiveStem, fuseWeighted, DENSE_SIM_FLOOR, DENSE_GAIN, DENSE_TOP_N, DENSE_VACUUM_MAX_SPARSE } from '../../src/lib/memory.js';
 import { shouldIgnore, guessTags } from '../../src/lib/memory-extract.js';
 import { parseFrontmatter } from '../../src/lib/markdown.js';
 
@@ -146,47 +146,35 @@ test('scoreMemory: IDF 加权下稀有 token 得分更高', () => {
   assert.ok(rare > common);
 });
 
-test('fuseWeighted: 真空门控融合 — 词面真空时 dense 主导，词面强时 dense 仅确认', () => {
+test('fuseWeighted: tag 感知过滤 + dense 真空门限', () => {
   const mk = (file, pinned = false) => ({ type: 'memory', scope: 'user', created: '', updated: '', confidence: 'medium', pinned, hits: 0, tags: [], file, body: file });
+  const S = (m, score, overlap, tagOverlap = 0) => ({ m, score, overlap, tagOverlap });
   const dense = new Map([['c.md', 0.5], ['b.md', 0.45]]);
-  // 场景1：词面真空（maxSparse 小）→ dense top1 的 c 得满分增益，压过弱词面
+  // 场景1：词面真空（maxSparse < 20）→ dense 激活，c（dense top1）排最前（pinned 除外）
   const vacuumSet = fuseWeighted(
-    [{ m: mk('a.md'), score: 8, overlap: 1 }, { m: mk('b.md'), score: 6, overlap: 1 }, { m: mk('c.md'), score: 1, overlap: 0 }, { m: mk('pin.md', true), score: 0, overlap: 0 }, { m: mk('d.md'), score: 0, overlap: 0 }],
+    [S(mk('a.md'), 8, 1, 1), S(mk('b.md'), 6, 1, 1), S(mk('c.md'), 1, 0), S(mk('pin.md', true), 0, 0), S(mk('d.md'), 0, 0)],
     dense
   );
   const f1 = vacuumSet.map((x) => x.m.file);
   assert.equal(f1[0], 'pin.md');
-  assert.equal(f1[1], 'c.md'); // 真空下 dense top1 排最前（ pinned 除外）
+  assert.equal(f1[1], 'c.md');
   assert.ok(!f1.includes('d.md'));
-  // 场景2：词面证据强（maxSparse 大）→ 真空度低，dense 压不过强词面
+  // 场景2：词面证据强（maxSparse ≥ 20）→ dense 静默，强词面保持第一，dense 噪声不得上位
   const strongSet = fuseWeighted(
-    [{ m: mk('a.md'), score: 60, overlap: 3 }, { m: mk('b.md'), score: 6, overlap: 1 }, { m: mk('c.md'), score: 1, overlap: 0 }],
+    [S(mk('a.md'), 60, 3), S(mk('b.md'), 6, 1, 1), S(mk('c.md'), 1, 0)],
     dense
   );
   const f2 = strongSet.map((x) => x.m.file);
-  assert.equal(f2[0], 'a.md'); // 强词面保持第一
-  assert.ok(f2.indexOf('a.md') < f2.indexOf('c.md'));
-});
-  const scored = [
-    { m: mk('a.md'), score: 10, overlap: 1 },
-    { m: mk('b.md'), score: 8, overlap: 1 },
-    { m: mk('c.md'), score: 1, overlap: 0 },  // 词面零重叠，dense 独有
-    { m: mk('pin.md', true), score: 0, overlap: 0 },
-    { m: mk('d.md'), score: 0, overlap: 0 },  // 两边都无 → 不进候选
-  ];
-  const denseSim = new Map([
-    ['c.md', DENSE_SIM_FLOOR + 0.2],  // bonus = 0.2*100*W = 20
-    ['b.md', DENSE_SIM_FLOOR + 0.05], // bonus = 5
-  ]);
-  const fused = fuseWeighted(scored, denseSim);
-  const files = fused.map((x) => x.m.file);
-  assert.equal(files[0], 'pin.md');           // pinned 强制置顶
-  assert.ok(files.includes('c.md'));           // dense 独有召回
-  assert.ok(!files.includes('d.md'));          // 两边都无，不注入
-  // b: 8 + 5 = 13 > a: 10（dense 加分改变次序）
-  assert.ok(files.indexOf('b.md') < files.indexOf('a.md'));
-  const c = fused.find((x) => x.m.file === 'c.md');
-  assert.ok(Math.abs(c.final - (1 + DENSE_WEIGHT * 0.2 * 100)) < 1e-9);
-  // 期望次序：pin(1e9) > c(1+20=21) > b(8+5=13) > a(10)——dense 加分可让语义强命中压过弱词面
-  assert.deepEqual(files, ['pin.md', 'c.md', 'b.md', 'a.md']);
+  assert.equal(f2[0], 'a.md');
+  // b(6) 无 dense 增益时应排在 c(1) 前
+  assert.ok(f2.indexOf('b.md') < f2.indexOf('c.md'));
+  // 场景3：正文单重叠（无 tag 命中）被过滤；单重叠但命中 tag 保留
+  const filtered = fuseWeighted(
+    [S(mk('body-only.md'), 10, 1, 0), S(mk('tag-hit.md'), 10, 1, 1), S(mk('two.md'), 12, 2)],
+    new Map()
+  );
+  const f3 = filtered.map((x) => x.m.file);
+  assert.ok(!f3.includes('body-only.md')); // 「世界杯」撞「隔离世界」类
+  assert.ok(f3.includes('tag-hit.md'));
+  assert.ok(f3.includes('two.md'));
 });
