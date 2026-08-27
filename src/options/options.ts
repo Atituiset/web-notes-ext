@@ -1,6 +1,6 @@
 import { getSettings, saveSettings } from '../lib/db.js';
 import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
-import { PROVIDERS, listModels } from '../lib/llm/index.js';
+import { PROVIDERS, listModels, streamChat } from '../lib/llm/index.js';
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
 
@@ -129,6 +129,7 @@ function matchModel(query, m) {
 }
 
 function renderModelDropdown() {
+  clearTimeout(hideDdTimer); // 取消 blur 调度的隐藏（快速端点竞态）
   const dd = $('model-dropdown');
   const query = $('model').value.trim();
   dd.textContent = '';
@@ -158,6 +159,7 @@ function renderModelDropdown() {
       e.preventDefault();
       $('model').value = m.id;
       hideModelDropdown();
+      testModel(); // 选中即测，坏模型提前暴露
     });
     dd.appendChild(o);
   }
@@ -172,9 +174,15 @@ function fillModelList(models) {
   allModels = models || [];
 }
 
+// blur 的延迟隐藏 vs 快速渲染的竞态：本地端点（Ollama/mock）拉取极快，
+// render 后 120ms 的 hide 才把下拉误隐藏 —— render 时取消 pending hide
+let hideDdTimer: any = null;
+
 $('model').addEventListener('focus', () => { if (allModels.length) renderModelDropdown(); });
 $('model').addEventListener('input', () => { if (allModels.length) renderModelDropdown(); });
-$('model').addEventListener('blur', () => setTimeout(hideModelDropdown, 120));
+$('model').addEventListener('blur', () => {
+  hideDdTimer = setTimeout(hideModelDropdown, 120);
+});
 
 async function refreshVaultState() {
   const state = await vaultPermissionState();
@@ -227,6 +235,55 @@ $('btn-models').addEventListener('click', async () => {
   }
   btn.disabled = false;
 });
+
+// ---------- 模型连通性测试 ----------
+
+let testing = false;
+
+/** 用表单当前值发一条真实请求验证模型可用性（选中模型后自动调用，也可点「测试」手动触发） */
+async function testModel() {
+  if (testing) return;
+  const status = $('model-test-status');
+  const model = $('model').value.trim();
+  if (!model) { status.textContent = ''; return; }
+  const provider = $('provider').value;
+  testing = true;
+  status.style.color = '#6b7280';
+  status.textContent = `正在测试 ${model} …`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000); // 有的上游只发 keep-alive 不出 token，30s 判死
+  const t0 = Date.now();
+  try {
+    const { text } = await streamChat({
+      settings: {
+        provider,
+        baseUrl: $('baseUrl').value.trim(),
+        model,
+        apiKeys: { [provider]: $('apiKey').value.trim() },
+      },
+      messages: [{ role: 'user', content: '回复 ok 即可' }],
+      signal: ctrl.signal,
+    });
+    const sec = ((Date.now() - t0) / 1000).toFixed(1);
+    if (text.trim()) {
+      status.style.color = '#059669';
+      status.textContent = `✓ ${model} 可用（${sec}s）`;
+    } else {
+      status.style.color = '#b45309';
+      status.textContent = `⚠ ${model} 连接成功但未返回内容，换一个试试`;
+    }
+  } catch (e: any) {
+    status.style.color = '#dc2626';
+    status.textContent = ctrl.signal.aborted
+      ? `✗ ${model} 30s 无响应（上游可能挂起，换个模型试试）`
+      : `✗ ${model} 不可用: ${String(e.message || e).slice(0, 150)}`;
+  } finally {
+    clearTimeout(timer);
+    testing = false;
+  }
+}
+
+$('btn-test').addEventListener('click', testModel);
 
 $('btn-pick').addEventListener('click', async () => {
   try {
@@ -281,16 +338,23 @@ async function renderMemories() {
 
     const meta = document.createElement('div');
     meta.className = 'meta';
-    const bits = [
-      m.pinned ? '📌' : '',
-      isCold(m) ? '<span class="cold-tag">冷（90天未用）</span>' : '',
-      m.domain ? m.domain : 'user',
-      m.confidence,
-      'hits:' + m.hits,
-      m.updated,
-      m.tags.length ? '#' + m.tags.join(' #') : '',
-    ].filter(Boolean);
-    meta.innerHTML = bits.join(' · ');
+    // 记忆文件的 domain/tags 等来自 LLM 输出，不可信 —— 一律 textContent，不用 innerHTML
+    const appendBit = (node: Node | string) => {
+      if (meta.childNodes.length) meta.appendChild(document.createTextNode(' · '));
+      meta.appendChild(typeof node === 'string' ? document.createTextNode(node) : node);
+    };
+    if (m.pinned) appendBit('📌');
+    if (isCold(m)) {
+      const cold = document.createElement('span');
+      cold.className = 'cold-tag';
+      cold.textContent = '冷（90天未用）';
+      appendBit(cold);
+    }
+    appendBit(m.domain ? m.domain : 'user');
+    appendBit(String(m.confidence));
+    appendBit('hits:' + m.hits);
+    appendBit(String(m.updated));
+    if (m.tags.length) appendBit('#' + m.tags.join(' #'));
     item.appendChild(meta);
 
     const body = document.createElement('div');
