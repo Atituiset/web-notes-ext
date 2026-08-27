@@ -120,7 +120,7 @@ export async function streamChat({ settings, messages, signal, onToken, onReason
   onReasoning?: (tok: string) => void;
 }) {
   const model = settings.model;
-  if (!model) throw new Error('未配置模型 — 请到设置页填写');
+  if (!model) throw new Error((globalThis.chrome?.i18n?.getMessage?.('modelNotConfiguredError')) || 'No model configured — set it in the settings page');
   const url = endpointFor(settings);
   const key = (settings.apiKeys && settings.apiKeys[settings.provider]) || '';
   const headers = { 'Content-Type': 'application/json' };

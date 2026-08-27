@@ -13,6 +13,7 @@ fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
+fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 
 // ---- 简单静态服务器 + mock OpenAI SSE 端点 ----
 function startServer(port) {
@@ -55,12 +56,14 @@ function startServer(port) {
 (async () => {
   await startServer(8899);
   const userDataDir = '/tmp/wne-profile-' + Date.now();
+process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟随进程 locale
   const ctx = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
+    locale: 'zh-CN',
     args: [
       `--disable-extensions-except=${EXT_DIR}`,
       `--load-extension=${EXT_DIR}`,
-      '--no-first-run',
+      '--no-first-run', '--lang=zh-CN',
     ],
   });
 

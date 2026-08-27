@@ -11,11 +11,14 @@ fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
+fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 
 (async () => {
+process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟随进程 locale
   const ctx = await chromium.launchPersistentContext('/tmp/wne-debug-live-' + Date.now(), {
     headless: false,
-    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run'],
+    locale: 'zh-CN',
+    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run', '--lang=zh-CN'],
   });
   const page = await ctx.newPage();
   page.on('console', (m) => console.log('CONSOLE[' + m.type() + ']:', m.text().slice(0, 150)));

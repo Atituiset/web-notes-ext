@@ -19,6 +19,7 @@ fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
+fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 const PORT = 8899;
 
 let pass = 0, fail = 0;
@@ -71,9 +72,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 (async () => {
   const server = await startServer();
+process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟随进程 locale
   const ctx = await chromium.launchPersistentContext('/tmp/wne-ask-profile-' + Date.now(), {
     headless: false,
-    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run'],
+    locale: 'zh-CN',
+    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run', '--lang=zh-CN'],
   });
 
   // 扩展 ID（从 service worker URL 取）

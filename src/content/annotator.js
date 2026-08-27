@@ -7,6 +7,7 @@
  *   - 新增: URL 变化监听 (patch pushState + popstate)，SPA 切页时重载高亮 (D5)
  */
 import { extractArticle } from '../lib/page-extract.js';
+import { msg as t } from '../lib/i18n.js';
 
 (() => {
   'use strict';
@@ -52,8 +53,8 @@ import { extractArticle } from '../lib/page-extract.js';
 
   function pageTitle() {
     return (
-      (document.title || '未命名页面').replace(/\s*[-–—|·].*$/, '').trim() ||
-      '未命名页面'
+      (document.title || t('untitledPage')).replace(/\s*[-–—|·].*$/, '').trim() ||
+      t('untitledPage')
     );
   }
 
@@ -231,7 +232,7 @@ import { extractArticle } from '../lib/page-extract.js';
     const selText = selInfo && selInfo.text;
     if (selText) {
       quote.style.display = 'block';
-      quote.textContent = '划选: "' + selText + '"';
+      quote.textContent = t('selQuotePrefix', selText);
     } else {
       quote.style.display = 'none';
     }
@@ -256,7 +257,7 @@ import { extractArticle } from '../lib/page-extract.js';
     if (!popState) return;
     const ta = document.getElementById('wne-pop-input');
     const content = ta.value.trim();
-    if (!content) { toast('先写点内容再保存'); return; }
+    if (!content) { toast(t('noteEmptyWarn')); return; }
     const now = Date.now();
     if (popState.id) {
       const notes = await loadNotes();
@@ -277,7 +278,7 @@ import { extractArticle } from '../lib/page-extract.js';
     }
     closePopover();
     applyAllMarks();
-    toast('已保存');
+    toast(t('noteSaved'));
   }
 
   function hideSelbar() {
@@ -332,11 +333,11 @@ import { extractArticle } from '../lib/page-extract.js';
     // 划词工具条
     const selbar = el('div');
     selbar.id = 'wne-selbar';
-    const btnNote = el('button', '', '📝 记笔记');
+    const btnNote = el('button', '', t('btnNote'));
     btnNote.addEventListener('click', () => {
       if (pendingSel) { openPopover(null, pendingSel); hideSelbar(); }
     });
-    const btnAsk = el('button', '', '🤖 问 AI');
+    const btnAsk = el('button', '', t('btnAsk'));
     btnAsk.style.marginLeft = '6px';
     btnAsk.addEventListener('click', async () => {
       if (!pendingSel) return;
@@ -351,7 +352,7 @@ import { extractArticle } from '../lib/page-extract.js';
         askId: uid(),
         ts: Date.now(),
       });
-      toast(r && r.ok ? '已发送到侧栏' : '发送失败，请点击工具栏图标打开侧栏');
+      toast(r && r.ok ? t('sentToPanel') : t('sendFailedHint'));
     });
     selbar.appendChild(btnNote);
     selbar.appendChild(btnAsk);
@@ -368,11 +369,11 @@ import { extractArticle } from '../lib/page-extract.js';
     quote.id = 'wne-pop-quote';
     const ta = document.createElement('textarea');
     ta.id = 'wne-pop-input';
-    ta.placeholder = '写下你的心得 / 补充… (Markdown 可用)';
+    ta.placeholder = t('notePlaceholder');
     const ops = el('div', 'wp-ops');
-    const btnCancel = el('button', '', '取消');
+    const btnCancel = el('button', '', t('btnCancel'));
     btnCancel.addEventListener('click', closePopover);
-    const btnSave = el('button', 'wp-save', '保存');
+    const btnSave = el('button', 'wp-save', t('btnSave'));
     btnSave.addEventListener('click', savePopover);
     ops.appendChild(btnCancel);
     ops.appendChild(btnSave);

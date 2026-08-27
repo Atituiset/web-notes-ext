@@ -15,6 +15,7 @@ mkdirSync(staging, { recursive: true });
 // dist 全部内容 + icons + manifest 放到包根
 cpSync('dist', staging, { recursive: true });
 cpSync('icons', join(staging, 'icons'), { recursive: true });
+cpSync('_locales', join(staging, '_locales'), { recursive: true });
 cpSync('manifest.json', join(staging, 'manifest.json'));
 
 // ---- 最小 ZIP (store/deflate) 写入器 ----

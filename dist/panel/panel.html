@@ -45,6 +45,11 @@
     .msg .body pre { position: relative; background: #111827; color: #f9fafb; border-radius: 8px; padding: 8px 10px; overflow-x: auto; font-size: 12px; line-height: 1.45; }
     .msg .body pre code { background: none; color: inherit; padding: 0; white-space: pre; }
     .msg .body pre .copy-code { position: sticky; top: 0; float: right; border: 1px solid #374151; background: #1f2937; color: #9ca3af; border-radius: 4px; padding: 0 6px; cursor: pointer; font-size: 11px; }
+    /* 思考过程折叠块 */
+    details.thinking { margin: 4px 0 6px; border: 1px dashed #d1d5db; border-radius: 8px; background: #f9fafb; }
+    details.thinking summary { cursor: pointer; padding: 4px 10px; font-size: 12px; color: #6b7280; user-select: none; }
+    details.thinking[open] summary { border-bottom: 1px dashed #e5e7eb; }
+    .thinking-body { padding: 6px 10px; font-size: 12px; color: #6b7280; white-space: pre-wrap; word-break: break-word; max-height: 240px; overflow-y: auto; }
     .msg .body pre .copy-code:hover { color: #fff; }
     .msg .body pre .lang-tag { position: absolute; top: 6px; left: 10px; font-size: 10px; color: #6b7280; text-transform: uppercase; letter-spacing: .5px; }
     .msg .body blockquote { border-left: 3px solid #cbd5e1; color: #475569; padding-left: 8px; }
@@ -100,27 +105,27 @@
 <body>
   <header>
     <b>📝 Markpilot</b>
-    <button id="btn-new-chat" title="清空当前会话，开始新会话" style="display:none">✚ 新会话</button>
-    <button id="btn-threads" title="会话历史">🕘</button>
-    <button id="btn-export">⬇ 导出本页</button>
+    <button id="btn-new-chat" data-i18n-title="newChatTitle" style="display:none">✚ <span data-i18n="newChat"></span></button>
+    <button id="btn-threads" data-i18n-title="threadsTitle">🕘</button>
+    <button id="btn-export" data-i18n="exportPage"></button>
     <button id="btn-options">⚙</button>
   </header>
   <nav class="tabs">
-    <button data-tab="notes" class="active">本页笔记</button>
-    <button data-tab="chat">问 AI</button>
+    <button data-tab="notes" class="active" data-i18n="tabNotes"></button>
+    <button data-tab="chat" data-i18n="tabChat"></button>
   </nav>
   <main id="main"></main>
-  <button id="btn-scroll-bottom" title="滚动到底部">↓</button>
+  <button id="btn-scroll-bottom" data-i18n-title="scrollBottomTitle">↓</button>
   <div id="thread-list"></div>
   <div class="chat-input-wrap" id="chat-input-wrap">
-    <textarea id="chat-q" placeholder="问点什么…（自动带上页面正文 + 你的笔记 + 选区）"></textarea>
+    <textarea id="chat-q" data-i18n-ph="chatPlaceholder"></textarea>
     <div class="row">
       <select id="chat-scope">
-        <option value="page">整页上下文</option>
-        <option value="selection">仅当前选区 + 笔记</option>
+        <option value="page" data-i18n="scopePage"></option>
+        <option value="selection" data-i18n="scopeSelection"></option>
       </select>
       <span class="hint" id="model-hint"></span>
-      <button class="send" id="btn-send">发送</button>
+      <button class="send" id="btn-send" data-i18n="sendBtn"></button>
     </div>
   </div>
 

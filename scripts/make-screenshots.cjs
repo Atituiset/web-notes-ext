@@ -16,6 +16,7 @@ fs.mkdirSync(EXT_DIR, { recursive: true });
 fs.cpSync(path.join(ROOT, 'dist'), EXT_DIR, { recursive: true });
 fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.json'));
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
+fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 const PORT = 8897;
 
 const ARTICLE = `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>主动阅读：为什么你读完就忘 - 阅读方法论</title>
@@ -84,10 +85,12 @@ function startServer() {
 
 (async () => {
   const server = await startServer();
+process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟随进程 locale
   const ctx = await chromium.launchPersistentContext('/tmp/wne-shots-' + Date.now(), {
     headless: false,
+    locale: 'zh-CN',
     viewport: { width: 1280, height: 800 },
-    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run', '--font-render-hinting=none'],
+    args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`, '--no-first-run', '--lang=zh-CN', '--font-render-hinting=none'],
   });
   let sw = ctx.serviceWorkers()[0];
   if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 10000 });

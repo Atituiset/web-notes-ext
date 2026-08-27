@@ -2,6 +2,8 @@
  * 轻量 Markdown → DOM 渲染（零依赖，安全转义）
  * 支持: 标题/粗斜体/行内代码/代码块(带复制)/列表/引用/表格/链接/分隔线
  */
+import { msg as t } from './i18n.js';
+
 export function renderMarkdown(md) {
   const frag = document.createDocumentFragment();
   const lines = String(md || '').split('\n');
@@ -39,11 +41,11 @@ export function renderMarkdown(md) {
     const btn = document.createElement('button');
     btn.className = 'copy-code';
     btn.type = 'button';
-    btn.textContent = '复制';
+    btn.textContent = t('copyBtn');
     btn.addEventListener('click', () => {
       navigator.clipboard.writeText(codeText).then(() => {
         btn.textContent = '✓';
-        setTimeout(() => (btn.textContent = '复制'), 1200);
+        setTimeout(() => (btn.textContent = t('copyBtn')), 1200);
       });
     });
     const code = document.createElement('code');

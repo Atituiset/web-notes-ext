@@ -49,8 +49,8 @@ YOUR KEYS, YOUR DATA
 OPEN SOURCE
 Source code & privacy policy: https://github.com/Atituiset/web-notes-ext
 
-Note: the extension UI is currently Simplified Chinese only. English UI is
-planned — follow the GitHub repo for updates.
+The UI speaks your language: Simplified Chinese and English are built in,
+following your browser language automatically.
 ```
 
 ## 权限用途说明（英文版，审核表单用）
@@ -83,5 +83,5 @@ planned — follow the GitHub repo for updates.
 3. `03-panel-chat.png` — "AI answers with your notes and the page as context"
 4. `04-options.png` — "BYOK: major providers and local Ollama supported"
 
-注：截图 UI 为中文。如之后做了 UI i18n，用同一脚本
-（`scripts/make-screenshots.cjs`）换英文文案重拍即可。
+注：截图 UI 为中文。扩展 v0.2.7 起 UI 支持中英文（跟随浏览器语言自动切换），
+英文版截图可用同一脚本（`scripts/make-screenshots.cjs`）在英文 locale 下重拍。

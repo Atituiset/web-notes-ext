@@ -21,6 +21,7 @@ import {
   ensureVaultPermission, exportViaUri,
 } from '../lib/obsidian.js';
 import { renderPageMarkdown } from '../lib/markdown.js';
+import { msg as t, applyI18n } from '../lib/i18n.js';
 
 const $ = (id: string): any => document.getElementById(id);
 let tab = 'notes';
@@ -50,13 +51,13 @@ async function renderNotes() {
   const main = $('main');
   main.textContent = '';
   const info = await activeTabInfo();
-  if (!info) { main.appendChild(el('div', 'empty', '无法获取当前标签页')); return; }
+  if (!info) { main.appendChild(el('div', 'empty', t('noActiveTab'))); return; }
   const pageUrl = normalizeUrl(info.url);
   const r = await send({ type: 'notes:get', url: pageUrl });
   const notes = (r && r.ok && r.notes) || [];
-  $('btn-export').textContent = '⬇ 导出本页 (' + notes.length + ')';
+  $('btn-export').textContent = t('exportPageCount', notes.length);
   if (!notes.length) {
-    main.appendChild(el('div', 'empty', '本页还没有笔记 — 回到网页选中文字试试'));
+    main.appendChild(el('div', 'empty', t('noNotesYet')));
     return;
   }
   for (const n of [...notes].reverse()) main.appendChild(noteItem(n));
@@ -77,14 +78,14 @@ function noteItem(n) {
   const d = el('div', 'item');
   const meta = el('div', 'meta');
   meta.appendChild(el('span', '', new Date(n.ts).toLocaleString()));
-  if (n.kind === 'ai-qa') meta.appendChild(el('span', '', '[AI]'));
+  if (n.kind === 'ai-qa') meta.appendChild(el('span', '', t('aiTag')));
   d.appendChild(meta);
   if (n.sel && n.sel.text) d.appendChild(el('div', 'quote', '"' + n.sel.text + '"'));
   d.appendChild(el('div', 'text', n.content));
   const ops = el('div', 'ops');
-  const btnCopy = el('button', '', '复制');
-  btnCopy.onclick = () => navigator.clipboard.writeText(n.content).then(() => toast('已复制'));
-  const btnDel = el('button', 'danger', '删除');
+  const btnCopy = el('button', '', t('copyBtn'));
+  btnCopy.onclick = () => navigator.clipboard.writeText(n.content).then(() => toast(t('copied')));
+  const btnDel = el('button', 'danger', t('deleteBtn'));
   btnDel.onclick = async () => {
     await send({ type: 'notes:delete', id: n.id });
     renderNotes();
@@ -113,7 +114,7 @@ function toast(msg) {
 
 $('btn-export').addEventListener('click', async () => {
   const info = await activeTabInfo();
-  if (!info || !/^https?:/.test(info.url)) { toast('该页面不可导出'); return; }
+  if (!info || !/^https?:/.test(info.url)) { toast(t('pageNotExportable')); return; }
   const pageUrl = normalizeUrl(info.url);
   const r = await send({ type: 'notes:get', url: pageUrl });
   const notes = (r && r.ok && r.notes) || [];
@@ -128,10 +129,10 @@ $('btn-export').addEventListener('click', async () => {
   if (state === 'granted') {
     try {
       const out = await exportViaFsAccess({ url: pageUrl, title: info.title, notes, pageMarkdown });
-      toast('已写入 vault: ' + out.file);
+      toast(t('exportOk', out.file));
       return;
     } catch (e: any) {
-      appendError('导出失败: ' + e.message);
+      appendError(t('exportFailed', e.message));
       return;
     }
   }
@@ -141,9 +142,9 @@ $('btn-export').addEventListener('click', async () => {
       if (state === 'no-handle') await import('../lib/obsidian.js').then((m) => m.pickVault());
       else await ensureVaultPermission();
       const out = await exportViaFsAccess({ url: pageUrl, title: info.title, notes, pageMarkdown });
-      toast('已写入 vault: ' + out.file);
+      toast(t('exportOk', out.file));
     } catch (e: any) {
-      appendError('目录授权/导出失败: ' + e.message + '\n（可改用 obsidian:// URI 兜底）');
+      appendError(t('exportAuthFailed', e.message));
     }
     return;
   }
@@ -158,10 +159,10 @@ function appendError(msg) {
 // ---------- 聊天（会话线程化）----------
 
 const STARTERS = [
-  { icon: '📄', text: '总结这篇文章的核心观点' },
-  { icon: '❓', text: '列出文中我不理解的术语并解释' },
-  { icon: '🤔', text: '针对我的笔记，指出可能的误解' },
-  { icon: '🧭', text: '用费曼方法向我讲解这个页面' },
+  { icon: '📄', text: t('starter1') },
+  { icon: '❓', text: t('starter2') },
+  { icon: '🤔', text: t('starter3') },
+  { icon: '🧭', text: t('starter4') },
 ];
 
 interface Thread { id: string; title: string; url: string; createdAt: number; updatedAt: number; messages: any[]; }
@@ -194,13 +195,13 @@ async function renderChat() {
   const main = $('main');
   main.textContent = '';
   const settings = await getSettings();
-  $('model-hint').textContent = settings.provider + ':' + (settings.model || '(未配置)');
+  $('model-hint').textContent = settings.provider + ':' + (settings.model || t('modelNotConfigured'));
   $('btn-new-chat').style.display = chatStarted ? 'inline-block' : 'none';
 
   if (!chatStarted) {
     // 欢迎屏 + conversation starters
     const hero = el('div', 'empty');
-    hero.appendChild(el('div', '', '问点什么 — 自动带上页面正文、你的笔记和选区'));
+    hero.appendChild(el('div', '', t('chatWelcome')));
     main.appendChild(hero);
     const grid = el('div', 'starters');
     for (const s of STARTERS) {
@@ -220,9 +221,9 @@ async function loadThreadList() {
   if (!threads.length) { wrap.style.display = 'none'; return; }
   for (const t of threads.slice(0, 15)) {
     const item = el('div', 'thread-item');
-    item.appendChild(el('span', 'thread-title', t.title || '(无标题会话)'));
+    item.appendChild(el('span', 'thread-title', t.title || t('untitledThread')));
     const btnDel = el('button', 'thread-del', '✕');
-    btnDel.title = '删除此会话';
+    btnDel.title = t('deleteThreadTitle');
     btnDel.onclick = async (e) => {
       e.stopPropagation();
       await deleteThread(t.id);
@@ -231,7 +232,7 @@ async function loadThreadList() {
     };
     item.appendChild(btnDel);
     item.addEventListener('click', async () => {
-      if (streaming) { toast('流式回答中，先停止或等待完成'); return; }
+      if (streaming) { toast(t('streamingWait')); return; }
       const full = await getThread(t.id);
       if (!full) return;
       currentThread = full;
@@ -256,7 +257,7 @@ function redrawThread() {
       bodyEl2.textContent = '';
       if (m.reasoning) {
         const think = el('details', 'thinking');
-        think.appendChild(el('summary', '', '💭 思考过程'));
+        think.appendChild(el('summary', '', t('thinkingSummary')));
         const tb = el('div', 'thinking-body');
         tb.textContent = m.reasoning;
         think.appendChild(tb);
@@ -282,10 +283,10 @@ let stopCurrent: (() => void) | null = null;
 function setSendButton(mode: 'send' | 'stop') {
   const btn = $('btn-send');
   if (mode === 'stop') {
-    btn.textContent = '停止';
+    btn.textContent = t('stopBtn');
     btn.classList.add('stop');
   } else {
-    btn.textContent = '发送';
+    btn.textContent = t('sendBtn');
     btn.classList.remove('stop');
   }
 }
@@ -353,7 +354,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
 
   // 思考过程折叠块（reasoning 模型才有内容）
   const thinkWrap = el('details', 'thinking');
-  const thinkSummary = el('summary', '', '💭 思考过程');
+  const thinkSummary = el('summary', '', t('thinkingSummary'));
   const thinkBody = el('div', 'thinking-body');
   thinkWrap.appendChild(thinkSummary);
   thinkWrap.appendChild(thinkBody);
@@ -411,7 +412,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
       } else {
         bubble.remove();
         thread.messages.pop(); // 移除没有回答的 user 消息
-        appendError('已停止');
+        appendError(t('stopped'));
       }
     } else {
       bubble.remove();
@@ -445,7 +446,7 @@ function finishAssistant(thread, question, scope, answer, bubble, extra: {
   bodyEl.textContent = '';
   if (extra.reasoning) {
     const think = el('details', 'thinking');
-    think.appendChild(el('summary', '', '💭 思考过程'));
+    think.appendChild(el('summary', '', t('thinkingSummary')));
     const tb = el('div', 'thinking-body');
     tb.textContent = extra.reasoning;
     think.appendChild(tb);
@@ -494,26 +495,26 @@ function safeHost(info) {
 
 function attachMsgOps(bubble, ctxInfo) {
   const ops = bubble.querySelector('.ops');
-  const btnCopy = el('button', '', '复制');
+  const btnCopy = el('button', '', t('copyBtn'));
   btnCopy.addEventListener('click', () => {
-    navigator.clipboard.writeText(ctxInfo.answer()).then(() => toast('已复制回答'));
+    navigator.clipboard.writeText(ctxInfo.answer()).then(() => toast(t('answerCopied')));
   });
-  const btnRemember = el('button', '', '🧠 记住');
-  btnRemember.title = '把这条结论存为长期记忆';
+  const btnRemember = el('button', '', t('rememberBtn'));
+  btnRemember.title = t('rememberTitle');
   btnRemember.addEventListener('click', async () => {
     btnRemember.disabled = true;
-    btnRemember.textContent = '提取中…';
+    btnRemember.textContent = t('remembering');
     try {
       await extractAndStore(await getSettings(), ctxInfo.question, ctxInfo.answer(), currentThread?.url);
-      btnRemember.textContent = '✓ 已记忆';
-      toast('已存入 Markpilot-Memory');
+      btnRemember.textContent = t('remembered');
+      toast(t('rememberOk'));
     } catch (e: any) {
       btnRemember.disabled = false;
-      btnRemember.textContent = '🧠 记住';
-      toast('记忆失败: ' + e.message);
+      btnRemember.textContent = t('rememberBtn');
+      toast(t('rememberFailed', e.message));
     }
   });
-  const btnRetry = el('button', '', '重试');
+  const btnRetry = el('button', '', t('retryBtn'));
   btnRetry.addEventListener('click', () => retryQuestion(bubble, ctxInfo));
   if (!ctxInfo.readonly) ops.appendChild(btnRemember);
   ops.appendChild(btnCopy);
@@ -522,7 +523,7 @@ function attachMsgOps(bubble, ctxInfo) {
 
 /** 重试：移除该轮 user+assistant 消息对后重新提问（避免 thread 出现重复问答） */
 function retryQuestion(bubble, ctxInfo) {
-  if (streaming) { toast('流式回答中'); return; }
+  if (streaming) { toast(t('streamingShort')); return; }
   // 从 thread 里 pop 掉这对问答（assistant 及其前的 user）
   if (currentThread) {
     const idx = currentThread.messages.length - 1;
@@ -556,10 +557,10 @@ function updateMemoryBadge() {
   const old = $('mem-badge');
   if (old) old.remove();
   if (pendingMemories.length) {
-    const badge = el('span', '', `🧠 ${pendingMemories.length} 条可记忆`);
+    const badge = el('span', '', t('memBadge', pendingMemories.length));
     badge.id = 'mem-badge';
     badge.style.cssText = 'cursor:pointer;color:#2563eb;font-size:11px;';
-    badge.title = '点击查看并保存自动发现的记忆';
+    badge.title = t('memBadgeTitle');
     badge.addEventListener('click', reviewPendingMemories);
     btn.parentElement.insertBefore(badge, btn);
   }
@@ -567,7 +568,7 @@ function updateMemoryBadge() {
 
 async function reviewPendingMemories() {
   for (const s of [...pendingMemories]) {
-    if (confirm('记住这条吗？\n\n' + s)) {
+    if (confirm(t('confirmRemember', s))) {
       try {
         await storeProposed(s, currentThread?.url);
       } catch { /* vault 未授权等 */ }
@@ -602,11 +603,11 @@ function buildFollowUps(question: string, answer: string): string[] {
   const out: string[] = [];
   // 从回答中的标题提取深挖方向
   const headings = [...answer.matchAll(/^#{2,4}\s+(.+)$/gm)].map((m) => m[1].trim()).slice(0, 2);
-  for (const h of headings) out.push('详细展开「' + h.replace(/[**`]/g, '') + '」');
-  if (/代码|```/.test(answer)) out.push('逐行解释上面代码的作用');
-  if (/术语|概念/.test(question)) out.push('举一个具体的例子说明');
-  if (out.length < 3) out.push('总结成 3 点要点');
-  if (out.length < 3) out.push('这和我笔记里的理解有冲突吗？');
+  for (const h of headings) out.push(t('followupExpand', h.replace(/[**`]/g, '')));
+  if (/代码|```/.test(answer)) out.push(t('followupCode'));
+  if (/术语|概念/.test(question)) out.push(t('followupExample'));
+  if (out.length < 3) out.push(t('followupSummarize'));
+  if (out.length < 3) out.push(t('followupConflict'));
   return out.slice(0, 3);
 }
 
@@ -626,7 +627,7 @@ function newChat() {
   renderChat();
 }
 $('btn-new-chat').addEventListener('click', () => {
-  if (confirm('清空当前会话？已保存的笔记不受影响。')) newChat();
+  if (confirm(t('confirmNewChat'))) newChat();
 });
 function scrollBottom() { $('main').scrollTop = $('main').scrollHeight; }
 
@@ -644,7 +645,7 @@ $('btn-scroll-bottom').addEventListener('click', () => {
 
 function addMsg(role, text) {
   const d = el('div', 'msg ' + role);
-  const who = el('div', 'who', role === 'user' ? '你' : 'AI');
+  const who = el('div', 'who', role === 'user' ? t('roleYou') : 'AI');
   if (role === 'assistant') who.appendChild(el('span', 'ops'));
   d.appendChild(who);
   const body = el('div', 'body', text);
@@ -687,6 +688,7 @@ document.addEventListener('click', (e: any) => {
   }
 });
 
+applyI18n();
 renderNotes();
 
 // ---------- 页面「问 AI」入口（SW 转发 + 缓冲消费）----------
@@ -702,7 +704,7 @@ function handleIncomingAsk(selection: string, askId?: string) {
   });
   if (!selection) return;
   $('chat-scope').value = 'selection';
-  const q = '解释这段话：“' + selection + '”';
+  const q = t('askAboutSelection', selection);
   $('chat-q').value = q;
   if (!streaming) askLLMWith(q, 'selection', selection);
 }

@@ -22,6 +22,7 @@ mkdirSync(EXT_DIR, { recursive: true });
 cpSync(DIST, EXT_DIR, { recursive: true });
 copyFileSync(join(ROOT, 'manifest.json'), join(EXT_DIR, 'manifest.json'));
 cpSync(join(ROOT, 'icons'), join(EXT_DIR, 'icons'), { recursive: true });
+cpSync(join(ROOT, '_locales'), join(EXT_DIR, '_locales'), { recursive: true });
 let pass = 0, fail = 0;
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name); } };
 
@@ -39,10 +40,12 @@ console.log('[1] 静态检查：manifest content_scripts world 拆分正确');
 console.log('[2] 扩展加载 + SW 注册健康');
 {
   const userDataDir = mkdtempSync(join(tmpdir(), 'wne-e2e-obs-'));
+process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟随进程 locale
   const ctx = await chromium.launchPersistentContext(userDataDir, {
     headless: false,
+    locale: 'zh-CN',
     executablePath: '/home/atituiset/.cache/ms-playwright/chromium-1223/chrome-linux64/chrome',
-    args: ['--disable-extensions-except=' + EXT_DIR, '--load-extension=' + EXT_DIR, '--no-first-run', '--no-sandbox', '--disable-gpu'],
+    args: ['--disable-extensions-except=' + EXT_DIR, '--load-extension=' + EXT_DIR, '--no-first-run', '--lang=zh-CN', '--no-sandbox', '--disable-gpu'],
   });
   // MV3 SW 惰性注册不稳定 —— 直接从 chrome://extensions 页面读扩展 ID
   const page = await ctx.newPage();

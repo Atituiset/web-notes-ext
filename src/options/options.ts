@@ -2,6 +2,7 @@ import { getSettings, saveSettings } from '../lib/db.js';
 import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
 import { PROVIDERS, listModels, streamChat } from '../lib/llm/index.js';
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
+import { msg as t, applyI18n } from '../lib/i18n.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
 
 const $ = (id: string): any => document.getElementById(id);
@@ -138,7 +139,7 @@ function renderModelDropdown() {
   if (!list.length) {
     const e = document.createElement('div');
     e.className = 'empty';
-    e.textContent = allModels.length ? '无匹配模型' : '暂无列表 — 点「获取模型」或直接手填';
+    e.textContent = allModels.length ? t('modelNoMatch') : t('modelEmptyList');
     dd.appendChild(e);
   }
   for (const m of list.slice(0, 100)) {
@@ -151,7 +152,7 @@ function renderModelDropdown() {
     if (m.free) {
       const f = document.createElement('span');
       f.className = 'free';
-      f.textContent = '⭐ 免费';
+      f.textContent = t('freeTag');
       o.appendChild(f);
     }
     o.addEventListener('mousedown', (e) => {
@@ -187,9 +188,9 @@ $('model').addEventListener('blur', () => {
 async function refreshVaultState() {
   const state = await vaultPermissionState();
   $('vault-state').textContent =
-    state === 'no-handle' ? '未授权'
-    : state === 'granted' ? '✓ 已授权'
-    : '已选目录，需点击一次恢复权限';
+    state === 'no-handle' ? t('vaultNoHandle')
+    : state === 'granted' ? t('vaultGranted')
+    : t('vaultNeedPrompt');
 }
 
 $('provider').addEventListener('change', async () => {
@@ -208,7 +209,7 @@ $('provider').addEventListener('change', async () => {
 $('btn-models').addEventListener('click', async () => {
   const btn = $('btn-models');
   btn.disabled = true;
-  $('model-status').textContent = '拉取中…';
+  $('model-status').textContent = t('modelFetching');
   try {
     const models = await listModels({
       provider: $('provider').value,
@@ -217,10 +218,10 @@ $('btn-models').addEventListener('click', async () => {
     });
     fillModelList(models);
     const freeCount = models.filter((m) => m.free).length;
-    $('model-status').innerHTML =
-      `已拉取 ${models.length} 个模型` +
-      (freeCount ? `，其中 <b>${freeCount}</b> 个免费（标 ⭐）` : '') +
-      ' — 在模型输入框点击即可选择。';
+    $('model-status').textContent =
+      t('modelsFetched', models.length) +
+      (freeCount ? t('modelsFetchedFree', freeCount) : '') +
+      t('modelsFetchedTail');
     // 免费模型排前面方便选：自动带上第一个免费模型作为建议
     if (freeCount && !$('model').value) $('model').value = models.find((m) => m.free).id;
     // 别名增强（文档页解析，失败静默）— 不阻塞下拉展示
@@ -231,7 +232,7 @@ $('btn-models').addEventListener('click', async () => {
       $('model').focus();
     }
   } catch (e: any) {
-    $('model-status').textContent = '拉取失败: ' + e.message + '（可手动填模型名）';
+    $('model-status').textContent = t('modelsFetchFailed', e.message) + t('modelsManualHint');
   }
   btn.disabled = false;
 });
@@ -249,7 +250,7 @@ async function testModel() {
   const provider = $('provider').value;
   testing = true;
   status.style.color = '#6b7280';
-  status.textContent = `正在测试 ${model} …`;
+  status.textContent = t('testing', model);
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 30000); // 有的上游只发 keep-alive 不出 token，30s 判死
   const t0 = Date.now();
@@ -267,16 +268,16 @@ async function testModel() {
     const sec = ((Date.now() - t0) / 1000).toFixed(1);
     if (text.trim()) {
       status.style.color = '#059669';
-      status.textContent = `✓ ${model} 可用（${sec}s）`;
+      status.textContent = t('testOk', model, sec);
     } else {
       status.style.color = '#b45309';
-      status.textContent = `⚠ ${model} 连接成功但未返回内容，换一个试试`;
+      status.textContent = t('testEmpty', model);
     }
   } catch (e: any) {
     status.style.color = '#dc2626';
     status.textContent = ctrl.signal.aborted
-      ? `✗ ${model} 30s 无响应（上游可能挂起，换个模型试试）`
-      : `✗ ${model} 不可用: ${String(e.message || e).slice(0, 150)}`;
+      ? t('testTimeout', model)
+      : t('testFailed', model, String(e.message || e).slice(0, 150));
   } finally {
     clearTimeout(timer);
     testing = false;
@@ -290,7 +291,7 @@ $('btn-pick').addEventListener('click', async () => {
     await pickVault();
     await refreshVaultState();
   } catch (e: any) {
-    if (e && e.name !== 'AbortError') $('vault-state').textContent = '授权失败: ' + e.message;
+    if (e && e.name !== 'AbortError') $('vault-state').textContent = t('vaultAuthFailed', e.message);
   }
 });
 
@@ -309,7 +310,7 @@ $('btn-save').addEventListener('click', async () => {
     autoMemory: $('autoMemory').checked,
     systemPrompt: $('systemPrompt').value.trim(), // 空串 = 不带 system 消息
   });
-  $('save-status').textContent = '已保存 ✓';
+  $('save-status').textContent = t('savedOk');
   setTimeout(() => ($('save-status').textContent = ''), 2000);
 });
 
@@ -329,7 +330,7 @@ async function renderMemories() {
     $('mem-count').textContent = '';
     return;
   }
-  $('mem-count').textContent = memories.length ? `${memories.length} 条记忆` : '';
+  $('mem-count').textContent = memories.length ? t('memCount', memories.length) : '';
   if (!memories.length) return;
 
   for (const m of memories.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updated.localeCompare(a.updated))) {
@@ -347,7 +348,7 @@ async function renderMemories() {
     if (isCold(m)) {
       const cold = document.createElement('span');
       cold.className = 'cold-tag';
-      cold.textContent = '冷（90天未用）';
+      cold.textContent = t('coldTag');
       appendBit(cold);
     }
     appendBit(m.domain ? m.domain : 'user');
@@ -371,13 +372,13 @@ async function renderMemories() {
       b.addEventListener('click', fn);
       return b;
     };
-    ops.appendChild(mkBtn(m.pinned ? '取消钉选' : '📌 钉选', async () => {
+    ops.appendChild(mkBtn(m.pinned ? t('unpinBtn') : t('pinBtn'), async () => {
       await pinMemory(m.file, !m.pinned);
       renderMemories();
     }));
     // 编辑：prompt 简易实现
-    ops.appendChild(mkBtn('编辑', async () => {
-      const v = prompt('编辑记忆内容:', m.body);
+    ops.appendChild(mkBtn(t('editBtn'), async () => {
+      const v = prompt(t('editMemoryPrompt'), m.body);
       if (v === null || !v.trim() || v.trim() === m.body) return;
       await saveMemory({
         scope: m.scope, domain: m.domain, source: m.source,
@@ -386,8 +387,8 @@ async function renderMemories() {
       });
       renderMemories();
     }));
-    ops.appendChild(mkBtn('删除', async () => {
-      if (!confirm('删除这条记忆？')) return;
+    ops.appendChild(mkBtn(t('deleteBtn'), async () => {
+      if (!confirm(t('confirmDeleteMemory'))) return;
       await deleteMemory(m.file);
       renderMemories();
     }, 'danger'));
@@ -406,4 +407,5 @@ $('btn-mem-mgr').addEventListener('click', () => {
   }
 });
 
+applyI18n();
 load();
