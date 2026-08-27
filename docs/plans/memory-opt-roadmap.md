@@ -122,6 +122,24 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 结论：**两通道互补而非替代**——API 通道修好跨语种（q35）但丢掉反义/部分改述（q28/q33）；端侧 MiniLM 在改述家族上更稳且零成本零外传。产品建议：端侧为默认通道，OpenRouter embedding 作为 BYOK 用户的可选增强（用户已有 key 时自动可用）。
 注：全量套件 A/B 受 OpenRouter 免费账户日限额（~50 req/日）限制当日未完成，harness 已就绪（预热后全量仅 ~2 次批量调用），额度重置后可 `DENSE_CHANNEL=openrouter OR_KEY=... node tests/eval-memory.mjs` 直接复跑。
 
+**补充 2：NVIDIA NIM embedding A/B/C 终局对照（2026-08-28，nemotron-3-embed-1b，全部原始达标线达成）**
+
+第三通道接入（`DENSE_CHANNEL=nvidia`，key 仅走环境变量；query/passage 分类型的 e5 系模型）。难例集探针即展现最优判别力（噪声 ≤0.147 / 信号 0.27-0.55，地板 0.2 有完整安全边际），全量评测（floor 0.2）：
+
+| 指标 | MiniLM（端侧） | liquid-350m（OpenRouter） | **nemotron-3-embed（NVIDIA）** | 达标线 |
+|---|---|---|---|---|
+| recall@5 | 93.9% | （日限额未跑全量） | **97.0%** | ≥95% ✅ |
+| precision@5 | 59.9% | — | **66.7%** | ≥60% ✅ |
+| 拒答正确率 | 100% | — | **100%** | ≥90% ✅ |
+| 知识更新正确率 | 100% | — | **100%** | =100% ✅ |
+| paraphrase 子集 | 10/12 (83%) | — | **11/12 (91.7%)** | ≥90% ✅ |
+
+**全部原始达标线达成**——唯一失败 q26（语义跳跃，五个候选模型一致失败，确证为数据级难例）。nemotron-3-embed 同时解掉了 q35（跨语种，rank 0/0.391）且保持 q28/q33 与最宽的噪声-信号间距。
+
+踩坑记录（重要工程教训）：e5 系模型的 query/passage 非对称嵌入——预热把查询文本以 passage 类型缓存，与文档向量同型后噪声全面失真（abstain 0/4）；缓存键必须带类型前缀（`type + '\n' + text`）。修复后即达标。
+
+通道定位终局：**NVIDIA nemotron-3-embed 为效果最优通道**（BYOK API）；MiniLM 端侧为零成本零外传默认通道；OpenRouter liquid 为备选。生产侧 embedding 接线时按此优先级实现 provider 抽象。
+
 **模型边界结论（三轮探针实证）**：未达标的两格由且仅由 q26（语义跳跃）与 q35（跨语种）两条查询构成——q35 的 sim(0.219) 与拒答噪声 q18 的 sim(0.262) 在全部三个候选模型下都不可分（mpnet 下甚至 0.387 vs 0.412 倒挂）。这类歧义不是 embedding 能解的，需要用户画像/历史上下文（Phase 5 的画像正好提供这个信号）。recall@5 与 paraphrase 的达标线因此修订为：**93% / 80%（384d 端侧模型边界）**，升级路径（768d+ 模型或 API embedding）留作后续选项。
 
 ## 回放指引

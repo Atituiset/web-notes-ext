@@ -1,9 +1,10 @@
 {
   "metricVersion": 2,
+  "channel": "nvidia",
   "recall1": 0.030303030303030304,
-  "recall5": 0.9393939393939394,
-  "precision5": 0.5989583333333333,
-  "mrr": 0.45202020202020204,
+  "recall5": 0.9696969696969697,
+  "precision5": 0.6666666666666665,
+  "mrr": 0.46212121212121215,
   "abstain": 1,
   "knowledgeUpdate": 1
 }

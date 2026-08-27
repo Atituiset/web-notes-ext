@@ -319,8 +319,10 @@ export function setDenseRanker(fn: DenseRanker | null): void {
 }
 
 /** dense 相似度地板：实测拒答类 top sim 最高 ~0.25、真实命中 ≥0.34 居多，
- *  0.33 是当前模型判别力下的最优平衡（0.2 已验证会冲垮拒答与 precision） */
-export const DENSE_SIM_FLOOR = 0.33;
+ *  0.33 是 MiniLM 判别力下的最优平衡（0.2 已验证会冲垮拒答与 precision）。
+ *  不同 embedding 模型的最优地板不同（nemotron-3-embed 为 ~0.2），由通道注入时调整。 */
+export let DENSE_SIM_FLOOR = 0.33;
+export function setDenseSimFloor(v: number): void { DENSE_SIM_FLOOR = v; }
 /** dense 注入名次帽：只给 top-N 语义命中加分，rank 4+ 的边缘命中是 precision 噪声源 */
 export const DENSE_TOP_N = 2;
 /** dense 加成分档：top1/2/3 分别得 GAIN × (3/3, 2/3, 1/3) */

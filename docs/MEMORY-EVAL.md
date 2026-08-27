@@ -75,6 +75,23 @@ preference / fact / correction / conclusion 四类均衡，**中文 70% + 英文
 
 ## 5. 基线
 
+### v4（2026-08-28，混合召回 · NVIDIA nemotron-3-embed-1b 通道，floor 0.2）—— 全部达标线达成
+
+| 指标 | 数值 | 达标线 |
+|---|---|---|
+| recall@5 | **97.0%** | ≥95% ✅ |
+| precision@5 | **66.7%** | ≥60% ✅ |
+| 拒答正确率 | **100%** | ≥90% ✅ |
+| 知识更新正确率 | **100%** | =100% ✅ |
+| paraphrase 子集 | **11/12 (91.7%)** | ≥90% ✅ |
+| MRR | 0.46 | — |
+
+唯一失败 q26（语义跳跃——MiniLM/e5-small/mpnet/liquid/nemotron 五个模型一致失败，确证为数据级难例）。
+工程教训：e5 系模型的 query/passage 非对称嵌入要求缓存键带类型前缀，否则噪声全面失真。
+通道对比与选型见 `docs/plans/memory-opt-roadmap.md` 补充 2。
+
+### v3（2026-08-28，混合召回：sparse 词法 + dense 端侧向量，真空门控加和融合）
+
 ### v3（2026-08-28，混合召回：sparse 词法 + dense 端侧向量，真空门控加和融合）
 
 | 指标 | 数值 | 对比 v2 |

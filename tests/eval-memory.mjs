@@ -35,7 +35,46 @@ const _vecCache = new Map(); // body → vector
 const norm = (v) => { const n = Math.sqrt(v.reduce((s, x) => s + x * x, 0)) || 1; return v.map((x) => x / n); };
 
 let embed;
-if (DENSE_CHANNEL === 'openrouter') {
+if (DENSE_CHANNEL === 'nvidia') {
+  const NV_KEY = process.env.NV_KEY;
+  if (!NV_KEY) { console.error('DENSE_CHANNEL=nvidia 需要 NV_KEY 环境变量'); process.exit(2); }
+  const NV_MODEL = process.env.NV_MODEL || 'nvidia/nemotron-3-embed-1b';
+  console.log('[dense] 通道 NVIDIA NIM:', NV_MODEL);
+  async function embedBatchApi(texts, inputType) {
+    const resp = await fetch('https://integrate.api.nvidia.com/v1/embeddings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + NV_KEY },
+      body: JSON.stringify({ model: NV_MODEL, input: texts, input_type: inputType, encoding_format: 'float' }),
+    });
+    if (!resp.ok) throw new Error('NVIDIA embedding HTTP ' + resp.status + ': ' + (await resp.text()).slice(0, 120));
+    return (await resp.json()).data.map((d) => norm(d.embedding));
+  }
+  const cacheKey = (t, ty) => ty + '\n' + t;
+  var prefetch = async (candidates) => {
+    const missing = candidates.map((c) => c.body).filter((b) => !_vecCache.has(cacheKey(b, 'passage')));
+    for (let i = 0; i < missing.length; i += 50) {
+      const vecs = await embedBatchApi(missing.slice(i, i + 50), 'passage');
+      vecs.forEach((v, j) => _vecCache.set(cacheKey(missing[i + j], 'passage'), v));
+    }
+  };
+  // denseRankNode 的查询向量走 query 类型缓存键
+  var embedQuery = async (text) => {
+    const k = cacheKey(text, 'query');
+    if (!_vecCache.has(k)) {
+      const [v] = await embedBatchApi([text], 'query');
+      _vecCache.set(k, v);
+    }
+    return _vecCache.get(k);
+  };
+  embed = async (text) => {
+    const k = cacheKey(text, 'passage');
+    if (!_vecCache.has(k)) {
+      const [v] = await embedBatchApi([text], 'passage');
+      _vecCache.set(k, v);
+    }
+    return _vecCache.get(k);
+  };
+} else if (DENSE_CHANNEL === 'openrouter') {
   const OR_KEY = process.env.OR_KEY;
   if (!OR_KEY) { console.error('DENSE_CHANNEL=openrouter 需要 OR_KEY 环境变量'); process.exit(2); }
   const OR_MODEL = 'liquid/lfm-2.5-embedding-350m:free';
@@ -86,7 +125,7 @@ if (DENSE_CHANNEL === 'openrouter') {
 
 async function denseRankNode(query, candidates) {
   if (typeof prefetch === 'function') await prefetch(candidates);
-  const qv = await embed(query);
+  const qv = typeof embedQuery === 'function' ? await embedQuery(query) : await embed(query);
   const bodyVecs = await Promise.all(candidates.map((c) => embed(c.body)));
   return candidates
     .map((c, i) => ({ file: c.file, sim: qv.reduce((s, x, j) => s + x * bodyVecs[i][j], 0) }))
@@ -116,17 +155,23 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   if (process.env.SKIP_LATENCY === '1') await page.addInitScript(() => { globalThis.__skipLatency = true; });
   // OpenRouter 通道：预热全部向量（批量 2 次调用），评测过程零 API；
   // API 通道的延迟数据无意义（网络主导），默认跳过噪声延迟段
-  if (DENSE_CHANNEL === 'openrouter') {
+  if (DENSE_CHANNEL === 'openrouter' || DENSE_CHANNEL === 'nvidia') {
     console.log('[dense] 预热向量（语料+查询，批量调用）…');
     await prefetch(memories.map((m) => ({ body: m.body })));
-    await prefetch(queries.map((q) => ({ body: q.q })));
+    if (DENSE_CHANNEL === 'nvidia') {
+      for (const q of queries) await embedQuery(q.q);
+    } else {
+      await prefetch(queries.map((q) => ({ body: q.q })));
+    }
     if (process.env.SKIP_LATENCY !== '0') process.env.SKIP_LATENCY = '1';
     console.log('[dense] 预热完成');
   }
+
   await page.exposeFunction('__denseRankNode', (q, c) => denseRankNode(q, c));
 
   // 注入 OPFS 当 vault + 写入语料 + 跑全部查询（全部在页面内、走真实 memory.ts 管线）
-  const evalResult = await page.evaluate(async ({ memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll }) => {
+  const DENSE_FLOOR_OVERRIDE = process.env.DENSE_FLOOR ? parseFloat(process.env.DENSE_FLOOR) : null;
+  const evalResult = await page.evaluate(async ({ memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll, DENSE_FLOOR_OVERRIDE }) => {
     // 1. IDB：建库 + OPFS root 写入 handles/vault
     await new Promise((res, rej) => {
       const req = indexedDB.open('web-notes-ext', 2);
@@ -152,6 +197,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
     });
 
     const mem = await import(chrome.runtime.getURL('eval/memory.mjs'));
+    if (DENSE_FLOOR_OVERRIDE) mem.setDenseSimFloor(DENSE_FLOOR_OVERRIDE);
     mem.setDenseRanker((q, c) => window.__denseRankNode(q, c));
 
 
@@ -192,8 +238,8 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
     }
 
     // 4. 延迟-规模曲线：注入噪声到各规模档，跑固定 query
-    if (!globalThis.__skipLatency) {
     const latency = [{ scale: memories.length, results: queryResults.map((r) => r.ms) }];
+    if (!globalThis.__skipLatency) {
     let noiseCount = 0;
     for (const scale of LATENCY_SCALES) {
       const need = scale - memories.length - noiseCount;
@@ -212,7 +258,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
 
     }
     return { queryResults, latency, idToFile };
-  }, { memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll });
+  }, { memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll, DENSE_FLOOR_OVERRIDE });
 
   await ctx.close();
 
@@ -267,7 +313,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
 
   // ---------- 报告 ----------
   const line = (k, v) => console.log('  ' + k.padEnd(28) + v);
-  console.log('\n======== Memory 检索评测报告 ========');
+  console.log('\n======== Memory 检索评测报告 ========\ndense 通道: ' + DENSE_CHANNEL + (process.env.DENSE_FLOOR ? ' (floor=' + process.env.DENSE_FLOOR + ')' : ''));
   console.log(`语料 ${memories.length} 条 / 查询 ${queries.length} 条（可答 ${answerable.length} / 拒答 ${abstainQs.length}）\n`);
   line('recall@1', (recallAt(1) * 100).toFixed(1) + '%');
   line('recall@5', (recallAt(5) * 100).toFixed(1) + '%' + ``);
@@ -312,7 +358,7 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   // 基线对比：node tests/eval-memory.mjs --write-baseline 记录基线；之后自动做回归对比
   const BASELINE = path.join(ROOT, 'tests/eval/baseline.json');
   const METRIC_VERSION = 2; // v2: precision@5 分母排除 pinned、分子用 relevant 标注
-  const metricsNow = { metricVersion: METRIC_VERSION, recall1: recallAt(1), recall5: recallAt(5), precision5, mrr, abstain, knowledgeUpdate: ku };
+  const metricsNow = { metricVersion: METRIC_VERSION, channel: DENSE_CHANNEL, recall1: recallAt(1), recall5: recallAt(5), precision5, mrr, abstain, knowledgeUpdate: ku };
   if (process.argv.includes('--write-baseline')) {
     fs.writeFileSync(BASELINE, JSON.stringify(metricsNow, null, 2));
     console.log('\n基线已写入 tests/eval/baseline.json');
@@ -321,13 +367,18 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   let pass = true;
   if (fs.existsSync(BASELINE)) {
     const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+    if ((base.channel || 'minilm') !== DENSE_CHANNEL) {
+      console.log(`\n（基线通道 ${base.channel || 'minilm'} ≠ 当前 ${DENSE_CHANNEL}，仅展示不判回归）`);
+      console.log(`\n== DONE ==`);
+      process.exit(0);
+    }
     if ((base.metricVersion || 1) !== METRIC_VERSION) {
       console.log(`\n基线口径过旧（metricVersion ${base.metricVersion || 1} ≠ ${METRIC_VERSION}），请先 --write-baseline 重记`);
       process.exit(2);
     }
     console.log('\n对比基线:');
     for (const [k, v] of Object.entries(metricsNow)) {
-      if (k === 'metricVersion') continue;
+      if (k === 'metricVersion' || k === 'channel') continue;
       const b = base[k] ?? 0;
       const d = v - b;
       const flag = d < -0.01 ? ' ← 回归!' : '';
