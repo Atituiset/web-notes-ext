@@ -6,6 +6,8 @@
 
 ## 目录
 
+- `JOURNAL.md` — **全程工程日志**：每一步做了什么、撞了什么墙、怎么绕过去的（含被数据否决的 6 个方案），按时间线回放整个优化过程
+
 - `reports/2026-08-28-v4-nvidia.json` — v4 基线（NVIDIA nemotron-3-embed-1b 通道）的完整执行报告：逐 query 的 expect/got 明细、各指标、100/500/1000 条规模延迟。这是全部达标线达成的那次运行（recall@5 97.0% / precision@5 66.7% / 拒答 100% / 知识更新 100%）。此前各轮报告被同路径覆盖，仅存此最终版。
 - `probes/` — embedding 模型选型探针（决定 dense 通道的原始证据）：
   - `probe-minilm.mjs` — 端侧 paraphrase-multilingual-MiniLM-L12-v2 对改述失败对的区分度（结果 7/8，促成混合召回立项）
