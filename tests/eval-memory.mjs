@@ -138,14 +138,27 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
 
   // ---------- 指标计算（node 侧）----------
   const expectMap = Object.fromEntries(queries.map((q) => [q.id, q]));
-  const ranked = evalResult.queryResults.map((r) => ({ ...r, expect: expectMap[r.id].expect, expectBefore: expectMap[r.id].expectBefore }));
+  const ranked = evalResult.queryResults.map((r) => ({
+    ...r,
+    expect: expectMap[r.id].expect,
+    relevant: expectMap[r.id].relevant || expectMap[r.id].expect,
+    expectBefore: expectMap[r.id].expectBefore,
+  }));
   const answerable = ranked.filter((r) => r.expect.length > 0);
 
   const recallAt = (k) =>
     answerable.filter((r) => r.hitIds.slice(0, k).some((id) => r.expect.includes(id))).length / answerable.length;
-  const precision5 =
-    answerable.reduce((acc, r) => acc + r.hitIds.slice(0, 5).filter((id) => r.expect.includes(id)).length / 5, 0) /
-    answerable.length;
+  // precision@5 口径 v2：命中 relevant（expect 的超集）/ top5 中非 pinned 席位数。
+  // pinned 是设计注入（永远占一席），分母含它会结构性压低数值，无法指导优化。
+  const isPinnedId = (id) => !!memories.find((m) => m.id === id && m.pinned);
+  const precisionRows = answerable
+    .map((r) => {
+      const top5np = r.hitIds.slice(0, 5).filter((id) => !isPinnedId(id));
+      if (!top5np.length) return null;
+      return top5np.filter((id) => r.relevant.includes(id)).length / top5np.length;
+    })
+    .filter((x) => x !== null);
+  const precision5 = precisionRows.reduce((a, b) => a + b, 0) / precisionRows.length;
   const mrr = answerable.reduce((acc, r) => {
     const idx = r.hitIds.findIndex((id) => r.expect.includes(id));
     return acc + (idx >= 0 ? 1 / (idx + 1) : 0);
@@ -212,7 +225,8 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
 
   // 基线对比：node tests/eval-memory.mjs --write-baseline 记录基线；之后自动做回归对比
   const BASELINE = path.join(ROOT, 'tests/eval/baseline.json');
-  const metricsNow = { recall1: recallAt(1), recall5: recallAt(5), precision5, mrr, abstain, knowledgeUpdate: ku };
+  const METRIC_VERSION = 2; // v2: precision@5 分母排除 pinned、分子用 relevant 标注
+  const metricsNow = { metricVersion: METRIC_VERSION, recall1: recallAt(1), recall5: recallAt(5), precision5, mrr, abstain, knowledgeUpdate: ku };
   if (process.argv.includes('--write-baseline')) {
     fs.writeFileSync(BASELINE, JSON.stringify(metricsNow, null, 2));
     console.log('\n基线已写入 tests/eval/baseline.json');
@@ -221,8 +235,13 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   let pass = true;
   if (fs.existsSync(BASELINE)) {
     const base = JSON.parse(fs.readFileSync(BASELINE, 'utf8'));
+    if ((base.metricVersion || 1) !== METRIC_VERSION) {
+      console.log(`\n基线口径过旧（metricVersion ${base.metricVersion || 1} ≠ ${METRIC_VERSION}），请先 --write-baseline 重记`);
+      process.exit(2);
+    }
     console.log('\n对比基线:');
     for (const [k, v] of Object.entries(metricsNow)) {
+      if (k === 'metricVersion') continue;
       const b = base[k] ?? 0;
       const d = v - b;
       const flag = d < -0.01 ? ' ← 回归!' : '';

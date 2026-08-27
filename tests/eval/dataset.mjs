@@ -59,43 +59,43 @@ export const memories = [
 
 export const queries = [
   // ---- fact-recall ×6 ----
-  { id: 'q1', q: 'clangd 的 Protocol.h 里重点要看哪些类型？', expect: ['f1'], category: 'fact-recall' },
-  { id: 'q2', q: 'MV3 的 service worker 为什么会中断长连接？', expect: ['f2'], category: 'fact-recall' },
-  { id: 'q3', q: '为什么 MV3 里存储要用 IndexedDB 而不是 localStorage？', expect: ['f3'], category: 'fact-recall' },
-  { id: 'q4', q: '目录句柄持久化之后权限还在吗？', expect: ['f4'], category: 'fact-recall' },
-  { id: 'q5', q: '遗忘曲线讲的是什么规律？', expect: ['f5'], category: 'fact-recall' },
-  { id: 'q6', q: 'BM25 打分由哪几部分构成？', expect: ['f7'], category: 'fact-recall' },
+  { id: 'q1', q: 'clangd 的 Protocol.h 里重点要看哪些类型？', expect: ['f1'], category: 'fact-recall', relevant: ['f1'] },
+  { id: 'q2', q: 'MV3 的 service worker 为什么会中断长连接？', expect: ['f2'], category: 'fact-recall', relevant: ['f2', 'k1'] },
+  { id: 'q3', q: '为什么 MV3 里存储要用 IndexedDB 而不是 localStorage？', expect: ['f3'], category: 'fact-recall', relevant: ['f3'] },
+  { id: 'q4', q: '目录句柄持久化之后权限还在吗？', expect: ['f4'], category: 'fact-recall', relevant: ['f4'] },
+  { id: 'q5', q: '遗忘曲线讲的是什么规律？', expect: ['f5'], category: 'fact-recall', relevant: ['f5'] },
+  { id: 'q6', q: 'BM25 打分由哪几部分构成？', expect: ['f7'], category: 'fact-recall', relevant: ['f7'] },
 
   // ---- preference-recall ×4 ----
-  { id: 'q7', q: '回答风格上我有什么偏好？', expect: ['p1', 'p4', 'p7'], category: 'preference-recall' },
-  { id: 'q8', q: '代码注释应该用什么语言写？', expect: ['p2'], category: 'preference-recall' },
-  { id: 'q9', q: '推荐工具时应该注意我的什么倾向？', expect: ['p5'], category: 'preference-recall' },
-  { id: 'q10', q: '我的读书笔记是什么格式？', expect: ['p6'], category: 'preference-recall' },
+  { id: 'q7', q: '回答风格上我有什么偏好？', expect: ['p1', 'p4', 'p7'], category: 'preference-recall', relevant: ['p1', 'p4', 'p7', 'p2'] },
+  { id: 'q8', q: '代码注释应该用什么语言写？', expect: ['p2'], category: 'preference-recall', relevant: ['p2', 'p7'] },
+  { id: 'q9', q: '推荐工具时应该注意我的什么倾向？', expect: ['p5'], category: 'preference-recall', relevant: ['p5', 'k9', 'c10'] },
+  { id: 'q10', q: '我的读书笔记是什么格式？', expect: ['p6'], category: 'preference-recall', relevant: ['p6'] },
 
   // ---- knowledge-update ×3（新版必须排在旧版前）----
-  { id: 'q11', q: 'flex 布局的 gap 属性能不能直接用？', expect: ['c2'], expectBefore: { newer: 'c2', older: 'c1' }, category: 'knowledge-update' },
-  { id: 'q12', q: 'SQLite can query JSON columns, right?', expect: ['c7', 'f8'], expectBefore: { newer: 'c7', older: 'c6' }, category: 'knowledge-update' },
-  { id: 'q13', q: 'content script 能直接读页面 window 变量吗？', expect: ['c3'], category: 'knowledge-update' },
+  { id: 'q11', q: 'flex 布局的 gap 属性能不能直接用？', expect: ['c2'], expectBefore: { newer: 'c2', older: 'c1' }, category: 'knowledge-update', relevant: ['c1', 'c2'] },
+  { id: 'q12', q: 'SQLite can query JSON columns, right?', expect: ['c7', 'f8'], expectBefore: { newer: 'c7', older: 'c6' }, category: 'knowledge-update', relevant: ['c6', 'c7', 'f8'] },
+  { id: 'q13', q: 'content script 能直接读页面 window 变量吗？', expect: ['c3'], category: 'knowledge-update', relevant: ['c3'] },
 
   // ---- tag-boost ×3（正文不含查询关键词，靠 tags 命中）----
-  { id: 'q14', q: 'clangd 相关的东西我记过什么？', expect: ['f1'], category: 'tag-boost' },
-  { id: 'q15', q: 'ollama 本地部署有什么要点？', expect: ['f9', 'c9'], category: 'tag-boost' },
-  { id: 'q16', q: 'git 提交习惯上我有什么讲究？', expect: ['p10'], category: 'tag-boost' },
+  { id: 'q14', q: 'clangd 相关的东西我记过什么？', expect: ['f1'], category: 'tag-boost', relevant: ['f1'] },
+  { id: 'q15', q: 'ollama 本地部署有什么要点？', expect: ['f9', 'c9'], category: 'tag-boost', relevant: ['f9', 'c9'] },
+  { id: 'q16', q: 'git 提交习惯上我有什么讲究？', expect: ['p10'], category: 'tag-boost', relevant: ['p10'] },
 
   // ---- abstain ×4（语料中无相关记忆，期望零注入）----
-  { id: 'q17', q: '怎么做天然酵母酸面包？', expect: [], category: 'abstain' },
-  { id: 'q18', q: 'Kubernetes 的 HPA 怎么配置？', expect: [], category: 'abstain' },
-  { id: 'q19', q: '2026 年世界杯冠军是谁？', expect: [], category: 'abstain' },
-  { id: 'q20', q: 'How do I replace the battery of a ThinkPad X1?', expect: [], category: 'abstain' },
+  { id: 'q17', q: '怎么做天然酵母酸面包？', expect: [], category: 'abstain', relevant: [] },
+  { id: 'q18', q: 'Kubernetes 的 HPA 怎么配置？', expect: [], category: 'abstain', relevant: [] },
+  { id: 'q19', q: '2026 年世界杯冠军是谁？', expect: [], category: 'abstain', relevant: [] },
+  { id: 'q20', q: 'How do I replace the battery of a ThinkPad X1?', expect: [], category: 'abstain', relevant: [] },
 
   // ---- en-mixed ×3 ----
-  { id: 'q21', q: 'Does Ollama work with OpenAI client libraries?', expect: ['f9'], category: 'en-mixed' },
-  { id: 'q22', q: 'What are the limits of pure vector retrieval?', expect: ['f10'], category: 'en-mixed' },
-  { id: 'q23', q: 'How should memory hits influence ranking?', expect: ['k10'], category: 'en-mixed' },
+  { id: 'q21', q: 'Does Ollama work with OpenAI client libraries?', expect: ['f9'], category: 'en-mixed', relevant: ['f9'] },
+  { id: 'q22', q: 'What are the limits of pure vector retrieval?', expect: ['f10'], category: 'en-mixed', relevant: ['f10'] },
+  { id: 'q23', q: 'How should memory hits influence ranking?', expect: ['k10'], category: 'en-mixed', relevant: ['k10', 'k8'] },
 
   // ---- noise-robust ×2（词面高重合但语义无关，不应被误导）----
-  { id: 'q24', q: 'CSS 盒模型里 padding 指什么？', expect: ['c1', 'c2'], category: 'fact-recall' },
-  { id: 'q25', q: '记忆面包和记忆曲线有什么关系？', expect: ['f5'], category: 'noise-robust' },
+  { id: 'q24', q: 'CSS 盒模型里 padding 指什么？', expect: ['c1', 'c2'], category: 'fact-recall', relevant: ['c1', 'c2'] },
+  { id: 'q25', q: '记忆面包和记忆曲线有什么关系？', expect: ['f5'], category: 'noise-robust', relevant: ['f5'] },
 ];
 
 // ---- 噪声记忆生成器（确定性 LCG，延迟-规模曲线用）----
