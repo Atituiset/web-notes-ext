@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.2.11",
+  "version": "0.3.0",
   "description": "__MSG_extDesc__",
   "default_locale": "zh_CN",
   "author": "Atituiset",
@@ -28,6 +28,7 @@
     "https://api.anthropic.com/*",
     "https://api.openai.com/*",
     "https://opencode.ai/*",
+    "https://integrate.api.nvidia.com/*",
     "https://huggingface.co/*",
     "https://*.huggingface.co/*"
   ],
