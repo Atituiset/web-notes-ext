@@ -405,7 +405,12 @@ export async function searchMemories(
           .filter((h, i) => h.sim >= DENSE_SIM_FLOOR && i < DENSE_TOP_N)
           .map((h) => [h.file, h.sim] as [string, number])
       );
-    } catch { /* embedding 不可用 → 纯词法 */ }
+    } catch (e: any) {
+      if (!(globalThis as any).__denseWarned) {
+        (globalThis as any).__denseWarned = true;
+        console.warn('[memory] dense ranker 失败，本次降级纯词法:', e && e.message || e);
+      }
+    }
   }
 
   const fused = fuseWeighted(scored, denseSim).slice(0, k);

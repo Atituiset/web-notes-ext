@@ -384,5 +384,20 @@
   },
   "profileNone": {
     "message": "未生成"
+  },
+  "labelSemanticRecall": {
+    "message": "语义召回（向量检索）"
+  },
+  "semanticOff": {
+    "message": "关闭（仅词法检索）"
+  },
+  "semanticLocal": {
+    "message": "端侧模型（本地计算，首次下载约 60MB）"
+  },
+  "embedApiKeyPh": {
+    "message": "选 API 通道时填 key，端侧留空"
+  },
+  "semanticHint": {
+    "message": "开启后记忆检索升级为「词法 + 向量」混合召回，改述/跨语种也能命中；端侧模型在本机计算，数据不出设备。"
   }
 }

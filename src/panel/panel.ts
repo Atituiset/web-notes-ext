@@ -23,6 +23,7 @@ import {
 } from '../lib/obsidian.js';
 import { renderPageMarkdown } from '../lib/markdown.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
+import { initEmbedding } from '../lib/embedding.js';
 
 const $ = (id: string): any => document.getElementById(id);
 let tab = 'notes';
@@ -715,6 +716,10 @@ document.addEventListener('click', (e: any) => {
 
 applyI18n();
 renderNotes();
+// 语义召回接线：端侧模型后台下载/加载，就绪前自然降级为词法单路
+getSettings()
+  .then((s) => initEmbedding(s))
+  .catch(() => {});
 
 // ---------- 页面「问 AI」入口（SW 转发 + 缓冲消费）----------
 

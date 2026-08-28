@@ -382,5 +382,20 @@
   },
   "profileNone": {
     "message": "Not generated"
+  },
+  "labelSemanticRecall": {
+    "message": "Semantic recall (vector retrieval)"
+  },
+  "semanticOff": {
+    "message": "Off (lexical only)"
+  },
+  "semanticLocal": {
+    "message": "On-device model (local compute, ~60MB first download)"
+  },
+  "embedApiKeyPh": {
+    "message": "API key for API channels; empty for on-device"
+  },
+  "semanticHint": {
+    "message": "Enables hybrid lexical+vector memory recall — paraphrase and cross-lingual queries hit too. The on-device model computes locally; nothing leaves your device."
   }
 }

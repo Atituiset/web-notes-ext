@@ -162,7 +162,7 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
   const sw2 = sw || (await ctx.waitForEvent('serviceworker', { timeout: 5000 }).catch(() => null));
   const settingsOk = await (sw2 || ctx.workers()[0] || page).evaluate(() => {
     return new Promise((res) => {
-      const r = indexedDB.open('web-notes-ext', 2);
+      const r = indexedDB.open('web-notes-ext', 3);
       r.onsuccess = () => {
         const db = r.result;
         try {

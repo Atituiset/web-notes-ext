@@ -10,7 +10,7 @@
  * 在 service worker 与扩展页面 (panel/options) 中均可使用。
  */
 const DB_NAME = 'web-notes-ext';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let _dbPromise = null;
 
@@ -32,6 +32,10 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains('settings')) {
         db.createObjectStore('settings', { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains('embeddings')) {
+        // 语义召回向量缓存 { key: `${model}|${type}|${hash(body)}`, value: number[] }
+        db.createObjectStore('embeddings', { keyPath: 'key' });
       }
       if (!db.objectStoreNames.contains('threads')) {
         // 会话线程: { id, title, url, createdAt, updatedAt, messages:[{role,content}] }

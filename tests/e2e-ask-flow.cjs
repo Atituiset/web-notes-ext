@@ -133,7 +133,7 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
 
   // 预置 mock provider 设置（openai-compatible → localhost mock）
   await optPage.evaluate(async (port) => {
-    const req = indexedDB.open('web-notes-ext', 2);
+    const req = indexedDB.open('web-notes-ext', 3);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'url' });

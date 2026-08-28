@@ -53,7 +53,7 @@ const SEED = [
     const out = {};
     // IDB + OPFS vault
     await new Promise((res, rej) => {
-      const req = indexedDB.open('web-notes-ext', 2);
+      const req = indexedDB.open('web-notes-ext', 3);
       req.onupgradeneeded = () => {
         const db = req.result;
         for (const n of ['pages', 'handles', 'settings']) if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: n === 'pages' ? 'url' : n === 'handles' ? 'name' : 'key' });
@@ -64,7 +64,7 @@ const SEED = [
     });
     const root = await navigator.storage.getDirectory();
     await new Promise((res, rej) => {
-      const req = indexedDB.open('web-notes-ext', 2);
+      const req = indexedDB.open('web-notes-ext', 3);
       req.onsuccess = () => { const t = req.result.transaction('handles', 'readwrite'); t.objectStore('handles').put({ name: 'vault', handle: root }); t.oncomplete = res; t.onerror = rej; };
       req.onerror = rej;
     });

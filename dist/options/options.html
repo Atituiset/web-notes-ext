@@ -146,6 +146,17 @@
       <button class="secondary" id="btn-profile" type="button" data-i18n="btnGenProfile"></button>
       <span class="status" id="profile-state"></span>
     </div>
+    <label data-i18n="labelSemanticRecall"></label>
+    <div class="row">
+      <select id="semanticRecall" style="flex:1">
+        <option value="off" data-i18n="semanticOff"></option>
+        <option value="local" data-i18n="semanticLocal"></option>
+        <option value="nvidia">NVIDIA API（nemotron-3-embed）</option>
+        <option value="openrouter">OpenRouter API（liquid-350m）</option>
+      </select>
+      <input id="embedApiKey" type="password" data-i18n-ph="embedApiKeyPh" style="flex:1" />
+    </div>
+    <p class="hint" style="color:#6b7280;font-size:12px;margin:4px 0" data-i18n="semanticHint"></p>
     <div id="mem-list"></div>
   </section>
 

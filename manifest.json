@@ -7,8 +7,16 @@
   "author": "Atituiset",
   "homepage_url": "https://github.com/Atituiset/web-notes-ext",
   "minimum_chrome_version": "114",
-  "permissions": ["storage", "sidePanel", "activeTab", "scripting"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "activeTab",
+    "scripting"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "host_permissions": [
     "http://localhost/*",
     "http://127.0.0.1/*",
@@ -19,7 +27,9 @@
     "https://openrouter.ai/*",
     "https://api.anthropic.com/*",
     "https://api.openai.com/*",
-    "https://opencode.ai/*"
+    "https://opencode.ai/*",
+    "https://huggingface.co/*",
+    "https://*.huggingface.co/*"
   ],
   "background": {
     "service_worker": "background/sw.js"
@@ -33,14 +43,22 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content/extract.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/extract.js"
+      ],
       "run_at": "document_idle",
       "world": "MAIN"
     },
     {
-      "matches": ["<all_urls>"],
-      "js": ["content/annotator.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/annotator.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -48,5 +66,8 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

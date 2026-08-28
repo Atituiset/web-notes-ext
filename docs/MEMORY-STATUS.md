@@ -15,9 +15,13 @@
 | 存储 | 一条记忆一个 Markdown 文件（frontmatter 全字段），存用户自己的 Obsidian vault，零服务器、零账号 |
 | 用户画像（Phase 5） | LLM 聚合既有记忆自动生成 `Markpilot-Memory/_profile.md`（角色与领域带置信度/知识背景/偏好/活跃主题），注入优先级等同 pinned；options 手动生成 + 「新增 N 条记忆可更新」stale 提示；type=profile 不污染检索 |
 
-## 已验证、尚未接进产品
+## 语义召回（已接线进产品，2026-08-28）
 
-**混合向量召回**（sparse 词法 + dense 向量，`setDenseRanker` 注入接口 + 真空门控加和融合）：代码与三通道（NVIDIA / 端侧 MiniLM / OpenRouter）已在评测环境完整验证。**产品内目前仍跑词法单路**——embedding 产品化接线（provider 抽象、IndexedDB 向量缓存、设置开关）是明确的下一步。
+**混合向量召回已上线**：`src/lib/embedding.ts` 通道抽象 + IndexedDB 向量缓存（`${model}|${type}|${hash(body)}` 三键，e5 非对称安全）+ panel 启动自动接线（失败静默降级词法）。
+
+- 设置页「语义召回」开关：`off（仅词法）/ local（端侧 MiniLM，默认推荐，零外传）/ NVIDIA API / OpenRouter API` + Embedding API Key 输入
+- 端侧通道：transformers.js 预构建包 + 包内 wasm（`dist/lib/`，CSP `wasm-unsafe-eval` + `numThreads=1` 规避 blob worker 限制），模型运行时从 HuggingFace 下载（约 60MB，数据非代码）
+- e2e 实测 4/4：改述查询（词面零重叠）被 dense 正确召回、向量落 IDB、对照组确认召回确来自 dense
 
 ## 指标结果（自动化评测，37 条标注查询）
 
@@ -48,6 +52,6 @@
 
 ## 下一步（按优先级）
 
-1. **embedding 产品化接线**——provider 抽象按 NVIDIA > 端侧 MiniLM > OpenRouter 优先级；向量缓存复用 query/passage 双键（坑已记录）；设置页开关
-2. **画像自动演化**——生成触发从手动按钮升级为「新增 N 条记忆自动提示」；画像信号用于消歧 q26/q35 类查询（已有设计，未验证）
+1. **画像自动演化**——生成触发从手动按钮升级为「新增 N 条记忆自动提示」；画像信号用于消歧 q26/q35 类查询（已有设计，未验证）
+2. **API 通道实测**——NVIDIA/OpenRouter 通道在真实扩展里各跑一次（端侧通道已 e2e 验证 4/4）
 3. OpenRouter 全量 A/B 复跑（免费日限额重置后，命令已就绪）
