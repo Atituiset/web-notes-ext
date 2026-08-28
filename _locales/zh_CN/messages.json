@@ -361,5 +361,28 @@
   },
   "extractFailed": {
     "message": "提取页面正文失败 — 该页面可能在扩展安装/更新前就已打开，请刷新页面后重试（chrome:// 等受限页面不支持）"
+  },
+  "btnGenProfile": {
+    "message": "生成/更新用户画像"
+  },
+  "profileGenWorking": {
+    "message": "生成中…"
+  },
+  "profileGenOk": {
+    "message": "✓ 画像已更新（$1 条记忆）",
+    "description": "$1 为记忆数量"
+  },
+  "profileGenFailed": {
+    "message": "画像生成失败: $1"
+  },
+  "profileEmpty": {
+    "message": "记忆库为空，先积累一些记忆"
+  },
+  "profileStale": {
+    "message": "距上次生成已新增 $1 条记忆",
+    "description": "$1 为新增记忆数"
+  },
+  "profileNone": {
+    "message": "未生成"
   }
 }

@@ -4,6 +4,7 @@ import { PROVIDERS, listModels, streamChat } from '../lib/llm/index.js';
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
+import { generateProfile } from '../lib/profile.js';
 
 const $ = (id: string): any => document.getElementById(id);
 
@@ -407,5 +408,35 @@ $('btn-mem-mgr').addEventListener('click', () => {
   }
 });
 
+// ---------- 用户画像（Phase 5） ----------
+
+async function refreshProfileState() {
+  const s = await getSettings();
+  const el = $('profile-state');
+  if (!s.profileUpdated) { el.textContent = t('profileNone'); return; }
+  const memories = await listMemories().catch(() => []);
+  const delta = memories.length - (s.profileMemoryCount || 0);
+  el.textContent = s.profileUpdated + (delta > 0 ? ' · ' + t('profileStale', delta) : '');
+}
+
+$('btn-profile').addEventListener('click', async () => {
+  const btn = $('btn-profile');
+  const el = $('profile-state');
+  btn.disabled = true;
+  el.style.color = '#6b7280';
+  el.textContent = t('profileGenWorking');
+  try {
+    const settings = await getSettings();
+    const r = await generateProfile(settings);
+    el.style.color = '#059669';
+    el.textContent = t('profileGenOk', r.memoryCount);
+  } catch (e: any) {
+    el.style.color = '#dc2626';
+    el.textContent = e && e.message === 'EMPTY' ? t('profileEmpty') : t('profileGenFailed', String(e.message || e).slice(0, 120));
+  }
+  btn.disabled = false;
+});
+
 applyI18n();
 load();
+refreshProfileState();

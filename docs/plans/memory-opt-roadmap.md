@@ -76,13 +76,15 @@ precision 口径在 Phase 1 修正后才能测量（旧口径分母含 pinned �
 
 已知难例（接受）：q26（语义跳跃过大，模型 top sim 0.45 给的是无关记忆）、q35（en→zh 跨语种改述，384d 模型判别力不足 sim 0.219<地板）。**Phase 4 候选杠杆：相关性阈值拒答治理、自适应地板（按查询 dense 分布形态判定）、可选更强 embedding 模型（multilingual-e5-base）复测。**
 
-### Phase 5 — 用户画像（新增，方向已确认：自动抽取）
+### Phase 5 — 用户画像（✅ 已完成 v1，2026-08-28）
 
 - 定位：画像是**派生物而非新存储**——对既有记忆库做一次 LLM 聚合，生成 `Markpilot-Profile.md`（角色/领域及置信度、知识背景、偏好、活跃主题），注入优先级等同 pinned（"用户是谁"卡片）。
 - 为什么是自动抽取而非预设角色：预设 taxonomy（程序员/财务/PM…）永远贴不准真实用户且增加 onboarding 摩擦；偏好/事实本就在流入记忆库，画像是它们的聚合视图，随使用自动演化。
 - 触发：每积累 N 条新记忆后提示生成（复用 autoMemory 的确认流，用户可控）；手动按钮可随时重新聚合。
 - 评测接入：画像注入后 precision/abstain 口径与 pinned 一致处理（设计注入不计入分母）。
 - 执行顺序：Phase 3/4（recall+precision 达标）之后。
+
+**实施结果（v1）**：`src/lib/profile.ts`——LLM 聚合全部记忆生成 `Markpilot-Memory/_profile.md`（固定四节：角色与领域带置信度/知识背景/偏好/活跃主题；frontmatter `type: profile` 使 listMemories 天然跳过、不污染检索）；chat-pipeline 在记忆之前以「用户画像」卡片注入（受 memoryInject 开关统一控制）；options「生成/更新画像」按钮 + `profileMemoryCount` stale 提示。e2e（opencode 免费模型 hy3-free + OPFS）5/5：生成/格式/小节结构/检索过滤/提问注入全过；检索指标回归零变化（画像不走 searchMemories）。v2 候选：新增 N 条自动提示生成、画像信号消歧难例查询。
 
 ### Phase 4 — 精确率收紧：tag 感知过滤 + dense 真空门限 + 三模型选型（✅ 已完成）
 

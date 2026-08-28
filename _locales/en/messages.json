@@ -361,5 +361,26 @@
   },
   "extractFailed": {
     "message": "Couldn't extract page text — this page may have been opened before the extension was installed or updated. Refresh the page and try again (restricted pages like chrome:// are unsupported)."
+  },
+  "btnGenProfile": {
+    "message": "Generate/update profile"
+  },
+  "profileGenWorking": {
+    "message": "Generating…"
+  },
+  "profileGenOk": {
+    "message": "✓ Profile updated ($1 memories)"
+  },
+  "profileGenFailed": {
+    "message": "Profile generation failed: $1"
+  },
+  "profileEmpty": {
+    "message": "Memory base is empty — save some memories first"
+  },
+  "profileStale": {
+    "message": "$1 new memories since last generation"
+  },
+  "profileNone": {
+    "message": "Not generated"
   }
 }

@@ -13,6 +13,7 @@
 import { buildContext } from './llm/context.js';
 import { streamChat } from './llm/index.js';
 import { searchMemories } from './memory.js';
+import { getProfile } from './profile.js';
 
 // ---------- token / 数量预算（集中管理，接长上下文模型时只改这里） ----------
 export const BUDGET = {
@@ -107,6 +108,16 @@ export async function buildLlmMessages(opts: {
 
   // 长期记忆注入（设置可关；vault 未授权静默降级）
   if (opts.settings.memoryInject !== false) {
+    // 用户画像（Phase 5）：若有，作为「用户是谁」卡片注入，优先级等同 pinned，位于记忆之前
+    try {
+      const profile = await getProfile();
+      if (profile) {
+        messages.splice(insertAt, 0, {
+          role: 'user',
+          content: '【用户画像】\n' + profile + '\n\n以上画像概括了用户的背景与偏好，回答时请以此为理解用户的基调。',
+        });
+      }
+    } catch { /* vault 未授权等 */ }
     try {
       const { memories } = await searchMemories(opts.question, {
         tokenBudget: BUDGET.memoryTokenBudget,

@@ -13,6 +13,7 @@
 | 检索 | 三因子排序（pin / hits 复述效应 / recency 衰减）+ IDF 加权词面重叠 + 英文停用词 + 词干归一 + tag 感知过滤 + listMemories mtime 缓存 |
 | 生命周期 | recency 指数衰减 + 90 天冷记忆标记（管理面板手动清理，不自动删） |
 | 存储 | 一条记忆一个 Markdown 文件（frontmatter 全字段），存用户自己的 Obsidian vault，零服务器、零账号 |
+| 用户画像（Phase 5） | LLM 聚合既有记忆自动生成 `Markpilot-Memory/_profile.md`（角色与领域带置信度/知识背景/偏好/活跃主题），注入优先级等同 pinned；options 手动生成 + 「新增 N 条记忆可更新」stale 提示；type=profile 不污染检索 |
 
 ## 已验证、尚未接进产品
 
@@ -48,5 +49,5 @@
 ## 下一步（按优先级）
 
 1. **embedding 产品化接线**——provider 抽象按 NVIDIA > 端侧 MiniLM > OpenRouter 优先级；向量缓存复用 query/passage 双键（坑已记录）；设置页开关
-2. **Phase 5 用户画像**——自动抽取的派生画像（LLM 聚合既有记忆生成 Profile.md，注入等同 pinned）；也是解 q26/q35 类歧义所需的上下文信号
+2. **画像自动演化**——生成触发从手动按钮升级为「新增 N 条记忆自动提示」；画像信号用于消歧 q26/q35 类查询（已有设计，未验证）
 3. OpenRouter 全量 A/B 复跑（免费日限额重置后，命令已就绪）
