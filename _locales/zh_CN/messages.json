@@ -51,6 +51,16 @@
   "exportPage": {
     "message": "⬇ 导出本页"
   },
+  "downloadMd": {
+    "message": "💾 存为 .md"
+  },
+  "downloadMdTitle": {
+    "message": "将本页笔记与总结直接下载为 Markdown 文件"
+  },
+  "downloadOk": {
+    "message": "已下载: $1",
+    "description": "$1 为文件名"
+  },
   "tabNotes": {
     "message": "本页笔记"
   },

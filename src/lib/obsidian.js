@@ -40,7 +40,7 @@ export async function ensureVaultPermission() {
   return h;
 }
 
-function fileNameFor(url, title) {
+export function fileNameFor(url, title) {
   let host = 'unknown';
   try {
     host = new URL(url).hostname.replace(/^www\./, '');

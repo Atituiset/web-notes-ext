@@ -51,6 +51,16 @@
   "exportPage": {
     "message": "⬇ Export page"
   },
+  "downloadMd": {
+    "message": "💾 Save as .md"
+  },
+  "downloadMdTitle": {
+    "message": "Download this page's notes and summaries as a Markdown file"
+  },
+  "downloadOk": {
+    "message": "Downloaded: $1",
+    "description": "$1 is the file name"
+  },
   "tabNotes": {
     "message": "Notes"
   },

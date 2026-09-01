@@ -19,9 +19,9 @@ import { saveMemory, listMemories, deleteMemory, pinMemory, isCold } from '../li
 import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
 import {
   getVaultHandle, exportViaFsAccess, vaultPermissionState,
-  ensureVaultPermission, exportViaUri,
+  ensureVaultPermission, exportViaUri, fileNameFor,
 } from '../lib/obsidian.js';
-import { renderPageMarkdown } from '../lib/markdown.js';
+import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
 import { initEmbedding } from '../lib/embedding.js';
 
@@ -114,9 +114,10 @@ function toast(msg) {
 
 // ---------- 导出 ----------
 
-$('btn-export').addEventListener('click', async () => {
+/** 收集本页导出材料（url/笔记/正文），失败时 toast 并返回 null */
+async function gatherExportData() {
   const info = await activeTabInfo();
-  if (!info || !/^https?:/.test(info.url)) { toast(t('pageNotExportable')); return; }
+  if (!info || !/^https?:/.test(info.url)) { toast(t('pageNotExportable')); return null; }
   const pageUrl = normalizeUrl(info.url);
   const r = await send({ type: 'notes:get', url: pageUrl });
   const notes = (r && r.ok && r.notes) || [];
@@ -126,6 +127,13 @@ $('btn-export').addEventListener('click', async () => {
     const text = await extractPageText(info.tab.id as number);
     pageMarkdown = (text || '').slice(0, BUDGET.pageTextMaxChars);
   } catch { /* 提取失败则只导笔记 */ }
+  return { info, pageUrl, notes, pageMarkdown };
+}
+
+$('btn-export').addEventListener('click', async () => {
+  const data = await gatherExportData();
+  if (!data) return;
+  const { info, pageUrl, notes, pageMarkdown } = data;
 
   const state = await vaultPermissionState();
   if (state === 'granted') {
@@ -150,6 +158,27 @@ $('btn-export').addEventListener('click', async () => {
     }
     return;
   }
+});
+
+// 直接下载为 .md 文件（与 Obsidian 导出同格式，无需 vault 授权）
+$('btn-download').addEventListener('click', async () => {
+  const data = await gatherExportData();
+  if (!data) return;
+  const notesMd = data.notes.map(noteToMarkdown).join('\n\n');
+  const md = renderPageMarkdown('', {
+    source: data.pageUrl,
+    title: data.info.title || data.pageUrl,
+    updated: Date.now(),
+    tags: ['web-notes'],
+  }, notesMd, data.pageMarkdown);
+  const file = fileNameFor(data.pageUrl, data.info.title || data.pageUrl);
+  const blobUrl = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+  const a = el('a');
+  a.href = blobUrl;
+  a.download = file;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  toast(t('downloadOk', file));
 });
 
 function appendError(msg) {
