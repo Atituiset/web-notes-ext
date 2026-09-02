@@ -1,4 +1,4 @@
-import { getSettings, saveSettings } from '../lib/db.js';
+import { getSettings, saveSettings, exportNotesData, importNotesData } from '../lib/db.js';
 import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
 import { PROVIDERS, listModels, streamChat } from '../lib/llm/index.js';
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
@@ -444,3 +444,33 @@ $('btn-profile').addEventListener('click', async () => {
 applyI18n();
 load();
 refreshProfileState();
+
+// ---------- 笔记备份（导出/导入） ----------
+
+$('btn-export-all').addEventListener('click', async () => {
+  const data = await exportNotesData();
+  const day = new Date().toISOString().slice(0, 10);
+  const blobUrl = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = `markpilot-notes-backup-${day}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+  $('backup-status').textContent = t('backupExported', data.notes.length);
+});
+
+$('btn-import').addEventListener('click', () => $('import-file').click());
+$('import-file').addEventListener('change', async (e: any) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // 允许重复导入同一文件
+  if (!file) return;
+  try {
+    const json = JSON.parse(await file.text());
+    if (!json || !Array.isArray(json.notes)) throw new Error(t('backupBadFile'));
+    if (!confirm(t('backupConfirmImport', json.notes.length))) return;
+    const r = await importNotesData(json);
+    $('backup-status').textContent = t('backupImported', r.imported, r.skipped);
+  } catch (err: any) {
+    $('backup-status').textContent = t('backupImportFailed', String((err && err.message) || err));
+  }
+});

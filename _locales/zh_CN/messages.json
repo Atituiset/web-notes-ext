@@ -409,5 +409,55 @@
   },
   "semanticHint": {
     "message": "开启后记忆检索升级为「词法 + 向量」混合召回，改述/跨语种也能命中；端侧模型在本机计算，数据不出设备。"
+  },
+  "scopeSiteChk": {
+    "message": "整个站点可见（本域名所有页面）"
+  },
+  "pageNotesTitle": {
+    "message": "📄 本页（$1）",
+    "description": "$1 为本页笔记数量"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 本站 $1（$2）",
+    "description": "$1 为域名，$2 为本站笔记数量"
+  },
+  "siteTag": {
+    "message": "本站"
+  },
+  "scopeToSite": {
+    "message": "设为本站"
+  },
+  "scopeToPage": {
+    "message": "收回本页"
+  },
+  "secBackup": {
+    "message": "💾 笔记备份"
+  },
+  "btnExportAll": {
+    "message": "导出全部笔记"
+  },
+  "btnImport": {
+    "message": "导入备份…"
+  },
+  "backupHint": {
+    "message": "导出为 JSON 自行保存；换浏览器 / 换设备 / 从本地版迁移到商店版时，导入即可恢复。相同 id 的笔记会被覆盖。"
+  },
+  "backupExported": {
+    "message": "已导出 $1 条笔记",
+    "description": "$1 为导出的笔记数量"
+  },
+  "backupBadFile": {
+    "message": "不是有效的备份文件（缺少 notes 数组）"
+  },
+  "backupConfirmImport": {
+    "message": "导入 $1 条笔记？相同 id 的已有笔记会被覆盖。",
+    "description": "$1 为备份文件中的笔记数量"
+  },
+  "backupImported": {
+    "message": "导入完成：成功 $1 条，跳过 $2 条",
+    "description": "$1 为成功导入数，$2 为跳过数"
+  },
+  "backupImportFailed": {
+    "message": "导入失败：$1"
   }
 }

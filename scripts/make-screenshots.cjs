@@ -96,15 +96,18 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
   if (!sw) sw = await ctx.waitForEvent('serviceworker', { timeout: 10000 });
   const extOrigin = 'chrome-extension://' + new URL(sw.url()).host;
 
-  // 预置 mock provider 设置（在扩展源页面里写 IDB）
+  // 预置 mock provider 设置（在扩展源页面里写 IDB；schema 与 src/lib/db.js v3 保持一致）
   const seed = await ctx.newPage();
   await seed.goto(extOrigin + '/options/options.html');
   await seed.evaluate(async (port) => {
-    const req = indexedDB.open('web-notes-ext', 2);
+    const req = indexedDB.open('web-notes-ext', 3);
     req.onupgradeneeded = () => {
       const db = req.result;
-      for (const n of ['pages', 'handles', 'settings']) if (!db.objectStoreNames.contains(n)) db.createObjectStore(n, { keyPath: n === 'pages' ? 'url' : n === 'handles' ? 'name' : 'key' });
+      if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'url' });
       if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' }).createIndex('url', 'url');
+      if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles', { keyPath: 'name' });
+      if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+      if (!db.objectStoreNames.contains('embeddings')) db.createObjectStore('embeddings', { keyPath: 'key' });
       if (!db.objectStoreNames.contains('threads')) db.createObjectStore('threads', { keyPath: 'id' }).createIndex('updatedAt', 'updatedAt');
     };
     await new Promise((res2, rej) => { req.onsuccess = res2; req.onerror = rej; });
@@ -149,6 +152,31 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
   console.log('02-note-popover.png');
   await page.click('#wne-pop .wp-save');
   await page.waitForTimeout(800);
+
+  // ---- 05 笔记分组列表（本页 + 本站 分级展示）----
+  // 造一条本站笔记，让面板出现两个分组
+  const seed2 = await ctx.newPage();
+  await seed2.goto(extOrigin + '/options/options.html');
+  await seed2.evaluate((port) => chrome.runtime.sendMessage({
+    type: 'notes:put',
+    note: {
+      id: 'demo-site-1', ts: Date.now(), updatedAt: Date.now(), scope: 'site',
+      url: 'localhost', originUrl: `http://localhost:${port}/article`,
+      sel: null, kind: 'manual',
+      content: '本栏目通用：读完立刻回想三个要点，想不起来就重读划线部分。',
+    },
+    page: { title: '主动阅读：为什么你读完就忘', host: `localhost:${port}` },
+  }), PORT);
+  await seed2.close();
+  const panelLs = await ctx.newPage();
+  await panelLs.setViewportSize({ width: 360, height: 800 });
+  await panelLs.goto(extOrigin + '/panel/panel.html');
+  await page.bringToFront(); // activeTab 指向文章页，面板按它检索笔记
+  await panelLs.reload();
+  await panelLs.waitForTimeout(700);
+  await panelLs.screenshot({ path: path.join(OUT, '05-notes-levels.png') });
+  console.log('05-notes-levels.png');
+  await panelLs.close();
 
   // 03 侧栏问答（panel 360×800 + 文章页 920×800 合成 1280×800）
   const panel = await ctx.newPage();

@@ -13,6 +13,7 @@
 - `src/content/annotator.js` — 划词捕获 / 字符偏移锚定 / 重高亮（notes.js 移植）
 - `src/content/extract.js` — 简化 Readability 正文提取
 - `src/lib/db.js` — IndexedDB（pages/notes/handles/settings）
+- `src/lib/url-key.js` — 笔记「本页 / 本站」两级 key（page = URL 去跟踪参数、保留 ?id= 类内容参数；site = 域名互通）
 - `src/lib/obsidian.js` — 三通道导出（fs-access 主 / obsidian:// 兜底 / REST API）
 - `src/lib/llm/` — provider 抽象 + SSE 流式 + 上下文构建器
 - `src/panel/` — side panel 笔记列表 + 聊天

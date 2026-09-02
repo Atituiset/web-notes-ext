@@ -8,7 +8,7 @@
  */
 
 import {
-  putNote, deleteNote, getNotesByUrl, getAllNotes, touchPage,
+  putNote, deleteNote, getNotesForUrl, getAllNotes, touchPage,
 } from '../lib/db.js';
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -25,7 +25,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     try {
       switch (msg && msg.type) {
         case 'notes:get': {
-          const notes = await getNotesByUrl(msg.url);
+          // 分级检索：本页 key（含 query 白名单）+ 旧裸 path + 本站 site key
+          const notes = await getNotesForUrl(msg.url);
           sendResponse({ ok: true, notes });
           break;
         }
@@ -36,9 +37,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         case 'notes:put': {
           await putNote(msg.note);
-          if (msg.note.url) {
+          // 页面档案用真实页面 URL（site 级笔记的 url 是裸域名，不入 pages 表）
+          const pageUrl = msg.note.originUrl || msg.note.url;
+          if (pageUrl && /^https?:/.test(pageUrl)) {
             const page = msg.page || {};
-            await touchPage(msg.note.url, page.title || '', page.host || '');
+            await touchPage(pageUrl, page.title || '', page.host || '');
           }
           sendResponse({ ok: true });
           break;

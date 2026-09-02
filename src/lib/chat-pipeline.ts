@@ -183,6 +183,8 @@ export async function saveAiQaNote(opts: {
       ts: Date.now(),
       updatedAt: Date.now(),
       url: opts.pageUrl,
+      scope: 'page',
+      originUrl: opts.pageUrl,
       kind: 'ai-qa',
       content: 'Q: ' + opts.question + '\n\nA: ' + opts.answer,
       sel: null,

@@ -139,14 +139,22 @@ if ((await h.queryPermission({mode:'readwrite'})) !== 'granted')
 ## 5. 数据模型（IndexedDB）
 
 ```
-db: web-notes-ext v1
+db: web-notes-ext v3
 ├── pages: keyPath=url        { url, title, host, lastVisited }
 ├── notes: keyPath=id, index:url
 │     { id, url, ts, updatedAt, content, sel:{start,end,text}|null,
-│       kind: 'manual'|'ai-qa', aiMeta:{provider,model,q,a}|null }
+│       kind: 'manual'|'ai-qa', aiMeta:{provider,model,q,a}|null,
+│       scope: 'page'|'site',          -- v0.4 分级；缺省视为 page
+│       originUrl: pageKey|null }      -- site 笔记的回源页（高亮恢复用）
 ├── handles: key=name         { name:'vault', handle }
 └── settings: key=key         { provider, model, apiKeys, vaultDirTemplate, exportAiQA }
 ```
+
+**笔记 URL 分级 key（v0.4，见 src/lib/url-key.js）**：
+- `page` 级：`origin + pathname + 内容区分 query`（白名单：id/p/page/v/q 等；utm_* 等跟踪参数丢弃）——`?id=1` 与 `?id=2` 互不干扰
+- `site` 级：hostname（去 www.）——同域名所有页面互通访问，提问时也注入上下文
+- 检索 = 三键并集（page key + 裸 path + site key）；旧数据（裸 path、无 scope）天然兼容
+- 高亮恢复：`matchesPage(note.url | note.originUrl, 当前页)`——site 笔记只在回源页画高亮，不污染同域其他页面
 
 ## 6. MVP 范围与验收标准
 

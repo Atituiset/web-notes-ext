@@ -6,6 +6,7 @@ const cases = [
   ['tests/unit/markdown-xss.test.mjs', '/tmp/wne-xss-test.mjs'],
   ['tests/unit/pipeline.test.mjs', '/tmp/wne-pipeline-test.mjs'],
   ['tests/unit/model-picker.test.mjs', '/tmp/wne-picker-test.mjs'],
+  ['tests/unit/url-key.test.mjs', '/tmp/wne-urlkey-test.mjs'],
 ];
 for (const [src, out] of cases) {
   execSync(

@@ -8,6 +8,7 @@
  */
 import { extractArticle } from '../lib/page-extract.js';
 import { msg as t } from '../lib/i18n.js';
+import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
 
 (() => {
   'use strict';
@@ -48,7 +49,7 @@ import { msg as t } from '../lib/i18n.js';
   }
 
   function pageUrl() {
-    return location.origin + location.pathname;
+    return pageKey(location.href);
   }
 
   function pageTitle() {
@@ -84,8 +85,15 @@ import { msg as t } from '../lib/i18n.js';
   }
 
   async function loadNotes() {
-    const r = await send({ type: 'notes:get', url: pageUrl() });
+    const r = await send({ type: 'notes:get', url: location.href });
     return (r && r.ok && r.notes) || [];
+  }
+
+  // 高亮只画与当前页同 page key 的笔记（本站笔记回源页才画，靠 originUrl 匹配）
+  function highlightable(notes) {
+    return notes.filter(
+      (n) => matchesPage(n.url, location.href) || (n.originUrl && matchesPage(n.originUrl, location.href))
+    );
   }
 
   function saveNote(note) {
@@ -190,7 +198,7 @@ import { msg as t } from '../lib/i18n.js';
   async function applyAllMarks() {
     unwrapMarks();
     const notes = await loadNotes();
-    notes.forEach(applyHighlight);
+    highlightable(notes).forEach(applyHighlight);
   }
 
   // ---------- UI ----------
@@ -229,6 +237,7 @@ import { msg as t } from '../lib/i18n.js';
     const ta = document.getElementById('wne-pop-input');
     ta.value = '';
     ta.dataset.editing = id ? '1' : '';
+    document.getElementById('wne-pop-site').checked = false;
     const selText = selInfo && selInfo.text;
     if (selText) {
       quote.style.display = 'block';
@@ -240,12 +249,15 @@ import { msg as t } from '../lib/i18n.js';
     ta.focus();
   }
 
-  // 编辑已有笔记：先取内容填入
+  // 编辑已有笔记：先取内容填入（site 级勾选态同步）
   async function openPopoverForEdit(id) {
     const notes = await loadNotes();
     const note = notes.find((x) => x.id === id);
     openPopover(id, note && note.sel);
-    if (note) document.getElementById('wne-pop-input').value = note.content;
+    if (note) {
+      document.getElementById('wne-pop-input').value = note.content;
+      document.getElementById('wne-pop-site').checked = note.scope === 'site';
+    }
   }
 
   function closePopover() {
@@ -259,16 +271,26 @@ import { msg as t } from '../lib/i18n.js';
     const content = ta.value.trim();
     if (!content) { toast(t('noteEmptyWarn')); return; }
     const now = Date.now();
+    const scope = document.getElementById('wne-pop-site').checked ? 'site' : 'page';
+    const url = scope === 'site' ? siteKey(location.href) : pageUrl();
     if (popState.id) {
       const notes = await loadNotes();
       const note = notes.find((x) => x.id === popState.id);
-      if (note) await saveNote(Object.assign({}, note, { content, updatedAt: now }));
+      if (note) {
+        await saveNote(Object.assign({}, note, {
+          content, updatedAt: now, scope, url,
+          // 回源页信息只增不改：site 级笔记靠它在原页面恢复高亮
+          originUrl: note.originUrl || pageUrl(),
+        }));
+      }
     } else {
       await saveNote({
         id: uid(),
         ts: now,
         updatedAt: now,
-        url: pageUrl(),
+        scope,
+        url,
+        originUrl: pageUrl(),
         content,
         sel: pendingSel || null,
         kind: 'manual',
@@ -323,7 +345,9 @@ import { msg as t } from '../lib/i18n.js';
       '#wne-pop .wp-quote{display:none;background:#fdf6e3;border-left:3px solid #f0c96a;color:#92400e;font-size:12px;padding:6px 10px;margin:10px 14px 0;max-height:72px;overflow:auto;white-space:pre-wrap;border-radius:0 8px 8px 0;}',
       '#wne-pop textarea{width:calc(100% - 28px);box-sizing:border-box;min-height:110px;margin:10px 14px 0;border:1px solid #d3d8e0;border-radius:10px;padding:9px 10px;font:inherit;color:#111827;resize:vertical;transition:border-color .15s,box-shadow .15s;}',
       '#wne-pop textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.15);}',
-      '#wne-pop .wp-ops{display:flex;justify-content:flex-end;gap:8px;padding:12px 14px 14px;}',
+      '#wne-pop .wp-ops{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 14px 14px;}',
+      '#wne-pop .wp-site{margin-right:auto;display:flex;align-items:center;gap:5px;font-size:12.5px;color:#67707f;cursor:pointer;user-select:none;}',
+      '#wne-pop .wp-site input{accent-color:#2563eb;margin:0;cursor:pointer;}',
       '#wne-pop .wp-ops button{border:1px solid #e4e7ec;background:#fff;color:#67707f;border-radius:10px;padding:7px 16px;cursor:pointer;font-size:13px;transition:all .15s;}',
       '#wne-pop .wp-ops button:hover{color:#2563eb;border-color:#c2d6fb;background:#eaf1fe;}',
       '#wne-pop .wp-ops button.wp-save{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600;}',
@@ -375,6 +399,13 @@ import { msg as t } from '../lib/i18n.js';
     ta.id = 'wne-pop-input';
     ta.placeholder = t('notePlaceholder');
     const ops = el('div', 'wp-ops');
+    const scopeLbl = el('label', 'wp-site');
+    const siteChk = document.createElement('input');
+    siteChk.type = 'checkbox';
+    siteChk.id = 'wne-pop-site';
+    scopeLbl.appendChild(siteChk);
+    scopeLbl.appendChild(el('span', '', t('scopeSiteChk')));
+    ops.appendChild(scopeLbl);
     const btnCancel = el('button', '', t('btnCancel'));
     btnCancel.addEventListener('click', closePopover);
     const btnSave = el('button', 'wp-save', t('btnSave'));

@@ -407,5 +407,55 @@
   },
   "semanticHint": {
     "message": "Enables hybrid lexical+vector memory recall — paraphrase and cross-lingual queries hit too. The on-device model computes locally; nothing leaves your device."
+  },
+  "scopeSiteChk": {
+    "message": "Visible on the whole site (all pages of this domain)"
+  },
+  "pageNotesTitle": {
+    "message": "📄 This page ($1)",
+    "description": "$1 is the page note count"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 This site: $1 ($2)",
+    "description": "$1 is the domain, $2 is the site note count"
+  },
+  "siteTag": {
+    "message": "site"
+  },
+  "scopeToSite": {
+    "message": "Make site-wide"
+  },
+  "scopeToPage": {
+    "message": "Move to this page"
+  },
+  "secBackup": {
+    "message": "💾 Notes backup"
+  },
+  "btnExportAll": {
+    "message": "Export all notes"
+  },
+  "btnImport": {
+    "message": "Import backup…"
+  },
+  "backupHint": {
+    "message": "Export notes as JSON and keep it safe; import to restore when switching browsers, devices, or migrating from a local build to the store build. Notes with the same id are overwritten."
+  },
+  "backupExported": {
+    "message": "Exported $1 notes",
+    "description": "$1 is the exported note count"
+  },
+  "backupBadFile": {
+    "message": "Not a valid backup file (notes array missing)"
+  },
+  "backupConfirmImport": {
+    "message": "Import $1 notes? Existing notes with the same id will be overwritten.",
+    "description": "$1 is the note count in the backup file"
+  },
+  "backupImported": {
+    "message": "Import done: $1 imported, $2 skipped",
+    "description": "$1 imported count, $2 skipped count"
+  },
+  "backupImportFailed": {
+    "message": "Import failed: $1"
   }
 }

@@ -4,11 +4,14 @@
  * stores:
  *   pages    keyPath=url
  *   notes    keyPath=id, index:url
+ *            note.url 为分级 key（见 lib/url-key.js）：page=页面 key，site=hostname
  *   handles  key=name      (vault FileSystemDirectoryHandle 持久化)
  *   settings key=key
  *
  * 在 service worker 与扩展页面 (panel/options) 中均可使用。
  */
+import { lookupKeys } from './url-key.js';
+
 const DB_NAME = 'web-notes-ext';
 const DB_VERSION = 3;
 
@@ -110,11 +113,82 @@ export function getNotesByUrl(url) {
   );
 }
 
+/**
+ * 取某页面可见的全部笔记：本页 page key + 旧裸 path key + 本站 site key。
+ * 调用方传原始 URL（或任一 key），key 归一与集合组装见 lib/url-key.js。
+ */
+export function getNotesForUrl(url) {
+  const keys = lookupKeys(url);
+  if (!keys.length) return Promise.resolve([]);
+  return openDB().then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const byId = new Map();
+        const t = db.transaction('notes', 'readonly');
+        const idx = t.objectStore('notes').index('url');
+        for (const k of keys) {
+          const req = idx.openCursor(IDBKeyRange.only(k));
+          req.onsuccess = () => {
+            const cur = req.result;
+            if (cur) {
+              byId.set(cur.value.id, cur.value);
+              cur.continue();
+            }
+          };
+        }
+        t.oncomplete = () =>
+          resolve([...byId.values()].sort((a, b) => a.ts - b.ts));
+        t.onerror = () => reject(t.error);
+        t.onabort = () => reject(t.error || new Error('transaction aborted'));
+      })
+  );
+}
+
 export function getAllNotes() {
   return tx('notes', 'readonly', (os) => {
     const r = os.getAll();
     return { _req: r };
   });
+}
+
+// ---- 备份（全部笔记的 JSON 导出/导入）----
+
+const BACKUP_KIND = 'notes-backup';
+
+/** 导出全部笔记为可 JSON.stringify 的备份对象 */
+export async function exportNotesData() {
+  return {
+    app: 'markpilot',
+    kind: BACKUP_KIND,
+    version: 1,
+    exportedAt: Date.now(),
+    notes: await getAllNotes(),
+  };
+}
+
+/**
+ * 导入备份：按 id 覆盖写（put 语义）
+ * @returns { total, imported, skipped }  — total 为备份内条目数，skipped 为格式非法跳过数
+ */
+export async function importNotesData(json) {
+  const arr = json && Array.isArray(json.notes) ? json.notes : null;
+  if (!arr) throw new Error('invalid backup: notes[] missing');
+  let imported = 0, skipped = 0;
+  for (const raw of arr) {
+    if (
+      !raw ||
+      typeof raw.id !== 'string' || !raw.id ||
+      typeof raw.url !== 'string' || !raw.url ||
+      typeof raw.content !== 'string'
+    ) {
+      skipped++;
+      continue;
+    }
+    const now = Date.now();
+    await putNote({ ...raw, ts: +raw.ts || now, updatedAt: +raw.updatedAt || now });
+    imported++;
+  }
+  return { total: arr.length, imported, skipped };
 }
 
 // ---- pages ----

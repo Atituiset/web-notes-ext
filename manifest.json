@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "__MSG_extDesc__",
   "default_locale": "zh_CN",
   "author": "Atituiset",
   "homepage_url": "https://github.com/Atituiset/web-notes-ext",
   "minimum_chrome_version": "114",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmtQlXjBfFcp4JPgfahBGn/9ZXMNct8CPxIdRs8Gqu1sbA2vVwwu+eeQvtYkcRhv4WLoyt5UUMrfiAA5oHbNVXaWrUeGYjAoo2hh71uf+56bVgLoEqjjNx+mVF1bugEfCrjiEYG0u+Fdoqf/1QEysUszej+Akbqc5UhUbOwAEuN5bcJVHqblQBy49/WgTFCsbbrfqrCHOIh2O3j5chGGeAu7F5esCWrRhsUFeD4JmGkJTbT4qY6xroCwwZzJ/jPy+BIY7aSxS5CcKUru+A4l1475fOhSA7tXTP/rytCwovhogas7mCqjTfzBHKix65p8NGyafuqHmp/6FxbKVNreh5wIDAQAB",
   "permissions": [
     "storage",
     "sidePanel",

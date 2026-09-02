@@ -22,6 +22,7 @@ import {
   ensureVaultPermission, exportViaUri, fileNameFor,
 } from '../lib/obsidian.js';
 import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
+import { pageKey, siteKey } from '../lib/url-key.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
 import { initEmbedding } from '../lib/embedding.js';
 
@@ -47,26 +48,31 @@ async function activeTabInfo() {
   return { tab: t, url: t.url || csUrl, title: t.title || csTitle, selection };
 }
 
-// ---------- 笔记列表 ----------
+// ---------- 笔记列表（本页 / 本站 两级分组） ----------
 
 async function renderNotes() {
   const main = $('main');
   main.textContent = '';
   const info = await activeTabInfo();
   if (!info) { main.appendChild(el('div', 'empty', t('noActiveTab'))); return; }
-  const pageUrl = normalizeUrl(info.url);
-  const r = await send({ type: 'notes:get', url: pageUrl });
+  // SW 侧按分级 key 检索（本页 + 旧裸 path + 本站），这里只负责分组展示
+  const r = await send({ type: 'notes:get', url: info.url });
   const notes = (r && r.ok && r.notes) || [];
-  $('btn-export').textContent = t('exportPageCount', notes.length);
+  const pageNotes = notes.filter((n) => n.scope !== 'site');
+  const siteNotes = notes.filter((n) => n.scope === 'site');
+  $('btn-export').textContent = t('exportPageCount', pageNotes.length);
   if (!notes.length) {
     main.appendChild(el('div', 'empty', t('noNotesYet')));
     return;
   }
-  for (const n of [...notes].reverse()) main.appendChild(noteItem(n));
-}
-
-function normalizeUrl(u) {
-  try { const x = new URL(u); return x.origin + x.pathname; } catch { return u; }
+  if (pageNotes.length) {
+    main.appendChild(el('div', 'sec-h', t('pageNotesTitle', pageNotes.length)));
+    for (const n of [...pageNotes].reverse()) main.appendChild(noteItem(n, info.url));
+  }
+  if (siteNotes.length) {
+    main.appendChild(el('div', 'sec-h', t('siteNotesTitle', siteKey(info.url), siteNotes.length)));
+    for (const n of [...siteNotes].reverse()) main.appendChild(noteItem(n, info.url));
+  }
 }
 
 function el(tag: string, cls?: string, text?: string): any {
@@ -76,15 +82,28 @@ function el(tag: string, cls?: string, text?: string): any {
   return n;
 }
 
-function noteItem(n) {
+function noteItem(n, curUrl) {
   const d = el('div', 'item');
   const meta = el('div', 'meta');
   meta.appendChild(el('span', '', new Date(n.ts).toLocaleString()));
   if (n.kind === 'ai-qa') meta.appendChild(el('span', '', t('aiTag')));
+  if (n.scope === 'site') meta.appendChild(el('span', 'scope-tag', t('siteTag')));
   d.appendChild(meta);
   if (n.sel && n.sel.text) d.appendChild(el('div', 'quote', '"' + n.sel.text + '"'));
   d.appendChild(el('div', 'text', n.content));
   const ops = el('div', 'ops');
+  // 层级切换：page ↔ site（本站笔记回到某页时落回当前页/回源页）
+  const btnScope = el('button', '', n.scope === 'site' ? t('scopeToPage') : t('scopeToSite'));
+  btnScope.onclick = async () => {
+    const updatedAt = Date.now();
+    if (n.scope === 'site') {
+      const page = (n.originUrl && siteKey(n.originUrl) === siteKey(curUrl)) ? n.originUrl : pageKey(curUrl);
+      await send({ type: 'notes:put', note: Object.assign({}, n, { scope: 'page', url: page, originUrl: page, updatedAt }) });
+    } else {
+      await send({ type: 'notes:put', note: Object.assign({}, n, { scope: 'site', url: siteKey(n.url), originUrl: n.originUrl || n.url, updatedAt }) });
+    }
+    renderNotes();
+  };
   const btnCopy = el('button', '', t('copyBtn'));
   btnCopy.onclick = () => navigator.clipboard.writeText(n.content).then(() => toast(t('copied')));
   const btnDel = el('button', 'danger', t('deleteBtn'));
@@ -92,6 +111,7 @@ function noteItem(n) {
     await send({ type: 'notes:delete', id: n.id });
     renderNotes();
   };
+  ops.appendChild(btnScope);
   ops.appendChild(btnCopy);
   ops.appendChild(btnDel);
   d.appendChild(ops);
@@ -114,13 +134,13 @@ function toast(msg) {
 
 // ---------- 导出 ----------
 
-/** 收集本页导出材料（url/笔记/正文），失败时 toast 并返回 null */
+/** 收集本页导出材料（url/笔记/正文），失败时 toast 并返回 null。导出仅含本页笔记，不带本站笔记（避免 vault 里逐页重复） */
 async function gatherExportData() {
   const info = await activeTabInfo();
   if (!info || !/^https?:/.test(info.url)) { toast(t('pageNotExportable')); return null; }
-  const pageUrl = normalizeUrl(info.url);
-  const r = await send({ type: 'notes:get', url: pageUrl });
-  const notes = (r && r.ok && r.notes) || [];
+  const pageUrl = pageKey(info.url);
+  const r = await send({ type: 'notes:get', url: info.url });
+  const notes = ((r && r.ok && r.notes) || []).filter((n) => n.scope !== 'site');
 
   let pageMarkdown = '';
   try {
@@ -343,8 +363,9 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   const wantPageText = scope !== 'selection';
   const gather = async () => {
     const info = await activeTabInfo();
-    const pageUrl = info ? normalizeUrl(info.url) : '';
-    const r = pageUrl ? await send({ type: 'notes:get', url: pageUrl }) : { ok: true, notes: [] };
+    const pageUrl = info ? pageKey(info.url) : '';
+    // 传原始 URL：SW 侧做分级 key 归一；本站笔记也注入，同域知识互通进上下文
+    const r = info ? await send({ type: 'notes:get', url: info.url }) : { ok: true, notes: [] };
     const notes = (r && r.notes) || [];
     let pageText: string | null = null;
     if (wantPageText && info && /^https?:/.test(info.url)) {

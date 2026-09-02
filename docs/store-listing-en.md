@@ -26,6 +26,12 @@ HIGHLIGHT & NOTE ANYWHERE
 Select text on any webpage and jot down your thoughts in one click. Notes are
 filed per page and their highlights are restored automatically on reload.
 
+PAGE-LEVEL AND SITE-LEVEL NOTES
+Notes stick to a single page by default — content-bearing query params like
+?id= are respected, tracking params like utm_* are dropped, so notes never
+bleed across article variants. Flip any note to "site-wide" and it appears in
+the side panel on every page of that domain, and feeds the AI context too.
+
 ASK AI IN CONTEXT
 Stuck on a paragraph? Select it and hit "Ask AI". The side panel sends the
 selected text, the page content, and your own notes to the LLM — so the model
@@ -36,6 +42,11 @@ LOCAL OBSIDIAN EXPORT
 Authorize your vault once, then export a page's notes and AI Q&A as Markdown
 with frontmatter in one click. Long-term memories are written to
 Markpilot-Memory/ and injected into future conversations when relevant.
+
+BACKUP & MIGRATION
+Export all notes as JSON from the settings page in one click; import to
+restore when switching browsers, devices, or moving from a dev build to the
+store build. Your data sovereignty, end to end.
 
 YOUR KEYS, YOUR DATA
 · Works with DeepSeek, Zhipu GLM, Moonshot Kimi, Alibaba Qwen, OpenRouter,
@@ -80,9 +91,10 @@ following your browser language automatically.
 ## 截图说明（英文 caption，可选）
 
 1. `01-selection-toolbar.png` — "Select any text to take a note or ask AI"
-2. `02-note-popover.png` — "Notes with the original quote, saved per page"
+2. `02-note-popover.png` — "Notes with the original quote, saved per page or site-wide"
 3. `03-panel-chat.png` — "AI answers with your notes and the page as context"
 4. `04-options.png` — "BYOK: major providers and local Ollama supported"
+5. `05-notes-levels.png` — "Notes grouped by page and by site"
 
 注：截图 UI 为中文。扩展 v0.2.7 起 UI 支持中英文（跟随浏览器语言自动切换），
 英文版截图可用同一脚本（`scripts/make-screenshots.cjs`）在英文 locale 下重拍。

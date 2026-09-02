@@ -135,6 +135,17 @@
   </section>
 
   <section>
+    <h2 data-i18n="secBackup"></h2>
+    <div class="row">
+      <button class="secondary" id="btn-export-all" type="button" data-i18n="btnExportAll"></button>
+      <button class="secondary" id="btn-import" type="button" data-i18n="btnImport"></button>
+      <input id="import-file" type="file" accept=".json,application/json" style="display:none" />
+      <span class="status" id="backup-status"></span>
+    </div>
+    <p class="warn" data-i18n="backupHint"></p>
+  </section>
+
+  <section>
     <h2 data-i18n="secMemory"></h2>
     <label><input type="checkbox" id="memoryInject" style="width:auto" /> <span data-i18n="labelMemoryInject"></span></label>
     <label><input type="checkbox" id="autoMemory" style="width:auto" /> <span data-i18n="labelAutoMemory"></span></label>

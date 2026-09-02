@@ -3,3 +3,5 @@ dist/
 *.zip
 .DS_Store
 release/
+# 扩展签名私钥（manifest "key" 公钥的配对私钥，切勿入库）
+markpilot-key.pem

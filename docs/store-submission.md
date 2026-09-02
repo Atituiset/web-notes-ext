@@ -25,6 +25,12 @@ Markpilot 把「读到 → 划下 → 记住 → 问透」压缩进浏览器侧�
 【划词笔记】
 在任意网页选中文字，一键记下心得。笔记按页面归档，刷新后自动恢复高亮。
 
+【笔记分级：本页 / 本站】
+笔记默认跟随单个页面（自动识别 ?id= 等正文参数，丢弃 utm 等跟踪参数，
+不再出现"换了个页面参数笔记就串了"的问题）。也可以一键设为「本站」——
+在同域名所有页面的侧栏都能看到，问 AI 时同样注入上下文。
+整页与整站随时切换，侧栏分组展示一目了然。
+
 【AI 就地问答】
 选中读不懂的段落点「问 AI」，侧栏自动带着选中原文、页面正文和你的笔记向 LLM
 提问——模型回答的是"你正在读的这一页"，而不是泛泛而谈。支持流式输出、
@@ -33,6 +39,10 @@ Markpilot 把「读到 → 划下 → 记住 → 问透」压缩进浏览器侧�
 【本地 Obsidian 落盘】
 一次授权 vault 目录，之后一键把整页笔记 + AI 问答导出为带 frontmatter 的
 Markdown。长期记忆自动写入 Markpilot-Memory/，跨会话提问时按需注入。
+
+【备份与迁移】
+设置页一键导出全部笔记为 JSON；换浏览器、换设备（或从开发版切换到商店版）
+时导入即恢复，数据主权完全在你手里。
 
 【你的 Key，你的数据】
 · 支持 DeepSeek / 智谱 GLM / 月之暗面 Kimi / 通义千问 / OpenRouter /
@@ -71,7 +81,22 @@ Markdown。长期记忆自动写入 Markpilot-Memory/，跨会话提问时按需
 - [x] 图标 128×128：`icons/icon128.png`
 - [x] 截图（`docs/store/`，1280×800）：
   - `01-selection-toolbar.png` 划词工具条
-  - `02-note-popover.png` 笔记弹窗
+  - `02-note-popover.png` 笔记弹窗（含「整个站点可见」选项）
   - `03-panel-chat.png` 侧栏 AI 问答（合成图：网页 + 侧栏）
   - `04-options.png` 设置页（含模型测试）
-- [ ] 宣传磁贴 440×280（可选，想进精选位再做）
+  - `05-notes-levels.png` 笔记分级列表（本页 / 本站）
+- [x] 宣传磁贴 440×280：`docs/store/promo-tile-440x280.png`
+
+截图重拍：`npm run build && node scripts/make-screenshots.cjs`
+磁贴更新：`node scripts/make-promo-tile.cjs`
+
+## 扩展 ID 与 manifest key（重要）
+
+`manifest.json` 内含 `"key"` 字段（公钥），对应私钥在仓库根目录
+`markpilot-key.pem`（已 gitignore，**切勿提交或泄露**）。
+
+- **固定扩展 ID**：`pfkejpdbaikhknckilankommnlhmhigm`（由该 key 决定）
+- 本地加载（load unpacked）与商店版因此共享同一 ID，用户数据（IndexedDB）互通
+- **首次上传商店时务必保留 manifest 中的 key 字段**，商店会用它确定永久 ID；
+  若删掉，商店版 ID 会变，老用户笔记将"不可见"（数据没丢，但读取不到）
+- 私钥仅在需要本地打 .crx 自测时用到；商店签名由 Google 托管，无需上传私钥
