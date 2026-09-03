@@ -1,0 +1,471 @@
+{
+  "extName": {
+    "message": "Markpilot — Web Notes to Obsidian & AI"
+  },
+  "extDesc": {
+    "message": "Notizen per Textmarkierung → lokaler Obsidian-Vault → LLM-Fragen im Kontext, mit Langzeitgedächtnis"
+  },
+  "btnNote": {
+    "message": "📝 Notiz"
+  },
+  "btnAsk": {
+    "message": "🤖 KI fragen"
+  },
+  "btnTranslate": {
+    "message": "🌐 Übersetzen"
+  },
+  "translating": {
+    "message": "Übersetzen…"
+  },
+  "translateFailed": {
+    "message": "Übersetzung fehlgeschlagen: $1",
+    "description": "Hinweis bei fehlgeschlagener Übersetzung der Auswahl, $1 ist die Fehlerdetailmeldung"
+  },
+  "noteSaved": {
+    "message": "Gespeichert"
+  },
+  "noteEmptyWarn": {
+    "message": "Schreibe erst etwas, bevor du speicherst"
+  },
+  "sentToPanel": {
+    "message": "An Seitenleiste gesendet"
+  },
+  "sendFailedHint": {
+    "message": "Senden fehlgeschlagen. Klicke auf das Symbol in der Symbolleiste, um die Seitenleiste zu öffnen"
+  },
+  "selQuotePrefix": {
+    "message": "Ausgewählt: „$1“",
+    "description": "Zitat-Präfix, $1 ist der ausgewählte Text"
+  },
+  "notePlaceholder": {
+    "message": "Deine Gedanken… (Markdown wird unterstützt)"
+  },
+  "untitledPage": {
+    "message": "Unbenannte Seite"
+  },
+  "btnSave": {
+    "message": "Speichern"
+  },
+  "btnCancel": {
+    "message": "Abbrechen"
+  },
+  "newChat": {
+    "message": "✚ Neuer Chat"
+  },
+  "newChatTitle": {
+    "message": "Aktuelle Unterhaltung löschen und neu beginnen"
+  },
+  "threadsTitle": {
+    "message": "Chat-Verlauf"
+  },
+  "exportPage": {
+    "message": "⬇ Seite exportieren"
+  },
+  "downloadMd": {
+    "message": "💾 Als .md speichern"
+  },
+  "downloadMdTitle": {
+    "message": "Notizen und Zusammenfassungen dieser Seite als Markdown-Datei herunterladen"
+  },
+  "downloadOk": {
+    "message": "Heruntergeladen: $1",
+    "description": "$1 ist der Dateiname"
+  },
+  "tabNotes": {
+    "message": "Notizen"
+  },
+  "tabChat": {
+    "message": "KI fragen"
+  },
+  "chatPlaceholder": {
+    "message": "Frag irgendetwas… (Seiteninhalt + deine Notizen + Auswahl werden mitgeschickt)"
+  },
+  "scopePage": {
+    "message": "Ganzer Seitenkontext"
+  },
+  "scopeSelection": {
+    "message": "Nur Auswahl + Notizen"
+  },
+  "sendBtn": {
+    "message": "Senden"
+  },
+  "stopBtn": {
+    "message": "Stopp"
+  },
+  "scrollBottomTitle": {
+    "message": "Nach unten scrollen"
+  },
+  "exportPageCount": {
+    "message": "⬇ Seite exportieren ($1)",
+    "description": "$1 ist die Anzahl der Notizen"
+  },
+  "noActiveTab": {
+    "message": "Kein Zugriff auf den aktiven Tab möglich"
+  },
+  "noNotesYet": {
+    "message": "Noch keine Notizen auf dieser Seite — markiere Text, um eine hinzuzufügen"
+  },
+  "copied": {
+    "message": "Kopiert"
+  },
+  "pageNotExportable": {
+    "message": "Diese Seite kann nicht exportiert werden"
+  },
+  "exportOk": {
+    "message": "In Vault geschrieben: $1",
+    "description": "$1 ist der Dateiname"
+  },
+  "exportFailed": {
+    "message": "Export fehlgeschlagen: $1"
+  },
+  "exportAuthFailed": {
+    "message": "Autorisierung/Export fehlgeschlagen: $1\n(Alternativ kannst du auf die obsidian:// URI zurückgreifen)"
+  },
+  "starter1": {
+    "message": "Fasse die Kernpunkte dieses Artikels zusammen"
+  },
+  "starter2": {
+    "message": "Liste Begriffe auf, die ich vielleicht nicht verstehe, und erkläre sie"
+  },
+  "starter3": {
+    "message": "Weise auf mögliche Missverständnisse in meinen Notizen hin"
+  },
+  "starter4": {
+    "message": "Erkläre mir diese Seite mit der Feynman-Methode"
+  },
+  "chatWelcome": {
+    "message": "Frag irgendetwas — Seiteninhalt, deine Notizen und die Auswahl werden mitgeschickt"
+  },
+  "modelNotConfigured": {
+    "message": "(nicht konfiguriert)"
+  },
+  "untitledThread": {
+    "message": "(unbenannt)"
+  },
+  "deleteThreadTitle": {
+    "message": "Diese Unterhaltung löschen"
+  },
+  "streamingWait": {
+    "message": "Antwort läuft — stoppe sie oder warte auf den Abschluss"
+  },
+  "thinkingSummary": {
+    "message": "💭 Denkt nach"
+  },
+  "stopped": {
+    "message": "Gestoppt"
+  },
+  "copyBtn": {
+    "message": "Kopieren"
+  },
+  "answerCopied": {
+    "message": "Antwort kopiert"
+  },
+  "rememberBtn": {
+    "message": "🧠 Merken"
+  },
+  "rememberTitle": {
+    "message": "Diese Erkenntnis als Langzeitgedächtnis speichern"
+  },
+  "remembering": {
+    "message": "Extrahieren…"
+  },
+  "remembered": {
+    "message": "✓ Gespeichert"
+  },
+  "rememberOk": {
+    "message": "In Markpilot-Memory gespeichert"
+  },
+  "rememberFailed": {
+    "message": "Merken fehlgeschlagen: $1"
+  },
+  "retryBtn": {
+    "message": "Erneut versuchen"
+  },
+  "streamingShort": {
+    "message": "Antwort läuft"
+  },
+  "memBadge": {
+    "message": "🧠 $1 merkbar",
+    "description": "$1 ist die Anzahl der Kandidaten"
+  },
+  "memBadgeTitle": {
+    "message": "Klicken, um automatisch gefundene Erinnerungen zu prüfen und zu speichern"
+  },
+  "confirmRemember": {
+    "message": "Das merken?\n\n$1"
+  },
+  "followupExpand": {
+    "message": "„$1“ näher ausführen",
+    "description": "$1 ist eine Überschrift aus der Antwort"
+  },
+  "followupCode": {
+    "message": "Erkläre den obigen Code Zeile für Zeile"
+  },
+  "followupExample": {
+    "message": "Gib ein konkretes Beispiel"
+  },
+  "followupSummarize": {
+    "message": "Fasse in 3 Kernpunkten zusammen"
+  },
+  "followupConflict": {
+    "message": "Steht das im Widerspruch zu meinen Notizen?"
+  },
+  "confirmNewChat": {
+    "message": "Diese Unterhaltung löschen? Gespeicherte Notizen bleiben erhalten."
+  },
+  "roleYou": {
+    "message": "Du"
+  },
+  "aiTag": {
+    "message": "[KI]"
+  },
+  "askAboutSelection": {
+    "message": "Erkläre das: „$1“",
+    "description": "Automatische Frage von „KI fragen“ auf der Seite, $1 ist der ausgewählte Text"
+  },
+  "optionsTitle": {
+    "message": "Markpilot-Einstellungen"
+  },
+  "labelBaseUrl": {
+    "message": "Base-URL (leer lassen für Anbieter-Voreinstellung; ausfüllen für eigenen Proxy/vLLM)"
+  },
+  "baseUrlPh": {
+    "message": "Leer = Voreinstellung / oder http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "Modell"
+  },
+  "modelPh": {
+    "message": "Zum Filtern tippen oder auf „Modelle abrufen“ klicken"
+  },
+  "btnModels": {
+    "message": "Modelle abrufen"
+  },
+  "btnTest": {
+    "message": "Testen"
+  },
+  "openrouterHint": {
+    "message": "OpenRouter listet Modelle ohne Schlüssel; kostenlose Modelle sind mit ⭐ markiert."
+  },
+  "labelApiKey": {
+    "message": "API-Schlüssel (wird nur lokal in IndexedDB gespeichert, nie hochgeladen)"
+  },
+  "apiKeyPh": {
+    "message": "Für lokale Modelle nicht nötig"
+  },
+  "keyWarn": {
+    "message": "Schlüssel bleiben in diesem Browser. Der Anthropic-Header für direkten Browserzugriff wird automatisch hinzugefügt."
+  },
+  "labelSystemPrompt": {
+    "message": "System-Prompt für Fragen & Antworten (leeren, um keine System-Nachricht zu senden)"
+  },
+  "btnPromptReset": {
+    "message": "Auf Standard zurücksetzen"
+  },
+  "systemPromptHint": {
+    "message": "Seiteninhalt, Notizen und Auswahl werden immer gesendet; hier steuerst du nur die Rolle des Modells."
+  },
+  "btnPickVault": {
+    "message": "Vault-Ordner autorisieren…"
+  },
+  "labelDirTemplate": {
+    "message": "Vorlage für das Export-Unterverzeichnis"
+  },
+  "labelExportAiQA": {
+    "message": "KI-Fragen & Antworten ebenfalls exportieren (standardmäßig aus)"
+  },
+  "secMemory": {
+    "message": "🧠 Langzeitgedächtnis"
+  },
+  "labelMemoryInject": {
+    "message": "Relevante Erinnerungen beim Fragen einbeziehen (standardmäßig an)"
+  },
+  "labelAutoMemory": {
+    "message": "Gedächtnis-Kandidaten automatisch extrahieren (standardmäßig aus; Badge zur Bestätigung)"
+  },
+  "btnMemMgr": {
+    "message": "Erinnerungen verwalten…"
+  },
+  "btnSaveSettings": {
+    "message": "Einstellungen speichern"
+  },
+  "vaultNoHandle": {
+    "message": "Nicht autorisiert"
+  },
+  "vaultGranted": {
+    "message": "✓ Autorisiert"
+  },
+  "vaultNeedPrompt": {
+    "message": "Ordner ausgewählt — einmal klicken, um die Berechtigung wiederherzustellen"
+  },
+  "modelFetching": {
+    "message": "Abrufen…"
+  },
+  "modelsFetched": {
+    "message": "$1 Modelle abgerufen",
+    "description": "$1 ist die Anzahl der Modelle"
+  },
+  "modelsFetchedFree": {
+    "message": ", davon $1 kostenlos (mit ⭐ markiert)",
+    "description": "$1 ist die Anzahl der kostenlosen Modelle"
+  },
+  "modelsFetchedTail": {
+    "message": " — klicke auf das Modell-Eingabefeld, um eines auszuwählen."
+  },
+  "modelsFetchFailed": {
+    "message": "Abruf fehlgeschlagen: $1"
+  },
+  "modelsManualHint": {
+    "message": "(oder Modellnamen manuell eingeben)"
+  },
+  "modelNoMatch": {
+    "message": "Kein passendes Modell"
+  },
+  "modelEmptyList": {
+    "message": "Noch keine Liste — klicke auf „Modelle abrufen“ oder tippe manuell"
+  },
+  "freeTag": {
+    "message": "⭐ Kostenlos"
+  },
+  "vaultAuthFailed": {
+    "message": "Autorisierung fehlgeschlagen: $1"
+  },
+  "savedOk": {
+    "message": "Gespeichert ✓"
+  },
+  "testing": {
+    "message": "Teste $1 …",
+    "description": "$1 ist der Modellname"
+  },
+  "testOk": {
+    "message": "✓ $1 funktioniert ($2s)",
+    "description": "$1 ist der Modellname, $2 sind Sekunden"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 verbunden, aber nichts zurückgegeben — versuche ein anderes"
+  },
+  "testTimeout": {
+    "message": "✗ $1 keine Antwort in 30s (Upstream ist evtl. nicht erreichbar — versuche ein anderes)"
+  },
+  "testFailed": {
+    "message": "✗ $1 nicht verfügbar: $2",
+    "description": "$1 ist der Modellname, $2 ist die Fehlerdetailmeldung"
+  },
+  "memCount": {
+    "message": "$1 Erinnerungen",
+    "description": "$1 ist die Anzahl der Erinnerungen"
+  },
+  "pinBtn": {
+    "message": "📌 Anpinnen"
+  },
+  "unpinBtn": {
+    "message": "Loslösen"
+  },
+  "coldTag": {
+    "message": "kalt (90 Tage ungenutzt)"
+  },
+  "editBtn": {
+    "message": "Bearbeiten"
+  },
+  "editMemoryPrompt": {
+    "message": "Erinnerung bearbeiten:"
+  },
+  "deleteBtn": {
+    "message": "Löschen"
+  },
+  "confirmDeleteMemory": {
+    "message": "Diese Erinnerung löschen?"
+  },
+  "modelNotConfiguredError": {
+    "message": "Kein Modell konfiguriert — in den Einstellungen festlegen"
+  },
+  "extractFailed": {
+    "message": "Seitentext konnte nicht extrahiert werden — diese Seite wurde möglicherweise vor der Installation oder Aktualisierung der Erweiterung geöffnet. Lade die Seite neu und versuche es erneut (eingeschränkte Seiten wie chrome:// werden nicht unterstützt)."
+  },
+  "btnGenProfile": {
+    "message": "Profil erstellen/aktualisieren"
+  },
+  "profileGenWorking": {
+    "message": "Wird erstellt…"
+  },
+  "profileGenOk": {
+    "message": "✓ Profil aktualisiert ($1 Erinnerungen)"
+  },
+  "profileGenFailed": {
+    "message": "Profilerstellung fehlgeschlagen: $1"
+  },
+  "profileEmpty": {
+    "message": "Gedächtnisbasis ist leer — speichere zuerst einige Erinnerungen"
+  },
+  "profileStale": {
+    "message": "$1 neue Erinnerungen seit der letzten Erstellung"
+  },
+  "profileNone": {
+    "message": "Nicht erstellt"
+  },
+  "labelSemanticRecall": {
+    "message": "Semantische Suche (Vektorabfrage)"
+  },
+  "semanticOff": {
+    "message": "Aus (nur lexikalisch)"
+  },
+  "semanticLocal": {
+    "message": "On-Device-Modell (lokale Berechnung, ~60MB beim ersten Download)"
+  },
+  "embedApiKeyPh": {
+    "message": "API-Schlüssel für API-Kanäle; leer für On-Device"
+  },
+  "semanticHint": {
+    "message": "Aktiviert hybride lexikalische + Vektor-Suche im Gedächtnis — auch Umschreibungen und sprachübergreifende Anfragen treffen. Das On-Device-Modell rechnet lokal; nichts verlässt dein Gerät."
+  },
+  "scopeSiteChk": {
+    "message": "Auf der ganzen Website sichtbar (alle Seiten dieser Domain)"
+  },
+  "pageNotesTitle": {
+    "message": "📄 Diese Seite ($1)",
+    "description": "$1 ist die Anzahl der Notizen auf dieser Seite"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 Diese Website: $1 ($2)",
+    "description": "$1 ist die Domain, $2 ist die Anzahl der Website-Notizen"
+  },
+  "siteTag": {
+    "message": "Website"
+  },
+  "scopeToSite": {
+    "message": "Website-weit machen"
+  },
+  "scopeToPage": {
+    "message": "Auf diese Seite verschieben"
+  },
+  "secBackup": {
+    "message": "💾 Notizen-Backup"
+  },
+  "btnExportAll": {
+    "message": "Alle Notizen exportieren"
+  },
+  "btnImport": {
+    "message": "Backup importieren…"
+  },
+  "backupHint": {
+    "message": "Exportiere Notizen als JSON und bewahre die Datei sicher auf; importiere sie, um beim Wechsel von Browser oder Gerät oder beim Umstieg von einem lokalen Build auf die Store-Version alles wiederherzustellen. Notizen mit derselben ID werden überschrieben."
+  },
+  "backupExported": {
+    "message": "$1 Notizen exportiert",
+    "description": "$1 ist die Anzahl der exportierten Notizen"
+  },
+  "backupBadFile": {
+    "message": "Keine gültige Backup-Datei (notes-Array fehlt)"
+  },
+  "backupConfirmImport": {
+    "message": "$1 Notizen importieren? Vorhandene Notizen mit derselben ID werden überschrieben.",
+    "description": "$1 ist die Anzahl der Notizen in der Backup-Datei"
+  },
+  "backupImported": {
+    "message": "Import abgeschlossen: $1 importiert, $2 übersprungen",
+    "description": "$1 Anzahl importiert, $2 Anzahl übersprungen"
+  },
+  "backupImportFailed": {
+    "message": "Import fehlgeschlagen: $1"
+  }
+}

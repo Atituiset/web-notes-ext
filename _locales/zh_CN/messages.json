@@ -11,6 +11,16 @@
   "btnAsk": {
     "message": "🤖 问 AI"
   },
+  "btnTranslate": {
+    "message": "🌐 翻译"
+  },
+  "translating": {
+    "message": "翻译中…"
+  },
+  "translateFailed": {
+    "message": "翻译失败：$1",
+    "description": "划词翻译失败提示，$1 为错误详情"
+  },
   "noteSaved": {
     "message": "已保存"
   },

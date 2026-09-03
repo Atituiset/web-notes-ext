@@ -1,0 +1,471 @@
+{
+  "extName": {
+    "message": "Markpilot — Web ノート to Obsidian & AI"
+  },
+  "extDesc": {
+    "message": "テキスト選択ノート → ローカル Obsidian → コンテキスト付き LLM 問答。長期記憶つき"
+  },
+  "btnNote": {
+    "message": "📝 ノート"
+  },
+  "btnAsk": {
+    "message": "🤖 AI に聞く"
+  },
+  "btnTranslate": {
+    "message": "🌐 翻訳"
+  },
+  "translating": {
+    "message": "翻訳中…"
+  },
+  "translateFailed": {
+    "message": "翻訳に失敗しました: $1",
+    "description": "選択テキスト翻訳の失敗通知。$1 はエラー詳細"
+  },
+  "noteSaved": {
+    "message": "保存しました"
+  },
+  "noteEmptyWarn": {
+    "message": "保存する前に内容を入力してください"
+  },
+  "sentToPanel": {
+    "message": "サイドパネルに送信しました"
+  },
+  "sendFailedHint": {
+    "message": "送信に失敗しました。ツールバーアイコンをクリックしてサイドパネルを開いてください"
+  },
+  "selQuotePrefix": {
+    "message": "選択中: \"$1\"",
+    "description": "引用プレフィックス。$1 は選択テキスト"
+  },
+  "notePlaceholder": {
+    "message": "考えを書く… (Markdown 対応)"
+  },
+  "untitledPage": {
+    "message": "無題のページ"
+  },
+  "btnSave": {
+    "message": "保存"
+  },
+  "btnCancel": {
+    "message": "キャンセル"
+  },
+  "newChat": {
+    "message": "✚ 新規チャット"
+  },
+  "newChatTitle": {
+    "message": "現在の会話をクリアして新しく始める"
+  },
+  "threadsTitle": {
+    "message": "チャット履歴"
+  },
+  "exportPage": {
+    "message": "⬇ ページをエクスポート"
+  },
+  "downloadMd": {
+    "message": "💾 .md で保存"
+  },
+  "downloadMdTitle": {
+    "message": "このページのノートと要約を Markdown ファイルとしてダウンロード"
+  },
+  "downloadOk": {
+    "message": "ダウンロードしました: $1",
+    "description": "$1 はファイル名"
+  },
+  "tabNotes": {
+    "message": "ノート"
+  },
+  "tabChat": {
+    "message": "AI に聞く"
+  },
+  "chatPlaceholder": {
+    "message": "何でも聞いてください…（ページ内容 + ノート + 選択範囲も送信されます）"
+  },
+  "scopePage": {
+    "message": "ページ全体をコンテキストに"
+  },
+  "scopeSelection": {
+    "message": "選択範囲 + ノートのみ"
+  },
+  "sendBtn": {
+    "message": "送信"
+  },
+  "stopBtn": {
+    "message": "停止"
+  },
+  "scrollBottomTitle": {
+    "message": "一番下へスクロール"
+  },
+  "exportPageCount": {
+    "message": "⬇ ページをエクスポート ($1)",
+    "description": "$1 はノート数"
+  },
+  "noActiveTab": {
+    "message": "アクティブなタブにアクセスできません"
+  },
+  "noNotesYet": {
+    "message": "このページにはまだノートがありません — テキストを選択して追加しましょう"
+  },
+  "copied": {
+    "message": "コピーしました"
+  },
+  "pageNotExportable": {
+    "message": "このページはエクスポートできません"
+  },
+  "exportOk": {
+    "message": "保管庫に書き込みました: $1",
+    "description": "$1 はファイル名"
+  },
+  "exportFailed": {
+    "message": "エクスポートに失敗しました: $1"
+  },
+  "exportAuthFailed": {
+    "message": "認可/エクスポートに失敗しました: $1\n（obsidian:// URI へのフォールバックも使えます）"
+  },
+  "starter1": {
+    "message": "この記事の要点をまとめて"
+  },
+  "starter2": {
+    "message": "わからなそうな用語を挙げて説明して"
+  },
+  "starter3": {
+    "message": "私のノートにある誤解の可能性を指摘して"
+  },
+  "starter4": {
+    "message": "ファインマン手法でこのページを解説して"
+  },
+  "chatWelcome": {
+    "message": "何でも聞いてください — ページ内容、ノート、選択範囲も含まれます"
+  },
+  "modelNotConfigured": {
+    "message": "(未設定)"
+  },
+  "untitledThread": {
+    "message": "(無題)"
+  },
+  "deleteThreadTitle": {
+    "message": "この会話を削除"
+  },
+  "streamingWait": {
+    "message": "ストリーミング中 — 停止するか完了を待ってください"
+  },
+  "thinkingSummary": {
+    "message": "💭 思考中"
+  },
+  "stopped": {
+    "message": "停止しました"
+  },
+  "copyBtn": {
+    "message": "コピー"
+  },
+  "answerCopied": {
+    "message": "回答をコピーしました"
+  },
+  "rememberBtn": {
+    "message": "🧠 記憶する"
+  },
+  "rememberTitle": {
+    "message": "この結論を長期記憶として保存"
+  },
+  "remembering": {
+    "message": "抽出中…"
+  },
+  "remembered": {
+    "message": "✓ 保存しました"
+  },
+  "rememberOk": {
+    "message": "Markpilot-Memory に保存しました"
+  },
+  "rememberFailed": {
+    "message": "記憶に失敗しました: $1"
+  },
+  "retryBtn": {
+    "message": "再試行"
+  },
+  "streamingShort": {
+    "message": "ストリーミング中"
+  },
+  "memBadge": {
+    "message": "🧠 記憶候補 $1 件",
+    "description": "$1 は候補数"
+  },
+  "memBadgeTitle": {
+    "message": "クリックして自動検出された記憶を確認・保存"
+  },
+  "confirmRemember": {
+    "message": "これを記憶しますか？\n\n$1"
+  },
+  "followupExpand": {
+    "message": "「$1」について詳しく",
+    "description": "$1 は回答内の見出し"
+  },
+  "followupCode": {
+    "message": "上のコードを一行ずつ説明して"
+  },
+  "followupExample": {
+    "message": "具体的な例を挙げて"
+  },
+  "followupSummarize": {
+    "message": "3つの要点にまとめて"
+  },
+  "followupConflict": {
+    "message": "私のノートと矛盾していませんか？"
+  },
+  "confirmNewChat": {
+    "message": "この会話をクリアしますか？保存済みのノートは影響を受けません。"
+  },
+  "roleYou": {
+    "message": "あなた"
+  },
+  "aiTag": {
+    "message": "[AI]"
+  },
+  "askAboutSelection": {
+    "message": "これを説明して: \"$1\"",
+    "description": "ページの「AI に聞く」からの自動質問。$1 は選択テキスト"
+  },
+  "optionsTitle": {
+    "message": "Markpilot 設定"
+  },
+  "labelBaseUrl": {
+    "message": "Base URL（空欄でプロバイダー既定値、カスタムプロキシ/vLLM の場合は入力）"
+  },
+  "baseUrlPh": {
+    "message": "空欄 = 既定値 / または http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "モデル"
+  },
+  "modelPh": {
+    "message": "入力して絞り込むか、「モデルを取得」をクリック"
+  },
+  "btnModels": {
+    "message": "モデルを取得"
+  },
+  "btnTest": {
+    "message": "テスト"
+  },
+  "openrouterHint": {
+    "message": "OpenRouter はキーなしでモデル一覧を取得できます。無料モデルには ⭐ が付きます。"
+  },
+  "labelApiKey": {
+    "message": "API キー（ローカルの IndexedDB にのみ保存、アップロードされません）"
+  },
+  "apiKeyPh": {
+    "message": "ローカルモデルでは不要"
+  },
+  "keyWarn": {
+    "message": "キーはこのブラウザ内にのみ保存されます。Anthropic のブラウザ直接アクセス用ヘッダーは自動で付与されます。"
+  },
+  "labelSystemPrompt": {
+    "message": "問答用システムプロンプト（空にすると system メッセージを送りません）"
+  },
+  "btnPromptReset": {
+    "message": "既定値に戻す"
+  },
+  "systemPromptHint": {
+    "message": "ページ内容・ノート・選択範囲は常に送信されます。ここではペルソナのみを制御します。"
+  },
+  "btnPickVault": {
+    "message": "保管庫フォルダーを認可…"
+  },
+  "labelDirTemplate": {
+    "message": "エクスポート先サブディレクトリのテンプレート"
+  },
+  "labelExportAiQA": {
+    "message": "AI 問答もエクスポート（既定はオフ）"
+  },
+  "secMemory": {
+    "message": "🧠 長期記憶"
+  },
+  "labelMemoryInject": {
+    "message": "質問時に関連する記憶を注入（既定はオン）"
+  },
+  "labelAutoMemory": {
+    "message": "記憶候補を自動抽出（既定はオフ。バッジで確認できます）"
+  },
+  "btnMemMgr": {
+    "message": "記憶を管理…"
+  },
+  "btnSaveSettings": {
+    "message": "設定を保存"
+  },
+  "vaultNoHandle": {
+    "message": "未認可"
+  },
+  "vaultGranted": {
+    "message": "✓ 認可済み"
+  },
+  "vaultNeedPrompt": {
+    "message": "フォルダー選択済み — 1回クリックして権限を復元してください"
+  },
+  "modelFetching": {
+    "message": "取得中…"
+  },
+  "modelsFetched": {
+    "message": "$1 件のモデルを取得しました",
+    "description": "$1 はモデル数"
+  },
+  "modelsFetchedFree": {
+    "message": "、うち $1 件は無料（⭐ 印）",
+    "description": "$1 は無料モデル数"
+  },
+  "modelsFetchedTail": {
+    "message": " — モデル入力欄をクリックして選択してください。"
+  },
+  "modelsFetchFailed": {
+    "message": "取得に失敗しました: $1"
+  },
+  "modelsManualHint": {
+    "message": "（またはモデル名を手入力）"
+  },
+  "modelNoMatch": {
+    "message": "一致するモデルがありません"
+  },
+  "modelEmptyList": {
+    "message": "一覧がまだありません — 「モデルを取得」をクリックするか手入力してください"
+  },
+  "freeTag": {
+    "message": "⭐ 無料"
+  },
+  "vaultAuthFailed": {
+    "message": "認可に失敗しました: $1"
+  },
+  "savedOk": {
+    "message": "保存しました ✓"
+  },
+  "testing": {
+    "message": "$1 をテスト中…",
+    "description": "$1 はモデル名"
+  },
+  "testOk": {
+    "message": "✓ $1 は利用可能です（$2 秒）",
+    "description": "$1 はモデル名、$2 は秒数"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 に接続できましたが応答が空です — 別のモデルを試してください"
+  },
+  "testTimeout": {
+    "message": "✗ $1 は 30 秒応答なし（上流が停止している可能性 — 別のモデルを試してください）"
+  },
+  "testFailed": {
+    "message": "✗ $1 は利用できません: $2",
+    "description": "$1 はモデル名、$2 はエラー詳細"
+  },
+  "memCount": {
+    "message": "$1 件の記憶",
+    "description": "$1 は記憶数"
+  },
+  "pinBtn": {
+    "message": "📌 ピン留め"
+  },
+  "unpinBtn": {
+    "message": "ピン留め解除"
+  },
+  "coldTag": {
+    "message": "コールド（90日間未使用）"
+  },
+  "editBtn": {
+    "message": "編集"
+  },
+  "editMemoryPrompt": {
+    "message": "記憶を編集:"
+  },
+  "deleteBtn": {
+    "message": "削除"
+  },
+  "confirmDeleteMemory": {
+    "message": "この記憶を削除しますか？"
+  },
+  "modelNotConfiguredError": {
+    "message": "モデルが未設定です — 設定ページで設定してください"
+  },
+  "extractFailed": {
+    "message": "ページの本文を抽出できませんでした — このページは拡張機能のインストール/更新前に開かれた可能性があります。ページを再読み込みして再試行してください（chrome:// などの制限ページは非対応です）。"
+  },
+  "btnGenProfile": {
+    "message": "プロファイルを生成/更新"
+  },
+  "profileGenWorking": {
+    "message": "生成中…"
+  },
+  "profileGenOk": {
+    "message": "✓ プロファイルを更新しました（$1 件の記憶）"
+  },
+  "profileGenFailed": {
+    "message": "プロファイルの生成に失敗しました: $1"
+  },
+  "profileEmpty": {
+    "message": "記憶ベースが空です — まず記憶をいくつか保存してください"
+  },
+  "profileStale": {
+    "message": "前回の生成以降、新しい記憶が $1 件あります"
+  },
+  "profileNone": {
+    "message": "未生成"
+  },
+  "labelSemanticRecall": {
+    "message": "意味的リコール（ベクトル検索）"
+  },
+  "semanticOff": {
+    "message": "オフ（語彙検索のみ）"
+  },
+  "semanticLocal": {
+    "message": "オンデバイスモデル（ローカル計算、初回ダウンロード約 60MB）"
+  },
+  "embedApiKeyPh": {
+    "message": "API チャネル用のキー。オンデバイスなら空欄"
+  },
+  "semanticHint": {
+    "message": "語彙+ベクトルのハイブリッド記憶リコールを有効化 — 言い換えや言語またがりのクエリにもヒットします。オンデバイスモデルはローカルで計算され、データはデバイス外に出ません。"
+  },
+  "scopeSiteChk": {
+    "message": "サイト全体で表示（このドメインの全ページ）"
+  },
+  "pageNotesTitle": {
+    "message": "📄 このページ（$1）",
+    "description": "$1 はページのノート数"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 このサイト: $1（$2）",
+    "description": "$1 はドメイン、$2 はサイトのノート数"
+  },
+  "siteTag": {
+    "message": "サイト"
+  },
+  "scopeToSite": {
+    "message": "サイト全体にする"
+  },
+  "scopeToPage": {
+    "message": "このページに移動"
+  },
+  "secBackup": {
+    "message": "💾 ノートのバックアップ"
+  },
+  "btnExportAll": {
+    "message": "すべてのノートをエクスポート"
+  },
+  "btnImport": {
+    "message": "バックアップをインポート…"
+  },
+  "backupHint": {
+    "message": "ノートを JSON としてエクスポートして保管してください。ブラウザやデバイスの乗り換え、ローカルビルドからストア版への移行時にインポートで復元できます。同じ id のノートは上書きされます。"
+  },
+  "backupExported": {
+    "message": "$1 件のノートをエクスポートしました",
+    "description": "$1 はエクスポートしたノート数"
+  },
+  "backupBadFile": {
+    "message": "有効なバックアップファイルではありません（notes 配列がありません）"
+  },
+  "backupConfirmImport": {
+    "message": "$1 件のノートをインポートしますか？同じ id の既存ノートは上書きされます。",
+    "description": "$1 はバックアップファイル内のノート数"
+  },
+  "backupImported": {
+    "message": "インポート完了: $1 件インポート、$2 件スキップ",
+    "description": "$1 はインポート数、$2 はスキップ数"
+  },
+  "backupImportFailed": {
+    "message": "インポートに失敗しました: $1"
+  }
+}

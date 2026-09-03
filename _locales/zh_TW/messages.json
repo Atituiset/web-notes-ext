@@ -1,0 +1,473 @@
+{
+  "extName": {
+    "message": "Markpilot — Web Notes to Obsidian & AI"
+  },
+  "extDesc": {
+    "message": "劃詞筆記 → 本機 Obsidian → LLM 即時問答，附跨工作階段長期記憶"
+  },
+  "btnNote": {
+    "message": "📝 記筆記"
+  },
+  "btnAsk": {
+    "message": "🤖 問 AI"
+  },
+  "btnTranslate": {
+    "message": "🌐 翻譯"
+  },
+  "translating": {
+    "message": "翻譯中…"
+  },
+  "translateFailed": {
+    "message": "翻譯失敗：$1",
+    "description": "劃詞翻譯失敗提示，$1 為錯誤詳情"
+  },
+  "noteSaved": {
+    "message": "已儲存"
+  },
+  "noteEmptyWarn": {
+    "message": "請先寫點內容再儲存"
+  },
+  "sentToPanel": {
+    "message": "已傳送到側邊欄"
+  },
+  "sendFailedHint": {
+    "message": "傳送失敗，請點擊工具列圖示開啟側邊欄"
+  },
+  "selQuotePrefix": {
+    "message": "選取：\"$1\"",
+    "description": "選取範圍引用前綴，$1 為選取的文字"
+  },
+  "notePlaceholder": {
+    "message": "寫下你的想法…（支援 Markdown）"
+  },
+  "untitledPage": {
+    "message": "未命名頁面"
+  },
+  "btnSave": {
+    "message": "儲存"
+  },
+  "btnCancel": {
+    "message": "取消"
+  },
+  "newChat": {
+    "message": "✚ 新對話"
+  },
+  "newChatTitle": {
+    "message": "清除目前對話，開始新對話"
+  },
+  "threadsTitle": {
+    "message": "對話紀錄"
+  },
+  "exportPage": {
+    "message": "⬇ 匯出本頁"
+  },
+  "downloadMd": {
+    "message": "💾 存為 .md"
+  },
+  "downloadMdTitle": {
+    "message": "將本頁筆記與摘要下載為 Markdown 檔案"
+  },
+  "downloadOk": {
+    "message": "已下載：$1",
+    "description": "$1 為檔案名稱"
+  },
+  "tabNotes": {
+    "message": "筆記"
+  },
+  "tabChat": {
+    "message": "問 AI"
+  },
+  "chatPlaceholder": {
+    "message": "隨便問…（自動帶上頁面內容 + 你的筆記 + 選取範圍）"
+  },
+  "scopePage": {
+    "message": "整頁上下文"
+  },
+  "scopeSelection": {
+    "message": "僅選取範圍 + 筆記"
+  },
+  "sendBtn": {
+    "message": "傳送"
+  },
+  "stopBtn": {
+    "message": "停止"
+  },
+  "scrollBottomTitle": {
+    "message": "捲動到底部"
+  },
+  "exportPageCount": {
+    "message": "⬇ 匯出本頁（$1）",
+    "description": "$1 為筆記數量"
+  },
+  "noActiveTab": {
+    "message": "無法存取目前分頁"
+  },
+  "noNotesYet": {
+    "message": "本頁尚無筆記 — 回到網頁選取文字即可新增"
+  },
+  "copied": {
+    "message": "已複製"
+  },
+  "pageNotExportable": {
+    "message": "此頁面無法匯出"
+  },
+  "exportOk": {
+    "message": "已寫入 vault：$1",
+    "description": "$1 為檔案名稱"
+  },
+  "exportFailed": {
+    "message": "匯出失敗：$1"
+  },
+  "exportAuthFailed": {
+    "message": "授權/匯出失敗：$1\n（可改用 obsidian:// URI 作為備案）"
+  },
+  "starter1": {
+    "message": "摘要這篇文章的重點"
+  },
+  "starter2": {
+    "message": "列出我可能不懂的術語並解釋"
+  },
+  "starter3": {
+    "message": "指出我筆記中可能的誤解"
+  },
+  "starter4": {
+    "message": "用費曼學習法向我講解這個頁面"
+  },
+  "chatWelcome": {
+    "message": "隨便問 — 自動帶上頁面內容、你的筆記和選取範圍"
+  },
+  "modelNotConfigured": {
+    "message": "（未設定）"
+  },
+  "untitledThread": {
+    "message": "（無標題）"
+  },
+  "deleteThreadTitle": {
+    "message": "刪除此對話"
+  },
+  "streamingWait": {
+    "message": "串流回覆中，請先停止或等待完成"
+  },
+  "thinkingSummary": {
+    "message": "💭 思考過程"
+  },
+  "stopped": {
+    "message": "已停止"
+  },
+  "copyBtn": {
+    "message": "複製"
+  },
+  "answerCopied": {
+    "message": "已複製回答"
+  },
+  "rememberBtn": {
+    "message": "🧠 記住"
+  },
+  "rememberTitle": {
+    "message": "將此結論存為長期記憶"
+  },
+  "remembering": {
+    "message": "擷取中…"
+  },
+  "remembered": {
+    "message": "✓ 已記住"
+  },
+  "rememberOk": {
+    "message": "已存入 Markpilot-Memory"
+  },
+  "rememberFailed": {
+    "message": "記憶失敗：$1"
+  },
+  "retryBtn": {
+    "message": "重試"
+  },
+  "streamingShort": {
+    "message": "串流中"
+  },
+  "memBadge": {
+    "message": "🧠 $1 則可記憶",
+    "description": "$1 為候選記憶數量"
+  },
+  "memBadgeTitle": {
+    "message": "點擊檢視並儲存自動發現的記憶"
+  },
+  "confirmRemember": {
+    "message": "要記住這則嗎？\n\n$1"
+  },
+  "followupExpand": {
+    "message": "詳細展開「$1」",
+    "description": "$1 為回答中的小標題"
+  },
+  "followupCode": {
+    "message": "逐行解釋上面的程式碼"
+  },
+  "followupExample": {
+    "message": "舉一個具體的例子"
+  },
+  "followupSummarize": {
+    "message": "整理成 3 個重點"
+  },
+  "followupConflict": {
+    "message": "這和我的筆記有衝突嗎？"
+  },
+  "confirmNewChat": {
+    "message": "清除目前對話？已儲存的筆記不受影響。"
+  },
+  "roleYou": {
+    "message": "你"
+  },
+  "aiTag": {
+    "message": "[AI]"
+  },
+  "askAboutSelection": {
+    "message": "解釋這段話：「$1」",
+    "description": "頁面「問 AI」自動產生的問題，$1 為選取的文字"
+  },
+  "optionsTitle": {
+    "message": "Markpilot 設定"
+  },
+  "labelBaseUrl": {
+    "message": "Base URL（留空使用服務商預設；自訂代理/vLLM 時填寫）"
+  },
+  "baseUrlPh": {
+    "message": "留空 = 預設 / 或 http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "模型"
+  },
+  "modelPh": {
+    "message": "輸入以篩選，或點擊「取得模型」"
+  },
+  "btnModels": {
+    "message": "取得模型"
+  },
+  "btnTest": {
+    "message": "測試"
+  },
+  "openrouterHint": {
+    "message": "OpenRouter 無需 Key 即可列出模型，免費模型會標示 ⭐。"
+  },
+  "labelApiKey": {
+    "message": "API Key（僅存於本機 IndexedDB，絕不上傳）"
+  },
+  "apiKeyPh": {
+    "message": "本機模型無需填寫"
+  },
+  "keyWarn": {
+    "message": "Key 只保存在此瀏覽器。Anthropic 瀏覽器直連標頭會自動加入。"
+  },
+  "labelSystemPrompt": {
+    "message": "問答使用的系統提示詞（清空則完全不帶系統訊息）"
+  },
+  "btnPromptReset": {
+    "message": "重設為預設值"
+  },
+  "systemPromptHint": {
+    "message": "頁面內容、筆記與選取範圍一律隨問題傳送；此處僅控制模型人設。"
+  },
+  "btnPickVault": {
+    "message": "授權 vault 資料夾…"
+  },
+  "labelDirTemplate": {
+    "message": "匯出子目錄範本"
+  },
+  "labelExportAiQA": {
+    "message": "一併匯出 AI 問答（預設關閉）"
+  },
+  "secMemory": {
+    "message": "🧠 長期記憶"
+  },
+  "labelMemoryInject": {
+    "message": "提問時自動注入相關記憶（預設開啟）"
+  },
+  "labelAutoMemory": {
+    "message": "自動擷取記憶候選（預設關閉；產生角標待你確認）"
+  },
+  "btnMemMgr": {
+    "message": "管理記憶…"
+  },
+  "btnSaveSettings": {
+    "message": "儲存設定"
+  },
+  "vaultNoHandle": {
+    "message": "未授權"
+  },
+  "vaultGranted": {
+    "message": "✓ 已授權"
+  },
+  "vaultNeedPrompt": {
+    "message": "已選擇資料夾 — 點擊一次以恢復權限"
+  },
+  "modelFetching": {
+    "message": "取得中…"
+  },
+  "modelsFetched": {
+    "message": "已取得 $1 個模型",
+    "description": "$1 為模型數量"
+  },
+  "modelsFetchedFree": {
+    "message": "，其中 $1 個免費（標示 ⭐）",
+    "description": "$1 為免費模型數量"
+  },
+  "modelsFetchedTail": {
+    "message": " — 點擊模型輸入框即可選擇。"
+  },
+  "modelsFetchFailed": {
+    "message": "取得失敗：$1"
+  },
+  "modelsManualHint": {
+    "message": "（或手動輸入模型名稱）"
+  },
+  "modelNoMatch": {
+    "message": "沒有符合的模型"
+  },
+  "modelEmptyList": {
+    "message": "尚無清單 — 點擊「取得模型」或手動輸入"
+  },
+  "freeTag": {
+    "message": "⭐ 免費"
+  },
+  "vaultAuthFailed": {
+    "message": "授權失敗：$1"
+  },
+  "savedOk": {
+    "message": "已儲存 ✓"
+  },
+  "testing": {
+    "message": "正在測試 $1 …",
+    "description": "$1 為模型名稱"
+  },
+  "testOk": {
+    "message": "✓ $1 可用（$2 秒）",
+    "description": "$1 為模型名稱，$2 為秒數"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 連線成功但未回傳內容 — 換一個試試"
+  },
+  "testTimeout": {
+    "message": "✗ $1 30 秒內無回應（上游可能故障 — 換一個試試）"
+  },
+  "testFailed": {
+    "message": "✗ $1 無法使用：$2",
+    "description": "$1 為模型名稱，$2 為錯誤詳情"
+  },
+  "memCount": {
+    "message": "$1 則記憶",
+    "description": "$1 為記憶數量"
+  },
+  "pinBtn": {
+    "message": "📌 釘選"
+  },
+  "unpinBtn": {
+    "message": "取消釘選"
+  },
+  "coldTag": {
+    "message": "冷門（90 天未使用）"
+  },
+  "editBtn": {
+    "message": "編輯"
+  },
+  "editMemoryPrompt": {
+    "message": "編輯記憶："
+  },
+  "deleteBtn": {
+    "message": "刪除"
+  },
+  "confirmDeleteMemory": {
+    "message": "刪除這則記憶？"
+  },
+  "modelNotConfiguredError": {
+    "message": "尚未設定模型 — 請到設定頁填寫"
+  },
+  "extractFailed": {
+    "message": "無法擷取頁面文字 — 此頁面可能在擴充功能安裝或更新前就已開啟，請重新整理頁面後重試（chrome:// 等受限頁面不支援）。"
+  },
+  "btnGenProfile": {
+    "message": "產生/更新使用者輪廓"
+  },
+  "profileGenWorking": {
+    "message": "產生中…"
+  },
+  "profileGenOk": {
+    "message": "✓ 輪廓已更新（$1 則記憶）",
+    "description": "$1 為記憶數量"
+  },
+  "profileGenFailed": {
+    "message": "輪廓產生失敗：$1"
+  },
+  "profileEmpty": {
+    "message": "記憶庫是空的 — 請先累積一些記憶"
+  },
+  "profileStale": {
+    "message": "距上次產生已新增 $1 則記憶",
+    "description": "$1 為新增記憶數"
+  },
+  "profileNone": {
+    "message": "尚未產生"
+  },
+  "labelSemanticRecall": {
+    "message": "語意召回（向量檢索）"
+  },
+  "semanticOff": {
+    "message": "關閉（僅詞彙檢索）"
+  },
+  "semanticLocal": {
+    "message": "裝置端模型（本機運算，首次下載約 60MB）"
+  },
+  "embedApiKeyPh": {
+    "message": "使用 API 通道時填寫 Key，裝置端留空"
+  },
+  "semanticHint": {
+    "message": "啟用後記憶檢索升級為「詞彙 + 向量」混合召回，改寫或跨語言查詢也能命中。裝置端模型在本機運算，資料不會離開你的裝置。"
+  },
+  "scopeSiteChk": {
+    "message": "整個網站可見（此網域的所有頁面）"
+  },
+  "pageNotesTitle": {
+    "message": "📄 本頁（$1）",
+    "description": "$1 為本頁筆記數量"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 本站：$1（$2）",
+    "description": "$1 為網域，$2 為本站筆記數量"
+  },
+  "siteTag": {
+    "message": "本站"
+  },
+  "scopeToSite": {
+    "message": "設為全站"
+  },
+  "scopeToPage": {
+    "message": "移到本頁"
+  },
+  "secBackup": {
+    "message": "💾 筆記備份"
+  },
+  "btnExportAll": {
+    "message": "匯出全部筆記"
+  },
+  "btnImport": {
+    "message": "匯入備份…"
+  },
+  "backupHint": {
+    "message": "將筆記匯出為 JSON 並妥善保存；更換瀏覽器、更換裝置，或從本地版遷移到商店版時，匯入即可還原。相同 id 的筆記會被覆寫。"
+  },
+  "backupExported": {
+    "message": "已匯出 $1 則筆記",
+    "description": "$1 為匯出的筆記數量"
+  },
+  "backupBadFile": {
+    "message": "不是有效的備份檔案（缺少 notes 陣列）"
+  },
+  "backupConfirmImport": {
+    "message": "匯入 $1 則筆記？相同 id 的現有筆記會被覆寫。",
+    "description": "$1 為備份檔案中的筆記數量"
+  },
+  "backupImported": {
+    "message": "匯入完成：成功 $1 則，略過 $2 則",
+    "description": "$1 為成功匯入數，$2 為略過數"
+  },
+  "backupImportFailed": {
+    "message": "匯入失敗：$1"
+  }
+}

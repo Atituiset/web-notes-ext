@@ -35,6 +35,18 @@ import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
       } catch {
         sendResponse({ ok: false });
       }
+    } else if (msg.type === 'translate:chunk') {
+      const body = transBubbles.get(msg.reqId);
+      if (body && !body.dataset.err) {
+        if (body.dataset.streaming !== '1') { body.textContent = ''; body.dataset.streaming = '1'; }
+        body.textContent += msg.tok;
+      }
+    } else if (msg.type === 'translate:error') {
+      const body = transBubbles.get(msg.reqId);
+      if (body) {
+        body.dataset.err = '1';
+        body.textContent = t('translateFailed', String(msg.error || ''));
+      }
     }
   });
 
@@ -204,7 +216,54 @@ import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
   // ---------- UI ----------
 
   let pendingSel = null;
+  let pendingTranslate = null; // { text, rect } — 划词翻译用（原文上限比笔记引用长）
   let popState = null; // { id }
+
+  // ---------- 划词翻译浮窗 ----------
+
+  let transSeq = 0;
+  const transBubbles = new Map(); // reqId -> 正文元素
+
+  function openTranslateBubble(info) {
+    const reqId = 't' + (++transSeq) + '-' + Date.now().toString(36);
+    const box = el('div', 'wne-trans');
+    const head = el('div', 'wt-head');
+    head.appendChild(el('b', '', t('btnTranslate')));
+    const closeBtn = el('button', '', '✕');
+    closeBtn.addEventListener('click', () => {
+      box.remove();
+      transBubbles.delete(reqId);
+    });
+    head.appendChild(closeBtn);
+    const body = el('div', 'wt-body', t('translating'));
+    box.appendChild(head);
+    box.appendChild(body);
+    const r = info.rect;
+    box.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 380)) + 'px';
+    box.style.top = r.bottom + 8 + 'px';
+    document.getElementById(ROOT_ID).appendChild(box);
+    // 底部溢出视口时翻到选区上方
+    const bh = box.offsetHeight;
+    if (r.bottom + 8 + bh > window.innerHeight) {
+      box.style.top = Math.max(4, r.top - bh - 8) + 'px';
+    }
+    transBubbles.set(reqId, body);
+    return reqId;
+  }
+
+  async function runTranslate() {
+    if (!pendingTranslate) return;
+    const info = pendingTranslate;
+    hideSelbar();
+    const reqId = openTranslateBubble(info);
+    const r = await send({ type: 'translate:run', reqId, text: info.text });
+    // 流式错误经 translate:error 推送；此处仅兜底消息通道本身的失败（如 SW 未就绪）
+    const body = transBubbles.get(reqId);
+    if ((!r || !r.ok) && body && body.dataset.streaming !== '1' && !body.dataset.err) {
+      body.dataset.err = '1';
+      body.textContent = t('translateFailed', (r && r.error) || '');
+    }
+  }
 
   function el(tag, cls, text) {
     const n = document.createElement(tag);
@@ -351,7 +410,14 @@ import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
       '#wne-pop .wp-ops button{border:1px solid #e4e7ec;background:#fff;color:#67707f;border-radius:10px;padding:7px 16px;cursor:pointer;font-size:13px;transition:all .15s;}',
       '#wne-pop .wp-ops button:hover{color:#2563eb;border-color:#c2d6fb;background:#eaf1fe;}',
       '#wne-pop .wp-ops button.wp-save{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600;}',
-      '#wne-pop .wp-ops button.wp-save:hover{background:#1d4ed8;border-color:#1d4ed8;}'
+      '#wne-pop .wp-ops button.wp-save:hover{background:#1d4ed8;border-color:#1d4ed8;}',
+      '.wne-trans{position:fixed;z-index:2147483647;width:min(360px,calc(100vw - 24px));background:#fff;color:#1f2937;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.28);font-family:system-ui,sans-serif;font-size:13px;overflow:hidden;}',
+      '.wne-trans .wt-head{display:flex;align-items:center;padding:7px 12px;background:#f0f9ff;border-bottom:1px solid #e5eef6;}',
+      '.wne-trans .wt-head b{flex:1;font-size:12.5px;color:#0369a1;}',
+      '.wne-trans .wt-head button{border:none;background:none;cursor:pointer;font-size:14px;color:#98a0ad;border-radius:6px;padding:0 4px;}',
+      '.wne-trans .wt-head button:hover{color:#374151;background:#e0f2fe;}',
+      '.wne-trans .wt-body{padding:10px 12px;line-height:1.65;white-space:pre-wrap;max-height:300px;overflow:auto;}',
+      '.wne-trans .wt-body[data-err]{color:#b91c1c;}'
     ].join('\n');
     document.head.appendChild(style);
 
@@ -384,6 +450,10 @@ import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
     });
     selbar.appendChild(btnNote);
     selbar.appendChild(btnAsk);
+    const btnTranslate = el('button', '', t('btnTranslate'));
+    btnTranslate.style.marginLeft = '6px';
+    btnTranslate.addEventListener('click', runTranslate);
+    selbar.appendChild(btnTranslate);
 
     // 笔记弹窗
     const pop = el('div');
@@ -434,8 +504,11 @@ import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
       let rect = null;
       try { rect = sel.getRangeAt(0).getBoundingClientRect(); } catch { rect = null; }
       if (rect && rect.width > 0) {
+        // 翻译用原文：不压空白、上限 2000（笔记引用的 300 字上限对段落翻译太短）
+        const rawText = String(sel).trim();
+        pendingTranslate = rawText ? { text: rawText.slice(0, 2000), rect } : null;
         selbar.style.display = 'flex';
-        let x = Math.max(4, Math.min(rect.left, window.innerWidth - 190));
+        let x = Math.max(4, Math.min(rect.left, window.innerWidth - 260));
         let y = rect.bottom + 6;
         if (y + 34 > window.innerHeight) y = Math.max(4, rect.top - 34);
         selbar.style.left = x + 'px';

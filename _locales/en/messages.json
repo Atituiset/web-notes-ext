@@ -11,6 +11,16 @@
   "btnAsk": {
     "message": "🤖 Ask AI"
   },
+  "btnTranslate": {
+    "message": "🌐 Translate"
+  },
+  "translating": {
+    "message": "Translating…"
+  },
+  "translateFailed": {
+    "message": "Translation failed: $1",
+    "description": "Selection translation failure notice, $1 is the error detail"
+  },
   "noteSaved": {
     "message": "Saved"
   },

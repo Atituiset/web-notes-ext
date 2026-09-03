@@ -1,0 +1,471 @@
+{
+  "extName": {
+    "message": "Markpilot — Notas da Web para Obsidian & IA"
+  },
+  "extDesc": {
+    "message": "Notas por seleção de texto → Obsidian local → perguntas à LLM em contexto, com memória de longo prazo"
+  },
+  "btnNote": {
+    "message": "📝 Nota"
+  },
+  "btnAsk": {
+    "message": "🤖 Perguntar à IA"
+  },
+  "btnTranslate": {
+    "message": "🌐 Traduzir"
+  },
+  "translating": {
+    "message": "Traduzindo…"
+  },
+  "translateFailed": {
+    "message": "Falha na tradução: $1",
+    "description": "Aviso de falha na tradução da seleção; $1 é o detalhe do erro"
+  },
+  "noteSaved": {
+    "message": "Salvo"
+  },
+  "noteEmptyWarn": {
+    "message": "Escreva algo antes de salvar"
+  },
+  "sentToPanel": {
+    "message": "Enviado ao painel lateral"
+  },
+  "sendFailedHint": {
+    "message": "Falha ao enviar. Clique no ícone da barra de ferramentas para abrir o painel lateral"
+  },
+  "selQuotePrefix": {
+    "message": "Selecionado: \"$1\"",
+    "description": "Prefixo de citação; $1 é o texto selecionado"
+  },
+  "notePlaceholder": {
+    "message": "Escreva suas ideias… (compatível com Markdown)"
+  },
+  "untitledPage": {
+    "message": "Página sem título"
+  },
+  "btnSave": {
+    "message": "Salvar"
+  },
+  "btnCancel": {
+    "message": "Cancelar"
+  },
+  "newChat": {
+    "message": "✚ Nova conversa"
+  },
+  "newChatTitle": {
+    "message": "Limpar a conversa atual e iniciar uma nova"
+  },
+  "threadsTitle": {
+    "message": "Histórico de conversas"
+  },
+  "exportPage": {
+    "message": "⬇ Exportar página"
+  },
+  "downloadMd": {
+    "message": "💾 Salvar como .md"
+  },
+  "downloadMdTitle": {
+    "message": "Baixar as notas e os resumos desta página como um arquivo Markdown"
+  },
+  "downloadOk": {
+    "message": "Baixado: $1",
+    "description": "$1 é o nome do arquivo"
+  },
+  "tabNotes": {
+    "message": "Notas"
+  },
+  "tabChat": {
+    "message": "Perguntar à IA"
+  },
+  "chatPlaceholder": {
+    "message": "Pergunte qualquer coisa… (inclui conteúdo da página + suas notas + seleção)"
+  },
+  "scopePage": {
+    "message": "Contexto da página inteira"
+  },
+  "scopeSelection": {
+    "message": "Apenas seleção + notas"
+  },
+  "sendBtn": {
+    "message": "Enviar"
+  },
+  "stopBtn": {
+    "message": "Parar"
+  },
+  "scrollBottomTitle": {
+    "message": "Rolar até o fim"
+  },
+  "exportPageCount": {
+    "message": "⬇ Exportar página ($1)",
+    "description": "$1 é a quantidade de notas"
+  },
+  "noActiveTab": {
+    "message": "Não foi possível acessar a guia ativa"
+  },
+  "noNotesYet": {
+    "message": "Ainda não há notas nesta página — selecione um texto para adicionar uma"
+  },
+  "copied": {
+    "message": "Copiado"
+  },
+  "pageNotExportable": {
+    "message": "Esta página não pode ser exportada"
+  },
+  "exportOk": {
+    "message": "Gravado no vault: $1",
+    "description": "$1 é o nome do arquivo"
+  },
+  "exportFailed": {
+    "message": "Falha na exportação: $1"
+  },
+  "exportAuthFailed": {
+    "message": "Falha na autorização/exportação: $1\n(você pode usar o URI obsidian:// como alternativa)"
+  },
+  "starter1": {
+    "message": "Resuma os pontos principais deste artigo"
+  },
+  "starter2": {
+    "message": "Liste e explique os termos que eu possa não entender"
+  },
+  "starter3": {
+    "message": "Aponte possíveis mal-entendidos nas minhas notas"
+  },
+  "starter4": {
+    "message": "Explique esta página para mim com o método Feynman"
+  },
+  "chatWelcome": {
+    "message": "Pergunte qualquer coisa — o conteúdo da página, suas notas e a seleção são incluídos"
+  },
+  "modelNotConfigured": {
+    "message": "(não configurado)"
+  },
+  "untitledThread": {
+    "message": "(sem título)"
+  },
+  "deleteThreadTitle": {
+    "message": "Excluir esta conversa"
+  },
+  "streamingWait": {
+    "message": "Resposta em andamento — pare ou aguarde a conclusão"
+  },
+  "thinkingSummary": {
+    "message": "💭 Pensando"
+  },
+  "stopped": {
+    "message": "Parado"
+  },
+  "copyBtn": {
+    "message": "Copiar"
+  },
+  "answerCopied": {
+    "message": "Resposta copiada"
+  },
+  "rememberBtn": {
+    "message": "🧠 Memorizar"
+  },
+  "rememberTitle": {
+    "message": "Salvar esta conclusão como memória de longo prazo"
+  },
+  "remembering": {
+    "message": "Extraindo…"
+  },
+  "remembered": {
+    "message": "✓ Salvo"
+  },
+  "rememberOk": {
+    "message": "Salvo em Markpilot-Memory"
+  },
+  "rememberFailed": {
+    "message": "Falha ao memorizar: $1"
+  },
+  "retryBtn": {
+    "message": "Tentar novamente"
+  },
+  "streamingShort": {
+    "message": "Respondendo"
+  },
+  "memBadge": {
+    "message": "🧠 $1 para memorizar",
+    "description": "$1 é a quantidade de candidatos"
+  },
+  "memBadgeTitle": {
+    "message": "Clique para revisar e salvar as memórias descobertas automaticamente"
+  },
+  "confirmRemember": {
+    "message": "Memorizar isto?\n\n$1"
+  },
+  "followupExpand": {
+    "message": "Aprofunde \"$1\"",
+    "description": "$1 é um título da resposta"
+  },
+  "followupCode": {
+    "message": "Explique o código acima linha por linha"
+  },
+  "followupExample": {
+    "message": "Dê um exemplo concreto"
+  },
+  "followupSummarize": {
+    "message": "Resuma em 3 pontos principais"
+  },
+  "followupConflict": {
+    "message": "Isso entra em conflito com as minhas notas?"
+  },
+  "confirmNewChat": {
+    "message": "Limpar esta conversa? As notas salvas não são afetadas."
+  },
+  "roleYou": {
+    "message": "Você"
+  },
+  "aiTag": {
+    "message": "[IA]"
+  },
+  "askAboutSelection": {
+    "message": "Explique isto: \"$1\"",
+    "description": "Pergunta automática do Perguntar à IA da página; $1 é o texto selecionado"
+  },
+  "optionsTitle": {
+    "message": "Configurações do Markpilot"
+  },
+  "labelBaseUrl": {
+    "message": "URL base (deixe vazio para usar o padrão do provedor; preencha para proxy personalizado/vLLM)"
+  },
+  "baseUrlPh": {
+    "message": "Vazio = padrão / ou http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "Modelo"
+  },
+  "modelPh": {
+    "message": "Digite para filtrar ou clique em \"Buscar modelos\""
+  },
+  "btnModels": {
+    "message": "Buscar modelos"
+  },
+  "btnTest": {
+    "message": "Testar"
+  },
+  "openrouterHint": {
+    "message": "O OpenRouter lista modelos sem chave; os modelos gratuitos são marcados com ⭐."
+  },
+  "labelApiKey": {
+    "message": "Chave de API (armazenada apenas no IndexedDB local, nunca enviada)"
+  },
+  "apiKeyPh": {
+    "message": "Não é necessária para modelos locais"
+  },
+  "keyWarn": {
+    "message": "As chaves ficam neste navegador. O cabeçalho de acesso direto do navegador da Anthropic é adicionado automaticamente."
+  },
+  "labelSystemPrompt": {
+    "message": "Prompt de sistema para perguntas e respostas (limpe para não enviar mensagem de sistema)"
+  },
+  "btnPromptReset": {
+    "message": "Restaurar padrão"
+  },
+  "systemPromptHint": {
+    "message": "O conteúdo da página, as notas e a seleção são sempre enviados; isto controla apenas a persona."
+  },
+  "btnPickVault": {
+    "message": "Autorizar pasta do vault…"
+  },
+  "labelDirTemplate": {
+    "message": "Modelo de subdiretório de exportação"
+  },
+  "labelExportAiQA": {
+    "message": "Exportar também as perguntas e respostas da IA (desativado por padrão)"
+  },
+  "secMemory": {
+    "message": "🧠 Memória de longo prazo"
+  },
+  "labelMemoryInject": {
+    "message": "Injetar memórias relevantes ao perguntar (ativado por padrão)"
+  },
+  "labelAutoMemory": {
+    "message": "Extrair candidatos de memória automaticamente (desativado por padrão; um selo aguarda sua confirmação)"
+  },
+  "btnMemMgr": {
+    "message": "Gerenciar memórias…"
+  },
+  "btnSaveSettings": {
+    "message": "Salvar configurações"
+  },
+  "vaultNoHandle": {
+    "message": "Não autorizado"
+  },
+  "vaultGranted": {
+    "message": "✓ Autorizado"
+  },
+  "vaultNeedPrompt": {
+    "message": "Pasta selecionada — clique uma vez para restaurar a permissão"
+  },
+  "modelFetching": {
+    "message": "Buscando…"
+  },
+  "modelsFetched": {
+    "message": "$1 modelos encontrados",
+    "description": "$1 é a quantidade de modelos"
+  },
+  "modelsFetchedFree": {
+    "message": ", $1 gratuitos (marcados com ⭐)",
+    "description": "$1 é a quantidade de modelos gratuitos"
+  },
+  "modelsFetchedTail": {
+    "message": " — clique no campo do modelo para escolher um."
+  },
+  "modelsFetchFailed": {
+    "message": "Falha na busca: $1"
+  },
+  "modelsManualHint": {
+    "message": "(ou digite o nome do modelo manualmente)"
+  },
+  "modelNoMatch": {
+    "message": "Nenhum modelo correspondente"
+  },
+  "modelEmptyList": {
+    "message": "Ainda sem lista — clique em \"Buscar modelos\" ou digite manualmente"
+  },
+  "freeTag": {
+    "message": "⭐ Grátis"
+  },
+  "vaultAuthFailed": {
+    "message": "Falha na autorização: $1"
+  },
+  "savedOk": {
+    "message": "Salvo ✓"
+  },
+  "testing": {
+    "message": "Testando $1 …",
+    "description": "$1 é o nome do modelo"
+  },
+  "testOk": {
+    "message": "✓ $1 funciona ($2s)",
+    "description": "$1 é o nome do modelo, $2 são os segundos"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 conectou, mas não retornou nada — tente outro"
+  },
+  "testTimeout": {
+    "message": "✗ $1 sem resposta em 30s (o serviço pode estar fora do ar — tente outro)"
+  },
+  "testFailed": {
+    "message": "✗ $1 indisponível: $2",
+    "description": "$1 é o nome do modelo, $2 é o detalhe do erro"
+  },
+  "memCount": {
+    "message": "$1 memórias",
+    "description": "$1 é a quantidade de memórias"
+  },
+  "pinBtn": {
+    "message": "📌 Fixar"
+  },
+  "unpinBtn": {
+    "message": "Desafixar"
+  },
+  "coldTag": {
+    "message": "fria (sem uso há 90 dias)"
+  },
+  "editBtn": {
+    "message": "Editar"
+  },
+  "editMemoryPrompt": {
+    "message": "Editar memória:"
+  },
+  "deleteBtn": {
+    "message": "Excluir"
+  },
+  "confirmDeleteMemory": {
+    "message": "Excluir esta memória?"
+  },
+  "modelNotConfiguredError": {
+    "message": "Nenhum modelo configurado — defina-o na página de configurações"
+  },
+  "extractFailed": {
+    "message": "Não foi possível extrair o texto da página — ela pode ter sido aberta antes da instalação ou atualização da extensão. Atualize a página e tente novamente (páginas restritas como chrome:// não são compatíveis)."
+  },
+  "btnGenProfile": {
+    "message": "Gerar/atualizar perfil"
+  },
+  "profileGenWorking": {
+    "message": "Gerando…"
+  },
+  "profileGenOk": {
+    "message": "✓ Perfil atualizado ($1 memórias)"
+  },
+  "profileGenFailed": {
+    "message": "Falha ao gerar o perfil: $1"
+  },
+  "profileEmpty": {
+    "message": "A base de memórias está vazia — salve algumas memórias primeiro"
+  },
+  "profileStale": {
+    "message": "$1 novas memórias desde a última geração"
+  },
+  "profileNone": {
+    "message": "Não gerado"
+  },
+  "labelSemanticRecall": {
+    "message": "Recuperação semântica (busca vetorial)"
+  },
+  "semanticOff": {
+    "message": "Desativada (somente lexical)"
+  },
+  "semanticLocal": {
+    "message": "Modelo no dispositivo (cálculo local, ~60 MB no primeiro download)"
+  },
+  "embedApiKeyPh": {
+    "message": "Chave de API para canais de API; vazio para modelo no dispositivo"
+  },
+  "semanticHint": {
+    "message": "Ativa a recuperação híbrida de memórias (lexical + vetorial) — paráfrases e consultas em outros idiomas também encontram resultados. O modelo no dispositivo processa localmente; nada sai do seu aparelho."
+  },
+  "scopeSiteChk": {
+    "message": "Visível em todo o site (todas as páginas deste domínio)"
+  },
+  "pageNotesTitle": {
+    "message": "📄 Esta página ($1)",
+    "description": "$1 é a quantidade de notas da página"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 Este site: $1 ($2)",
+    "description": "$1 é o domínio, $2 é a quantidade de notas do site"
+  },
+  "siteTag": {
+    "message": "site"
+  },
+  "scopeToSite": {
+    "message": "Tornar visível no site"
+  },
+  "scopeToPage": {
+    "message": "Mover para esta página"
+  },
+  "secBackup": {
+    "message": "💾 Backup de notas"
+  },
+  "btnExportAll": {
+    "message": "Exportar todas as notas"
+  },
+  "btnImport": {
+    "message": "Importar backup…"
+  },
+  "backupHint": {
+    "message": "Exporte as notas como JSON e guarde o arquivo em segurança; importe para restaurar ao trocar de navegador ou dispositivo, ou ao migrar da versão local para a versão da loja. Notas com o mesmo id são substituídas."
+  },
+  "backupExported": {
+    "message": "$1 notas exportadas",
+    "description": "$1 é a quantidade de notas exportadas"
+  },
+  "backupBadFile": {
+    "message": "Arquivo de backup inválido (array de notas ausente)"
+  },
+  "backupConfirmImport": {
+    "message": "Importar $1 notas? As notas existentes com o mesmo id serão substituídas.",
+    "description": "$1 é a quantidade de notas no arquivo de backup"
+  },
+  "backupImported": {
+    "message": "Importação concluída: $1 importadas, $2 ignoradas",
+    "description": "$1 é a quantidade importada, $2 é a quantidade ignorada"
+  },
+  "backupImportFailed": {
+    "message": "Falha na importação: $1"
+  }
+}

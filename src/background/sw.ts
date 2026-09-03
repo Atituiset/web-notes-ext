@@ -8,8 +8,9 @@
  */
 
 import {
-  putNote, deleteNote, getNotesForUrl, getAllNotes, touchPage,
+  putNote, deleteNote, getNotesForUrl, getAllNotes, touchPage, getSettings,
 } from '../lib/db.js';
+import { streamChat } from '../lib/llm/index.js';
 
 chrome.runtime.onInstalled.addListener((details) => {
   // 点击工具栏图标打开 side panel
@@ -75,6 +76,54 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           // 无接收者时（panel 未加载）sendMessage 会 reject，属预期，启动消费兜底
           chrome.runtime.sendMessage({ type: 'panel:ask', ...ask }).catch(() => {});
           sendResponse({ ok: true });
+          break;
+        }
+        case 'translate:run': {
+          // 划词一键翻译：文本短（≤2000 字符），流式几秒内结束，SW 休眠风险低；
+          // 仍加保活心跳覆盖推理模型的长 TTFB。token 经 tabs.sendMessage 回推页面。
+          const tabId = sender && sender.tab && sender.tab.id;
+          const reqId = String(msg.reqId || '');
+          const text = String(msg.text || '').slice(0, 2000);
+          const notify = (payload: any) => {
+            if (tabId != null) chrome.tabs.sendMessage(tabId, payload).catch(() => {});
+          };
+          if (!text || tabId == null) {
+            sendResponse({ ok: false, error: 'empty text' });
+            break;
+          }
+          // 保活：每次 chrome API 调用都会重置 SW 的 30s 空闲计时
+          const keepAlive = setInterval(() => {
+            chrome.runtime.getPlatformInfo(() => void chrome.runtime.lastError);
+          }, 20000);
+          try {
+            const settings = await getSettings();
+            const uiLang = chrome.i18n.getUILanguage();
+            let langName = uiLang;
+            try {
+              langName = new Intl.DisplayNames([uiLang], { type: 'language' }).of(uiLang) || uiLang;
+            } catch { /* 未知语言码时直接用码本身，模型同样认 */ }
+            await streamChat({
+              settings,
+              messages: [
+                {
+                  role: 'system',
+                  content:
+                    `You are a translation engine. Translate the user's text into ${langName} (${uiLang}). ` +
+                    'Preserve the original meaning and formatting. Output only the translation — no explanations, no quotes.',
+                },
+                { role: 'user', content: text },
+              ],
+              onToken: (tok) => notify({ type: 'translate:chunk', reqId, tok }),
+            });
+            notify({ type: 'translate:done', reqId });
+            sendResponse({ ok: true });
+          } catch (e) {
+            const err = String((e as Error)?.message || e);
+            notify({ type: 'translate:error', reqId, error: err });
+            sendResponse({ ok: false, error: err });
+          } finally {
+            clearInterval(keepAlive);
+          }
           break;
         }
         default:

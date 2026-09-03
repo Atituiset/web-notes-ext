@@ -1,0 +1,471 @@
+{
+  "extName": {
+    "message": "Markpilot — заметки с веб-страниц в Obsidian и ИИ"
+  },
+  "extDesc": {
+    "message": "Заметки по выделенному → локальный Obsidian → ответы LLM в контексте, с долговременной памятью"
+  },
+  "btnNote": {
+    "message": "📝 Заметка"
+  },
+  "btnAsk": {
+    "message": "🤖 Спросить ИИ"
+  },
+  "btnTranslate": {
+    "message": "🌐 Перевести"
+  },
+  "translating": {
+    "message": "Перевод…"
+  },
+  "translateFailed": {
+    "message": "Ошибка перевода: $1",
+    "description": "Уведомление об ошибке перевода выделенного, $1 — детали ошибки"
+  },
+  "noteSaved": {
+    "message": "Сохранено"
+  },
+  "noteEmptyWarn": {
+    "message": "Напишите что-нибудь перед сохранением"
+  },
+  "sentToPanel": {
+    "message": "Отправлено в боковую панель"
+  },
+  "sendFailedHint": {
+    "message": "Не удалось отправить. Нажмите значок на панели инструментов, чтобы открыть боковую панель"
+  },
+  "selQuotePrefix": {
+    "message": "Выделено: \"$1\"",
+    "description": "Префикс цитаты, $1 — выделенный текст"
+  },
+  "notePlaceholder": {
+    "message": "Напишите свои мысли… (поддерживается Markdown)"
+  },
+  "untitledPage": {
+    "message": "Страница без названия"
+  },
+  "btnSave": {
+    "message": "Сохранить"
+  },
+  "btnCancel": {
+    "message": "Отмена"
+  },
+  "newChat": {
+    "message": "✚ Новый чат"
+  },
+  "newChatTitle": {
+    "message": "Очистить текущий разговор и начать новый"
+  },
+  "threadsTitle": {
+    "message": "История чатов"
+  },
+  "exportPage": {
+    "message": "⬇ Экспорт страницы"
+  },
+  "downloadMd": {
+    "message": "💾 Сохранить как .md"
+  },
+  "downloadMdTitle": {
+    "message": "Скачать заметки и сводки этой страницы как файл Markdown"
+  },
+  "downloadOk": {
+    "message": "Скачано: $1",
+    "description": "$1 — имя файла"
+  },
+  "tabNotes": {
+    "message": "Заметки"
+  },
+  "tabChat": {
+    "message": "Спросить ИИ"
+  },
+  "chatPlaceholder": {
+    "message": "Спросите что угодно… (включены содержимое страницы, ваши заметки и выделение)"
+  },
+  "scopePage": {
+    "message": "Контекст всей страницы"
+  },
+  "scopeSelection": {
+    "message": "Только выделение и заметки"
+  },
+  "sendBtn": {
+    "message": "Отправить"
+  },
+  "stopBtn": {
+    "message": "Стоп"
+  },
+  "scrollBottomTitle": {
+    "message": "Прокрутить вниз"
+  },
+  "exportPageCount": {
+    "message": "⬇ Экспорт страницы ($1)",
+    "description": "$1 — количество заметок"
+  },
+  "noActiveTab": {
+    "message": "Нет доступа к активной вкладке"
+  },
+  "noNotesYet": {
+    "message": "На этой странице пока нет заметок — выделите текст, чтобы добавить"
+  },
+  "copied": {
+    "message": "Скопировано"
+  },
+  "pageNotExportable": {
+    "message": "Эту страницу нельзя экспортировать"
+  },
+  "exportOk": {
+    "message": "Записано в хранилище: $1",
+    "description": "$1 — имя файла"
+  },
+  "exportFailed": {
+    "message": "Ошибка экспорта: $1"
+  },
+  "exportAuthFailed": {
+    "message": "Ошибка авторизации/экспорта: $1\n(можно использовать запасной вариант через obsidian:// URI)"
+  },
+  "starter1": {
+    "message": "Кратко изложи ключевые мысли этой статьи"
+  },
+  "starter2": {
+    "message": "Перечисли и объясни термины, которые я могу не понять"
+  },
+  "starter3": {
+    "message": "Укажи возможные недоразумения в моих заметках"
+  },
+  "starter4": {
+    "message": "Объясни мне эту страницу по методу Фейнмана"
+  },
+  "chatWelcome": {
+    "message": "Спросите что угодно — включены содержимое страницы, ваши заметки и выделение"
+  },
+  "modelNotConfigured": {
+    "message": "(не настроено)"
+  },
+  "untitledThread": {
+    "message": "(без названия)"
+  },
+  "deleteThreadTitle": {
+    "message": "Удалить этот разговор"
+  },
+  "streamingWait": {
+    "message": "Идёт потоковая передача — остановите её или дождитесь завершения"
+  },
+  "thinkingSummary": {
+    "message": "💭 Размышления"
+  },
+  "stopped": {
+    "message": "Остановлено"
+  },
+  "copyBtn": {
+    "message": "Копировать"
+  },
+  "answerCopied": {
+    "message": "Ответ скопирован"
+  },
+  "rememberBtn": {
+    "message": "🧠 Запомнить"
+  },
+  "rememberTitle": {
+    "message": "Сохранить этот вывод в долговременную память"
+  },
+  "remembering": {
+    "message": "Извлечение…"
+  },
+  "remembered": {
+    "message": "✓ Сохранено"
+  },
+  "rememberOk": {
+    "message": "Сохранено в Markpilot-Memory"
+  },
+  "rememberFailed": {
+    "message": "Ошибка памяти: $1"
+  },
+  "retryBtn": {
+    "message": "Повторить"
+  },
+  "streamingShort": {
+    "message": "Потоковая передача"
+  },
+  "memBadge": {
+    "message": "🧠 $1 к запоминанию",
+    "description": "$1 — количество кандидатов"
+  },
+  "memBadgeTitle": {
+    "message": "Нажмите, чтобы просмотреть и сохранить автоматически найденные воспоминания"
+  },
+  "confirmRemember": {
+    "message": "Запомнить это?\n\n$1"
+  },
+  "followupExpand": {
+    "message": "Раскрой подробнее «$1»",
+    "description": "$1 — заголовок из ответа"
+  },
+  "followupCode": {
+    "message": "Объясни код выше построчно"
+  },
+  "followupExample": {
+    "message": "Приведи конкретный пример"
+  },
+  "followupSummarize": {
+    "message": "Сведи к 3 ключевым пунктам"
+  },
+  "followupConflict": {
+    "message": "Это противоречит моим заметкам?"
+  },
+  "confirmNewChat": {
+    "message": "Очистить этот разговор? Сохранённые заметки не пострадают."
+  },
+  "roleYou": {
+    "message": "Вы"
+  },
+  "aiTag": {
+    "message": "[ИИ]"
+  },
+  "askAboutSelection": {
+    "message": "Объясни это: \"$1\"",
+    "description": "Автоматический вопрос из функции «Спросить ИИ», $1 — выделенный текст"
+  },
+  "optionsTitle": {
+    "message": "Настройки Markpilot"
+  },
+  "labelBaseUrl": {
+    "message": "Base URL (оставьте пустым для предустановки провайдера; укажите для своего прокси/vLLM)"
+  },
+  "baseUrlPh": {
+    "message": "Пусто = предустановка / или http://localhost:11434/v1"
+  },
+  "labelModel": {
+    "message": "Модель"
+  },
+  "modelPh": {
+    "message": "Начните вводить для фильтрации или нажмите «Загрузить модели»"
+  },
+  "btnModels": {
+    "message": "Загрузить модели"
+  },
+  "btnTest": {
+    "message": "Тест"
+  },
+  "openrouterHint": {
+    "message": "OpenRouter показывает список моделей без ключа; бесплатные модели отмечены ⭐."
+  },
+  "labelApiKey": {
+    "message": "API-ключ (хранится только в локальном IndexedDB, никогда не отправляется)"
+  },
+  "apiKeyPh": {
+    "message": "Для локальных моделей не нужен"
+  },
+  "keyWarn": {
+    "message": "Ключи остаются в этом браузере. Заголовок Anthropic для прямого доступа из браузера добавляется автоматически."
+  },
+  "labelSystemPrompt": {
+    "message": "Системный промпт для вопросов и ответов (очистите, чтобы не отправлять системное сообщение)"
+  },
+  "btnPromptReset": {
+    "message": "Сбросить по умолчанию"
+  },
+  "systemPromptHint": {
+    "message": "Содержимое страницы, заметки и выделение отправляются всегда; этот параметр задаёт только роль модели."
+  },
+  "btnPickVault": {
+    "message": "Авторизовать папку хранилища…"
+  },
+  "labelDirTemplate": {
+    "message": "Шаблон подпапки для экспорта"
+  },
+  "labelExportAiQA": {
+    "message": "Также экспортировать диалоги с ИИ (по умолчанию выкл.)"
+  },
+  "secMemory": {
+    "message": "🧠 Долговременная память"
+  },
+  "labelMemoryInject": {
+    "message": "Подставлять релевантные воспоминания при вопросах (по умолчанию вкл.)"
+  },
+  "labelAutoMemory": {
+    "message": "Автоматически извлекать кандидатов в память (по умолчанию выкл.; значок для вашего подтверждения)"
+  },
+  "btnMemMgr": {
+    "message": "Управление памятью…"
+  },
+  "btnSaveSettings": {
+    "message": "Сохранить настройки"
+  },
+  "vaultNoHandle": {
+    "message": "Не авторизовано"
+  },
+  "vaultGranted": {
+    "message": "✓ Авторизовано"
+  },
+  "vaultNeedPrompt": {
+    "message": "Папка выбрана — нажмите один раз, чтобы восстановить разрешение"
+  },
+  "modelFetching": {
+    "message": "Загрузка…"
+  },
+  "modelsFetched": {
+    "message": "Загружено моделей: $1",
+    "description": "$1 — количество моделей"
+  },
+  "modelsFetchedFree": {
+    "message": ", из них бесплатных: $1 (отмечены ⭐)",
+    "description": "$1 — количество бесплатных моделей"
+  },
+  "modelsFetchedTail": {
+    "message": " — нажмите на поле модели, чтобы выбрать."
+  },
+  "modelsFetchFailed": {
+    "message": "Ошибка загрузки: $1"
+  },
+  "modelsManualHint": {
+    "message": "(или введите имя модели вручную)"
+  },
+  "modelNoMatch": {
+    "message": "Нет подходящей модели"
+  },
+  "modelEmptyList": {
+    "message": "Списка пока нет — нажмите «Загрузить модели» или введите вручную"
+  },
+  "freeTag": {
+    "message": "⭐ Бесплатно"
+  },
+  "vaultAuthFailed": {
+    "message": "Ошибка авторизации: $1"
+  },
+  "savedOk": {
+    "message": "Сохранено ✓"
+  },
+  "testing": {
+    "message": "Тестирование $1 …",
+    "description": "$1 — имя модели"
+  },
+  "testOk": {
+    "message": "✓ $1 работает ($2 с)",
+    "description": "$1 — имя модели, $2 — секунды"
+  },
+  "testEmpty": {
+    "message": "⚠ $1 подключилась, но ничего не вернула — попробуйте другую"
+  },
+  "testTimeout": {
+    "message": "✗ $1 не отвечает 30 с (возможно, сервер недоступен — попробуйте другую)"
+  },
+  "testFailed": {
+    "message": "✗ $1 недоступна: $2",
+    "description": "$1 — имя модели, $2 — детали ошибки"
+  },
+  "memCount": {
+    "message": "Воспоминаний: $1",
+    "description": "$1 — количество воспоминаний"
+  },
+  "pinBtn": {
+    "message": "📌 Закрепить"
+  },
+  "unpinBtn": {
+    "message": "Открепить"
+  },
+  "coldTag": {
+    "message": "холодное (не использовалось 90 дн.)"
+  },
+  "editBtn": {
+    "message": "Изменить"
+  },
+  "editMemoryPrompt": {
+    "message": "Изменить воспоминание:"
+  },
+  "deleteBtn": {
+    "message": "Удалить"
+  },
+  "confirmDeleteMemory": {
+    "message": "Удалить это воспоминание?"
+  },
+  "modelNotConfiguredError": {
+    "message": "Модель не настроена — задайте её на странице настроек"
+  },
+  "extractFailed": {
+    "message": "Не удалось извлечь текст страницы — возможно, она была открыта до установки или обновления расширения. Обновите страницу и попробуйте снова (ограниченные страницы вроде chrome:// не поддерживаются)."
+  },
+  "btnGenProfile": {
+    "message": "Создать/обновить профиль"
+  },
+  "profileGenWorking": {
+    "message": "Создание…"
+  },
+  "profileGenOk": {
+    "message": "✓ Профиль обновлён (воспоминаний: $1)"
+  },
+  "profileGenFailed": {
+    "message": "Ошибка создания профиля: $1"
+  },
+  "profileEmpty": {
+    "message": "База памяти пуста — сначала сохраните несколько воспоминаний"
+  },
+  "profileStale": {
+    "message": "С прошлого создания добавлено воспоминаний: $1"
+  },
+  "profileNone": {
+    "message": "Не создан"
+  },
+  "labelSemanticRecall": {
+    "message": "Семантический поиск (векторный поиск)"
+  },
+  "semanticOff": {
+    "message": "Выкл. (только лексический)"
+  },
+  "semanticLocal": {
+    "message": "Локальная модель (вычисления на устройстве, ~60 МБ при первой загрузке)"
+  },
+  "embedApiKeyPh": {
+    "message": "API-ключ для каналов API; для локальной модели оставьте пустым"
+  },
+  "semanticHint": {
+    "message": "Включает гибридный лексико-векторный поиск по памяти — срабатывают также перифразы и запросы на других языках. Локальная модель вычисляет на устройстве; данные никуда не отправляются."
+  },
+  "scopeSiteChk": {
+    "message": "Видна на всём сайте (все страницы этого домена)"
+  },
+  "pageNotesTitle": {
+    "message": "📄 Эта страница ($1)",
+    "description": "$1 — количество заметок на странице"
+  },
+  "siteNotesTitle": {
+    "message": "🌐 Этот сайт: $1 ($2)",
+    "description": "$1 — домен, $2 — количество заметок на сайте"
+  },
+  "siteTag": {
+    "message": "сайт"
+  },
+  "scopeToSite": {
+    "message": "Сделать общей для сайта"
+  },
+  "scopeToPage": {
+    "message": "Перенести на эту страницу"
+  },
+  "secBackup": {
+    "message": "💾 Резервная копия заметок"
+  },
+  "btnExportAll": {
+    "message": "Экспортировать все заметки"
+  },
+  "btnImport": {
+    "message": "Импортировать копию…"
+  },
+  "backupHint": {
+    "message": "Экспортируйте заметки в JSON и храните файл надёжно; импортируйте для восстановления при смене браузера, устройства или переходе с локальной сборки на сборку из магазина. Заметки с тем же id перезаписываются."
+  },
+  "backupExported": {
+    "message": "Экспортировано заметок: $1",
+    "description": "$1 — количество экспортированных заметок"
+  },
+  "backupBadFile": {
+    "message": "Недопустимый файл резервной копии (отсутствует массив notes)"
+  },
+  "backupConfirmImport": {
+    "message": "Импортировать заметок: $1? Существующие заметки с тем же id будут перезаписаны.",
+    "description": "$1 — количество заметок в файле копии"
+  },
+  "backupImported": {
+    "message": "Импорт завершён: импортировано $1, пропущено $2",
+    "description": "$1 — количество импортированных, $2 — количество пропущенных"
+  },
+  "backupImportFailed": {
+    "message": "Ошибка импорта: $1"
+  }
+}
