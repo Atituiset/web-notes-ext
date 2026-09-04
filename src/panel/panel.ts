@@ -300,6 +300,7 @@ function redrawThread() {
   const main = $('main');
   main.textContent = '';
   if (!currentThread) return;
+  $('btn-new-chat').style.display = 'inline-block';
   for (const m of currentThread.messages) {
     const d = addMsg(m.role, '');
     const bodyEl = d.querySelector('.body');
@@ -409,6 +410,8 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   const history = recentHistory(currentThread && currentThread.messages);
 
   const thread = ensureThread();
+  // 线程归属页：只增不改，tab 切换隔离时靠它找回本页线程
+  if (!thread.url && pageUrl) thread.url = pageUrl;
   thread.messages.push({ role: 'user', content: question });
   if (!thread.title) thread.title = question.slice(0, 30);
 
@@ -754,6 +757,44 @@ document.querySelectorAll('nav.tabs button').forEach((b: any) => {
 });
 
 $('btn-options').addEventListener('click', () => chrome.runtime.openOptionsPage());
+
+// ---------- 页面跟随：tab 切换 / 同 tab 导航时，笔记与线程按页隔离 ----------
+
+let panelPageUrl = ''; // 面板内容当前绑定的 page key
+
+async function syncWithActiveTab() {
+  if (streaming) return; // 流式中不打断；panelPageUrl 不动，下次切 tab 会重新触发同步
+  const info = await activeTabInfo();
+  const url = info && /^https?:/.test(info.url) ? pageKey(info.url) : '';
+  if (!url || url === panelPageUrl) return; // 受限页面（chrome:// 等）不抢当前会话
+  panelPageUrl = url;
+  if (tab === 'notes') renderNotes();
+  // 线程按归属页切换：加载本页最近线程，没有则回欢迎屏。
+  // 旧线程（含无 url 的历史线程）仍可从「会话历史」手动打开。
+  await persistThread().catch(() => {});
+  const metas = await listThreadMeta();
+  const meta = metas.find((m) => m.url === url);
+  if (meta) {
+    const full = await getThread(meta.id);
+    if (full) {
+      currentThread = full;
+      chatStarted = true;
+      redrawThread();
+      return;
+    }
+  }
+  currentThread = null;
+  chatStarted = false;
+  renderChat();
+}
+
+chrome.tabs.onActivated.addListener(() => {
+  syncWithActiveTab().catch(() => {});
+});
+chrome.tabs.onUpdated.addListener((_tabId, changeInfo) => {
+  if (changeInfo.url) syncWithActiveTab().catch(() => {});
+});
+
 $('btn-threads').addEventListener('click', () => {
   const wrap = $('thread-list');
   if (wrap.style.display === 'block') { wrap.style.display = 'none'; return; }
@@ -768,6 +809,12 @@ document.addEventListener('click', (e: any) => {
 
 applyI18n();
 renderNotes();
+// 记录启动时的激活页 key：syncWithActiveTab 的变更检测基线
+activeTabInfo()
+  .then((info) => {
+    if (info && /^https?:/.test(info.url)) panelPageUrl = pageKey(info.url);
+  })
+  .catch(() => {});
 // 语义召回接线：端侧模型后台下载/加载，就绪前自然降级为词法单路
 getSettings()
   .then((s) => initEmbedding(s))
