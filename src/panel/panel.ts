@@ -51,7 +51,8 @@ async function activeTabInfo() {
 // ---------- 笔记列表（本页 / 本站 两级分组） ----------
 
 async function renderNotes() {
-  const main = $('main');
+  // 笔记有独立容器：切 tab 只切显隐，绝不清聊天 DOM（流式气泡在 #main 里续命）
+  const main = $('notes-main');
   main.textContent = '';
   const info = await activeTabInfo();
   if (!info) { main.appendChild(el('div', 'empty', t('noActiveTab'))); return; }
@@ -716,7 +717,7 @@ function scrollBottom() { $('main').scrollTop = $('main').scrollHeight; }
 function updateScrollBtn() {
   const m = $('main');
   const away = m.scrollHeight - m.scrollTop - m.clientHeight > 200;
-  $('btn-scroll-bottom').style.display = away && chatStarted ? 'block' : 'none';
+  $('btn-scroll-bottom').style.display = tab === 'chat' && away && chatStarted ? 'block' : 'none';
 }
 $('main').addEventListener('scroll', updateScrollBtn);
 $('btn-scroll-bottom').addEventListener('click', () => {
@@ -743,7 +744,10 @@ document.querySelectorAll('nav.tabs button').forEach((b: any) => {
     tab = (b as HTMLElement).dataset.tab || 'notes';
     document.querySelectorAll('nav.tabs button').forEach((x) => x.classList.remove('active'));
     b.classList.add('active');
-    // 切 tab 保留聊天记录，只切换视图与输入框显隐
+    // 切 tab 保留聊天现场：#main（聊天）与 #notes-main（笔记）只切显隐，
+    // 流式中的气泡留在 #main 里继续更新，切回来原样可见
+    $('main').style.display = tab === 'chat' ? '' : 'none';
+    $('notes-main').style.display = tab === 'notes' ? '' : 'none';
     $('chat-input-wrap').style.display = tab === 'chat' ? 'block' : 'none';
     $('btn-new-chat').style.display = tab === 'chat' && chatStarted ? 'inline-block' : 'none';
     if (tab === 'notes') {

@@ -15,9 +15,18 @@ const NOISE_SELECTOR = [
   '.ad', '.ads', '.advert', '#sidebar', '#comments',
 ].join(',');
 
+// Mintlify 等站点用语义化自定义标签渲染正文（<span data-as="p">），
+// 打分与遍历都要把 data-as 当作真实标签看待，否则正文段落计为 0 分
+const P_SELECTOR = 'p, [data-as="p"]';
+
+function effectiveTag(el) {
+  const as = el.dataset && el.dataset.as;
+  return as || el.tagName.toLowerCase();
+}
+
 function scoreCandidate(el) {
   let score = 0;
-  for (const p of el.querySelectorAll('p')) {
+  for (const p of el.querySelectorAll(P_SELECTOR)) {
     const len = (p.textContent || '').trim().length;
     if (len > 40) score += len;
   }
@@ -26,7 +35,7 @@ function scoreCandidate(el) {
 
 function findArticleRoot(doc) {
   const candidates = new Set();
-  for (const p of doc.querySelectorAll('p')) {
+  for (const p of doc.querySelectorAll(P_SELECTOR)) {
     let up = p.parentElement;
     for (let i = 0; i < 3 && up; i++) {
       candidates.add(up);
@@ -57,7 +66,7 @@ export function extractArticle(rootDoc) {
 
   function walk(node, depth) {
     for (const child of node.children) {
-      const tag = child.tagName.toLowerCase();
+      const tag = effectiveTag(child);
       if (/^h[1-6]$/.test(tag)) {
         out.push('\n' + '#'.repeat(+tag[1]) + ' ' + child.textContent.trim() + '\n');
       } else if (tag === 'p') {

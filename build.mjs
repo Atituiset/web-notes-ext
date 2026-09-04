@@ -37,6 +37,9 @@ cpSync('node_modules/@xenova/transformers/dist/transformers.min.js', 'dist/lib/t
 for (const f of ['ort-wasm.wasm', 'ort-wasm-simd.wasm', 'ort-wasm-threaded.wasm', 'ort-wasm-simd-threaded.wasm']) {
   cpSync(`node_modules/onnxruntime-web/dist/${f}`, `dist/lib/wasm/${f}`);
 }
+// 静态 HTML 不进 bundle，但 dist 的 html 是被 git 跟踪的打包资产，
+// 每次构建同步源文件，避免 zip 里 HTML 与 JS 版本错位（曾靠手动拷贝维持）
+cpSync('src/panel/panel.html', 'dist/panel/panel.html');
 
 const ctxs = await Promise.all(builds);
 if (watch) {

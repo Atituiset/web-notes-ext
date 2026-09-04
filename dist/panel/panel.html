@@ -63,9 +63,9 @@
     nav.tabs button.active {
       color: var(--text); background: var(--bg-card); font-weight: 600; box-shadow: var(--shadow-sm);
     }
-    main { padding: 12px 14px; padding-right: 22px; overflow-y: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; position: relative; }
-    main::-webkit-scrollbar { width: 8px; }
-    main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+    main, #notes-main { padding: 12px 14px; padding-right: 22px; overflow-y: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; position: relative; }
+    main::-webkit-scrollbar, #notes-main::-webkit-scrollbar { width: 8px; }
+    main::-webkit-scrollbar-thumb, #notes-main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
     .empty { color: var(--text-3); text-align: center; padding: 28px 0; font-size: 12.5px; line-height: 1.7; }
     /* ---------- 笔记卡片 ---------- */
     .item {
@@ -209,7 +209,8 @@
     <button data-tab="notes" class="active" data-i18n="tabNotes"></button>
     <button data-tab="chat" data-i18n="tabChat"></button>
   </nav>
-  <main id="main"></main>
+  <main id="main" style="display:none"></main>
+  <div id="notes-main"></div>
   <button id="btn-scroll-bottom" data-i18n-title="scrollBottomTitle">↓</button>
   <div id="thread-list"></div>
   <div class="chat-input-wrap" id="chat-input-wrap">
