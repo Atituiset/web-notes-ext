@@ -4,7 +4,7 @@
  * LLM fetch 直接在 panel 侧执行（DESIGN.md 坑 #3：不经过 SW，规避休眠）。
  * 问答业务逻辑在 lib/chat-pipeline.ts，本文件只做渲染与事件绑定。
  */
-import { getSettings, putThread, getThread, listThreads, deleteThread } from '../lib/db.js';
+import { getSettings, putThread, getThread, listThreadMeta, deleteThread } from '../lib/db.js';
 import {
   BUDGET,
   buildLlmMessages,
@@ -268,7 +268,7 @@ async function loadThreadList() {
   // 会话历史下拉
   const wrap = $('thread-list');
   wrap.textContent = '';
-  const threads = await listThreads();
+  const threads = await listThreadMeta();
   if (!threads.length) { wrap.style.display = 'none'; return; }
   for (const t of threads.slice(0, 15)) {
     const item = el('div', 'thread-item');

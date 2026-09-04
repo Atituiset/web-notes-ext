@@ -259,7 +259,12 @@ export function getThread(id) {
   });
 }
 
-export function listThreads() {
+/**
+ * 线程列表（仅元数据，最新在前）。
+ * 列表渲染只需 id/title/时间；messages 正文点开线程时走 getThread 单条取。
+ * cursor 仍会瞬态反序列化整条记录，但只保留元数据字段，驻留内存与线程体积脱钩。
+ */
+export function listThreadMeta() {
   return openDB().then(
     (db) =>
       new Promise((resolve, reject) => {
@@ -269,7 +274,15 @@ export function listThreads() {
         req.onsuccess = () => {
           const cur = req.result;
           if (cur) {
-            out.push(cur.value);
+            const v = cur.value;
+            out.push({
+              id: v.id,
+              title: v.title,
+              url: v.url,
+              createdAt: v.createdAt,
+              updatedAt: v.updatedAt,
+              msgCount: (v.messages || []).length,
+            });
             cur.continue();
           } else resolve(out);
         };
