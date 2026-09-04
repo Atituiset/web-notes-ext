@@ -94,11 +94,15 @@ Markdown。产物是标准 Markdown 文件，也可以导出到任何 Markdown �
 
 ## 扩展 ID 与 manifest key（重要）
 
-`manifest.json` 内含 `"key"` 字段（公钥），对应私钥在仓库根目录
+仓库根 `manifest.json` 内含 `"key"` 字段（公钥），对应私钥在
 `markpilot-key.pem`（已 gitignore，**切勿提交或泄露**）。
 
-- **固定扩展 ID**：`pfkejpdbaikhknckilankommnlhmhigm`（由该 key 决定）
-- 本地加载（load unpacked）与商店版因此共享同一 ID，用户数据（IndexedDB）互通
-- **首次上传商店时务必保留 manifest 中的 key 字段**，商店会用它确定永久 ID；
-  若删掉，商店版 ID 会变，老用户笔记将"不可见"（数据没丢，但读取不到）
+- **本地开发版固定 ID**：`pfkejpdbaikhknckilankommnlhmhigm`（由该 key 决定），
+  load unpacked 重装/升级时 IndexedDB 数据得以保留
+- **商店上传包必须不含 key**：CWS 后台会直接拒绝带 `"key"` 字段的上传
+  （报错"清单文件中不得包含 key 字段"）。`package.mjs` 打包时已自动剥除，
+  无需手动处理；仓库根的 manifest 保留 key 不动
+- **后果与迁移**：商店版 ID 由商店分配，与开发版不同，开发版用户的
+  IndexedDB 笔记在商店版不可见（数据没丢）。切换路径 = 设置页导出 JSON →
+  装商店版 → 导入即恢复（见【备份与迁移】）
 - 私钥仅在需要本地打 .crx 自测时用到；商店签名由 Google 托管，无需上传私钥

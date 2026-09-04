@@ -16,7 +16,12 @@ mkdirSync(staging, { recursive: true });
 cpSync('dist', staging, { recursive: true });
 cpSync('icons', join(staging, 'icons'), { recursive: true });
 cpSync('_locales', join(staging, '_locales'), { recursive: true });
-cpSync('manifest.json', join(staging, 'manifest.json'));
+// manifest：剥掉 "key" 再入包——CWS 后台拒绝含 key 的上传；key 只留在仓库
+// 根 manifest 里固定本地开发版 ID。商店版 ID 由商店分配，开发版用户数据
+// 经设置页 JSON 导出/导入迁移（docs/store-submission.md 有说明）。
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+delete manifest.key;
+writeFileSync(join(staging, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 
 // ---- 最小 ZIP (store/deflate) 写入器 ----
 function crc32(buf) {
