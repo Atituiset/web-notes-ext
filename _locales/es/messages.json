@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "Plantilla de subdirectorio de exportación"
   },
+  "labelExportMode": {
+    "message": "Modo de exportación"
+  },
+  "exportModeFs": {
+    "message": "Acceso a carpeta (recomendado)"
+  },
+  "exportModeRest": {
+    "message": "Plugin Local REST API"
+  },
+  "labelRestApiKey": {
+    "message": "Clave de la REST API"
+  },
+  "restApiKeyPh": {
+    "message": "Clave de API de la página de ajustes del plugin"
+  },
+  "restApiHint": {
+    "message": "Requiere el plugin Local REST API instalado y activado en Obsidian (127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "No se puede conectar con Obsidian Local REST API: comprueba que Obsidian esté abierto y el plugin Local REST API activado"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API rechazó la solicitud (HTTP 401/403): comprueba la clave de API en la página de ajustes"
+  },
   "labelExportAiQA": {
     "message": "Exportar también las preguntas y respuestas de la IA (desactivado por defecto)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "Guardado ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "No hay acceso de red para $1; vuelve a guardar la configuración para autorizarlo",
+    "description": "$1 es un patrón de origen, p. ej. https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "Acceso de red no concedido: las llamadas de IA fallarán; guarda de nuevo y acepta el aviso"
   },
   "testing": {
     "message": "Probando $1 …",

@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "导出子目录模板"
   },
+  "labelExportMode": {
+    "message": "导出方式"
+  },
+  "exportModeFs": {
+    "message": "目录授权（推荐）"
+  },
+  "exportModeRest": {
+    "message": "Local REST API 插件"
+  },
+  "labelRestApiKey": {
+    "message": "REST API Key"
+  },
+  "restApiKeyPh": {
+    "message": "插件设置页中的 API Key"
+  },
+  "restApiHint": {
+    "message": "需在 Obsidian 中安装并启用 Local REST API 插件（127.0.0.1:27123）"
+  },
+  "restApiConnFailed": {
+    "message": "无法连接 Obsidian Local REST API——请确认 Obsidian 已启动且 Local REST API 插件已启用"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API 拒绝了请求（HTTP 401/403）——请检查设置页的 API Key 是否正确"
+  },
   "labelExportAiQA": {
     "message": "AI 问答一并导出（默认关）"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "已保存 ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "缺少对 $1 的网络访问授权，请到设置页重新保存以授权",
+    "description": "$1 为站点 origin 模式，如 https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "未授予网络访问权限，AI 调用会失败——请重新保存并在弹窗中允许"
   },
   "testing": {
     "message": "正在测试 $1 …",

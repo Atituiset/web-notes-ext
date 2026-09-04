@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "Modèle de sous-dossier d'export"
   },
+  "labelExportMode": {
+    "message": "Mode d'export"
+  },
+  "exportModeFs": {
+    "message": "Accès au dossier (recommandé)"
+  },
+  "exportModeRest": {
+    "message": "Plugin Local REST API"
+  },
+  "labelRestApiKey": {
+    "message": "Clé REST API"
+  },
+  "restApiKeyPh": {
+    "message": "Clé API depuis la page de réglages du plugin"
+  },
+  "restApiHint": {
+    "message": "Nécessite le plugin Local REST API installé et activé dans Obsidian (127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "Impossible de joindre l'API Local REST d'Obsidian — vérifiez qu'Obsidian est lancé et que le plugin Local REST API est activé"
+  },
+  "restApiAuthFailed": {
+    "message": "L'API Local REST a rejeté la requête (HTTP 401/403) — vérifiez la clé API dans la page des paramètres"
+  },
   "labelExportAiQA": {
     "message": "Exporter aussi les Q&R de l'IA (désactivé par défaut)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "Enregistré ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "Accès réseau non accordé pour $1 — réenregistrez les paramètres pour l'autoriser",
+    "description": "$1 est un motif d'origine, p. ex. https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "Accès réseau non accordé — les appels IA échoueront ; réenregistrez et acceptez la demande"
   },
   "testing": {
     "message": "Test de $1 …",

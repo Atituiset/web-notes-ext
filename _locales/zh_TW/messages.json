@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "匯出子目錄範本"
   },
+  "labelExportMode": {
+    "message": "匯出方式"
+  },
+  "exportModeFs": {
+    "message": "目錄授權（推薦）"
+  },
+  "exportModeRest": {
+    "message": "Local REST API 外掛"
+  },
+  "labelRestApiKey": {
+    "message": "REST API Key"
+  },
+  "restApiKeyPh": {
+    "message": "外掛設定頁中的 API Key"
+  },
+  "restApiHint": {
+    "message": "需在 Obsidian 中安裝並啟用 Local REST API 外掛（127.0.0.1:27123）"
+  },
+  "restApiConnFailed": {
+    "message": "無法連接 Obsidian Local REST API——請確認 Obsidian 已啟動且 Local REST API 外掛已啟用"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API 拒絕了請求（HTTP 401/403）——請檢查設定頁的 API Key 是否正確"
+  },
   "labelExportAiQA": {
     "message": "一併匯出 AI 問答（預設關閉）"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "已儲存 ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "缺少對 $1 的網路存取授權，請到設定頁重新儲存以授權",
+    "description": "$1 為站點 origin 模式，如 https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "未授予網路存取權限，AI 呼叫會失敗——請重新儲存並在彈窗中允許"
   },
   "testing": {
     "message": "正在測試 $1 …",

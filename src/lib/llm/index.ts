@@ -24,6 +24,64 @@ export const PROVIDERS = {
 };
 
 /**
+ * 计算当前设置需要的可选 host 权限 origins。
+ * manifest 不再声明固定 host_permissions，全部走 optional_host_permissions
+ * （http/https 通配）运行时按需请求；设置页保存时用本列表发起授权。
+ * 注意：match pattern 不含端口，origin 需去掉端口部分。
+ */
+export function requiredOrigins(settings: any): string[] {
+  const origins = new Set<string>();
+  const add = (base: string | undefined | null) => {
+    if (!base) return;
+    try {
+      const u = new URL(base);
+      origins.add(u.protocol + '//' + u.hostname + '/*');
+    } catch { /* 非法 baseUrl 忽略 */ }
+  };
+  const p = settings && settings.provider;
+  if (p === 'anthropic') add('https://api.anthropic.com'); // PROVIDERS 表中无 presetBase，端点硬编码
+  else if (p === 'openai-compatible') add(settings.baseUrl);
+  else if (p === 'ollama') {
+    origins.add('http://localhost/*');
+    origins.add('http://127.0.0.1/*');
+  } else if (p && PROVIDERS[p] && PROVIDERS[p].presetBase) add(PROVIDERS[p].presetBase);
+  if (p === 'opencode') origins.add('https://opencode.ai/*'); // 设置页抓公开文档页做模型别名增强
+  // 语义召回（embedding）通道
+  const ch = settings && settings.semanticRecall;
+  if (ch === 'local') {
+    origins.add('https://huggingface.co/*');
+    origins.add('https://*.huggingface.co/*');
+  } else if (ch === 'nvidia') add('https://integrate.api.nvidia.com/v1');
+  else if (ch === 'openrouter') add('https://openrouter.ai/api/v1');
+  // Obsidian Local REST API 导出通道（127.0.0.1:27123）
+  if (settings && settings.obsidianExportMode === 'rest-api') origins.add('http://127.0.0.1/*');
+  return [...origins];
+}
+
+/**
+ * fetch 前守卫：目标 origin 未授权时抛出引导性错误。
+ * 无 chrome.permissions 的环境（单测）直接放行。
+ */
+export async function ensureHostPermission(url: string): Promise<void> {
+  const perms = globalThis.chrome && globalThis.chrome.permissions;
+  if (!perms) return;
+  let origin: string;
+  try {
+    const u = new URL(url);
+    origin = u.protocol + '//' + u.hostname + '/*';
+  } catch {
+    return;
+  }
+  const granted = await perms.contains({ origins: [origin] }).catch(() => false);
+  if (!granted) {
+    throw new Error(
+      (globalThis.chrome?.i18n?.getMessage?.('hostPermissionMissing', origin)) ||
+      `Missing network access for ${origin} — re-save the settings page to grant it`
+    );
+  }
+}
+
+/**
  * 拉取模型列表（/models 端点，OpenAI 兼容格式）。
  * - openrouter: 无 key 也可列；标记出免费模型（pricing 全 0）
  * - 其他 OpenAI 兼容 provider: 需要 key
@@ -33,6 +91,7 @@ export async function listModels(settings) {
   const p = settings.provider;
   if (p === 'anthropic') {
     const key = (settings.apiKeys && settings.apiKeys.anthropic) || '';
+    await ensureHostPermission('https://api.anthropic.com/v1/models');
     const resp = await fetch('https://api.anthropic.com/v1/models', {
       headers: {
         'x-api-key': key,
@@ -53,6 +112,7 @@ export async function listModels(settings) {
   if (key) headers['Authorization'] = 'Bearer ' + key;
   let models: string[];
   let freeData: any = null;
+  await ensureHostPermission(base + '/models'); // 放 try 外：权限缺失不应被预置列表兜底吞掉
   try {
     const resp = await fetch(base + '/models', { headers });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -145,6 +205,7 @@ export async function streamChat({ settings, messages, signal, onToken, onReason
     body = { model, stream: true, messages };
   }
 
+  await ensureHostPermission(url);
   const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body), signal });
   if (!resp.ok) {
     const detail = await resp.text().catch(() => '');

@@ -2,7 +2,7 @@
  * 正文提取核心 — 简化版 Readability 算法（零依赖）
  *
  * 从 content/extract.js 抽出的共享实现，供两处使用：
- *   - content/extract.js（MAIN world）：挂 window.__wneExtract，供 executeScript 兜底调用
+ *   - content/extract.js：挂 window.__wneExtract，由 executeScript 兜底按需以 MAIN world 注入后调用
  *   - content/annotator.js（isolated world）：响应 page:get-text 消息（主路径）
  * 纯 DOM 操作，不依赖 chrome.* API，两个 world 均可运行。
  */

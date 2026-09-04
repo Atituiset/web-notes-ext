@@ -125,9 +125,19 @@
 
   <section>
     <h2>Obsidian Vault</h2>
-    <div class="row">
+    <label data-i18n="labelExportMode"></label>
+    <select id="obsidianExportMode">
+      <option value="fs-access" data-i18n="exportModeFs"></option>
+      <option value="rest-api" data-i18n="exportModeRest"></option>
+    </select>
+    <div class="row" id="vault-pick-row" style="margin-top:8px">
       <button id="btn-pick" data-i18n="btnPickVault"></button>
       <span id="vault-state" class="warn"></span>
+    </div>
+    <div id="rest-key-row" style="display:none">
+      <label data-i18n="labelRestApiKey"></label>
+      <input id="obsidianRestKey" type="password" data-i18n-ph="restApiKeyPh" />
+      <p class="warn" data-i18n="restApiHint"></p>
     </div>
     <label data-i18n="labelDirTemplate"></label>
     <input id="vaultDirTemplate" placeholder="Clippings" />

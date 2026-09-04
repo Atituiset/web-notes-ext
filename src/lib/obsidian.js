@@ -10,6 +10,7 @@
  */
 import { idbGet, idbPut, getSettings } from './db.js';
 import { renderPageMarkdown, noteToMarkdown, slugify } from './markdown.js';
+import { ensureHostPermission } from './llm/index.js';
 
 export async function getVaultHandle() {
   const row = await idbGet('handles', 'vault');
@@ -114,20 +115,44 @@ export function exportViaUri(vaultName, fileName, markdown) {
   window.open(u, '_blank');
 }
 
-/** 高级通道：Local REST API 插件 */
+/**
+ * 高级通道：Local REST API 插件（127.0.0.1:27123）。
+ * 尊重 vaultDirTemplate：写到 <dir>/<fileName>，路径段分别 encode、斜杠保留
+ * （dirTemplate 可含子目录，如 Clippings/AI）。
+ */
 export async function exportViaRestApi({ url, title, notes, pageMarkdown, apiKey }) {
   const now = Date.now();
   const md = renderPageMarkdown('', { source: url, title, clipped: now, updated: now, tags: ['web-notes'] },
     (notes || []).map(noteToMarkdown).join('\n\n'), pageMarkdown || '');
+  const settings = await getSettings();
+  const dirName = String(settings.vaultDirTemplate || 'Clippings').replace(/^\/+|\/+$/g, '');
   const fileName = fileNameFor(url, title);
-  const resp = await fetch('http://127.0.0.1:27123/vault/' + encodeURIComponent(fileName), {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'text/markdown',
-      Authorization: 'Bearer ' + (apiKey || ''),
-    },
-    body: md,
-  });
+  const dirPath = dirName ? dirName.split('/').filter(Boolean).map(encodeURIComponent).join('/') + '/' : '';
+  // 可选 host 权限（保存设置选 rest-api 时请求）；未授权抛引导性错误
+  await ensureHostPermission('http://127.0.0.1:27123/vault/');
+  let resp;
+  try {
+    resp = await fetch('http://127.0.0.1:27123/vault/' + dirPath + encodeURIComponent(fileName), {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'text/markdown',
+        Authorization: 'Bearer ' + (apiKey || ''),
+      },
+      body: md,
+    });
+  } catch (e) {
+    // 连接拒绝/超时：Obsidian 未启动或插件未启用
+    throw new Error(
+      (globalThis.chrome?.i18n?.getMessage?.('restApiConnFailed')) ||
+      '无法连接 Obsidian Local REST API——请确认 Obsidian 已启动且 Local REST API 插件已启用'
+    );
+  }
+  if (resp.status === 401 || resp.status === 403) {
+    throw new Error(
+      (globalThis.chrome?.i18n?.getMessage?.('restApiAuthFailed')) ||
+      'Local REST API 拒绝了请求（HTTP ' + resp.status + '）——请检查设置页的 API Key 是否正确'
+    );
+  }
   if (!resp.ok) throw new Error('Local REST API 写入失败 HTTP ' + resp.status);
-  return { file: fileName };
+  return { file: (dirName ? dirName + '/' : '') + fileName };
 }

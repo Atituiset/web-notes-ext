@@ -5,3 +5,6 @@ dist/
 release/
 # 扩展签名私钥（manifest "key" 公钥的配对私钥，切勿入库）
 markpilot-key.pem
+
+# 博客草稿（本地留存，不入库）
+docs/blog/

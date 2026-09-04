@@ -18,7 +18,7 @@ import { renderMarkdown } from '../lib/markdown-render.js';
 import { saveMemory, listMemories, deleteMemory, pinMemory, isCold } from '../lib/memory.js';
 import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
 import {
-  getVaultHandle, exportViaFsAccess, vaultPermissionState,
+  getVaultHandle, exportViaFsAccess, exportViaRestApi, vaultPermissionState,
   ensureVaultPermission, exportViaUri, fileNameFor,
 } from '../lib/obsidian.js';
 import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
@@ -155,6 +155,21 @@ $('btn-export').addEventListener('click', async () => {
   const data = await gatherExportData();
   if (!data) return;
   const { info, pageUrl, notes, pageMarkdown } = data;
+
+  // Local REST API 通道：跳过 vault 句柄逻辑，直接 PUT 到插件端点
+  const settings = await getSettings();
+  if (settings.obsidianExportMode === 'rest-api') {
+    try {
+      const out = await exportViaRestApi({
+        url: pageUrl, title: info.title, notes, pageMarkdown,
+        apiKey: settings.obsidianRestKey || '',
+      });
+      toast(t('exportOk', out.file));
+    } catch (e: any) {
+      appendError(t('exportFailed', e.message));
+    }
+    return;
+  }
 
   const state = await vaultPermissionState();
   if (state === 'granted') {

@@ -26,15 +26,15 @@ cpSync(join(ROOT, '_locales'), join(EXT_DIR, '_locales'), { recursive: true });
 let pass = 0, fail = 0;
 const ok = (cond, name) => { if (cond) { pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name); } };
 
-console.log('[1] 静态检查：manifest content_scripts world 拆分正确');
+console.log('[1] 静态检查：manifest content_scripts 仅 isolated 组，无静态 MAIN world 注入');
 {
   const mf = JSON.parse(readFileSync(join(DIST, '..', 'manifest.json'), 'utf8'));
   const cs = mf.content_scripts;
-  ok(cs.length === 2, 'content_scripts 拆成两组 (MAIN + isolated)');
-  const mainGroup = cs.find((c) => c.world === 'MAIN');
-  const isoGroup = cs.find((c) => c.world === undefined || c.world === 'ISOLATED');
-  ok(mainGroup && mainGroup.js.includes('content/extract.js'), 'extract.js 注册在 MAIN world（__wneExtract 页面可见）');
-  ok(isoGroup && isoGroup.js.includes('content/annotator.js'), 'annotator.js 留在 isolated world（chrome.runtime 可用）');
+  ok(cs.length === 1, 'content_scripts 只有一组（annotator.js，isolated world）');
+  ok(!cs.some((c) => c.world === 'MAIN'), '无静态 MAIN world 注入（extract.js 改由 executeScript 兜底按需注入）');
+  ok(cs[0].js.includes('content/annotator.js'), 'annotator.js 留在 isolated world（chrome.runtime 可用）');
+  ok(!('host_permissions' in mf), 'manifest 无固定 host_permissions（全部改可选权限运行时按需请求）');
+  ok(existsSync(join(DIST, 'content', 'extract.js')), 'extract.js 仍构建进 dist（executeScript files 注入要用）');
 }
 
 console.log('[2] 扩展加载 + SW 注册健康');
@@ -107,18 +107,23 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
   });
   const optionsJs = readFileSync(join(DIST, 'options', 'options.js'), 'utf8');
   ok(optionsJs.includes('exportViaFsAccess') || optionsJs.includes('getDirectoryHandle'), '导出逻辑已打包进 options.js');
+  const panelJs = readFileSync(join(DIST, 'panel', 'panel.js'), 'utf8');
+  ok(panelJs.includes('exportViaRestApi') && panelJs.includes('127.0.0.1:27123'), 'rest-api 导出通道已打包进 panel.js');
 
-  // [5] MAIN world 注入验证：打开真实页面看 __wneExtract 是否存在
-  console.log('[5] extract.js MAIN world 注入（__wneExtract 页面可见）');
+  // [5] 兜底产物验证：extract.js 以 MAIN world 注入页面后 __wneExtract 可用
+  // （executeScript files 注入与 addScriptTag 同为 MAIN world 经典脚本，
+  //  静态注册已移除，这里验证按需注入的产物行为不变）
+  console.log('[5] extract.js 按需注入产物（__wneExtract 页面可见）');
   const p2 = await ctx.newPage();
   await p2.goto('http://example.com/');
   await p2.waitForTimeout(800);
+  await p2.addScriptTag({ content: readFileSync(join(DIST, 'content', 'extract.js'), 'utf8') });
   const hasExtract = await p2.evaluate(() => typeof window.__wneExtract === 'function');
   const extractResult = hasExtract ? await p2.evaluate(() => {
     const r = window.__wneExtract();
     return { title: r.title, textLen: (r.text || '').length };
   }) : null;
-  ok(hasExtract, '__wneExtract 挂到页面 window（MAIN world 生效）');
+  ok(hasExtract, '__wneExtract 挂到页面 window（MAIN world 注入生效）');
   ok(extractResult && extractResult.textLen > 20, '提取返回非空正文 (textLen=' + (extractResult?.textLen ?? 0) + ')');
 
   await ctx.close();

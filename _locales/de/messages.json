@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "Vorlage für das Export-Unterverzeichnis"
   },
+  "labelExportMode": {
+    "message": "Exportmodus"
+  },
+  "exportModeFs": {
+    "message": "Ordnerzugriff (empfohlen)"
+  },
+  "exportModeRest": {
+    "message": "Local REST API Plugin"
+  },
+  "labelRestApiKey": {
+    "message": "REST API Key"
+  },
+  "restApiKeyPh": {
+    "message": "API-Key aus den Plugin-Einstellungen"
+  },
+  "restApiHint": {
+    "message": "Erfordert das installierte und aktivierte Local-REST-API-Plugin in Obsidian (127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "Obsidian Local REST API nicht erreichbar — prüfen Sie, ob Obsidian läuft und das Local-REST-API-Plugin aktiviert ist"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API hat die Anfrage abgelehnt (HTTP 401/403) — prüfen Sie den API-Key auf der Einstellungsseite"
+  },
   "labelExportAiQA": {
     "message": "KI-Fragen & Antworten ebenfalls exportieren (standardmäßig aus)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "Gespeichert ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "Kein Netzwerkzugriff für $1 — speichern Sie die Einstellungen erneut, um ihn zu erteilen",
+    "description": "$1 ist ein Origin-Muster, z. B. https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "Netzwerkzugriff nicht erteilt — KI-Aufrufe schlagen fehl; erneut speichern und der Abfrage zustimmen"
   },
   "testing": {
     "message": "Teste $1 …",

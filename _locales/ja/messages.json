@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "エクスポート先サブディレクトリのテンプレート"
   },
+  "labelExportMode": {
+    "message": "エクスポート方式"
+  },
+  "exportModeFs": {
+    "message": "フォルダーアクセス（推奨）"
+  },
+  "exportModeRest": {
+    "message": "Local REST API プラグイン"
+  },
+  "labelRestApiKey": {
+    "message": "REST API キー"
+  },
+  "restApiKeyPh": {
+    "message": "プラグイン設定ページの API キー"
+  },
+  "restApiHint": {
+    "message": "Obsidian に Local REST API プラグインをインストールして有効化する必要があります（127.0.0.1:27123）"
+  },
+  "restApiConnFailed": {
+    "message": "Obsidian Local REST API に接続できません。Obsidian が起動していて Local REST API プラグインが有効か確認してください"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API がリクエストを拒否しました（HTTP 401/403）。設定ページの API キーを確認してください"
+  },
   "labelExportAiQA": {
     "message": "AI 問答もエクスポート（既定はオフ）"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "保存しました ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "$1 へのネットワークアクセスが許可されていません。設定ページを再保存して許可してください",
+    "description": "$1 はサイトのオリジンパターン（例: https://api.example.com/*）"
+  },
+  "hostPermDenied": {
+    "message": "ネットワークアクセスが許可されませんでした。AI 呼び出しは失敗します。再保存してプロンプトを許可してください"
   },
   "testing": {
     "message": "$1 をテスト中…",

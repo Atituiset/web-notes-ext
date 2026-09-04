@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "Export subdirectory template"
   },
+  "labelExportMode": {
+    "message": "Export mode"
+  },
+  "exportModeFs": {
+    "message": "Folder access (recommended)"
+  },
+  "exportModeRest": {
+    "message": "Local REST API plugin"
+  },
+  "labelRestApiKey": {
+    "message": "REST API Key"
+  },
+  "restApiKeyPh": {
+    "message": "API key from the plugin's settings page"
+  },
+  "restApiHint": {
+    "message": "Requires the Local REST API plugin installed and enabled in Obsidian (127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "Cannot reach Obsidian Local REST API — make sure Obsidian is running and the Local REST API plugin is enabled"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API rejected the request (HTTP 401/403) — check the API key on the settings page"
+  },
   "labelExportAiQA": {
     "message": "Also export AI Q&A (default off)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "Saved ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "Network access for $1 is not granted — re-save the settings page to authorize it",
+    "description": "$1 is a site origin pattern, e.g. https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "Network access not granted — AI calls will fail; save again and allow the prompt"
   },
   "testing": {
     "message": "Testing $1 …",

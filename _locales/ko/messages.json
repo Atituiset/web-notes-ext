@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "내보내기 하위 디렉터리 템플릿"
   },
+  "labelExportMode": {
+    "message": "내보내기 방식"
+  },
+  "exportModeFs": {
+    "message": "폴더 접근(권장)"
+  },
+  "exportModeRest": {
+    "message": "Local REST API 플러그인"
+  },
+  "labelRestApiKey": {
+    "message": "REST API 키"
+  },
+  "restApiKeyPh": {
+    "message": "플러그인 설정 페이지의 API 키"
+  },
+  "restApiHint": {
+    "message": "Obsidian에 Local REST API 플러그인을 설치하고 활성화해야 합니다(127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "Obsidian Local REST API에 연결할 수 없습니다. Obsidian이 실행 중이고 Local REST API 플러그인이 활성화되어 있는지 확인하세요"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API가 요청을 거부했습니다(HTTP 401/403). 설정 페이지의 API 키를 확인하세요"
+  },
   "labelExportAiQA": {
     "message": "AI Q&A도 함께 내보내기 (기본값 꺼짐)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "저장됨 ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "$1에 대한 네트워크 접근 권한이 없습니다. 설정 페이지를 다시 저장하여 권한을 부여하세요",
+    "description": "$1은 사이트 origin 패턴입니다 (예: https://api.example.com/*)"
+  },
+  "hostPermDenied": {
+    "message": "네트워크 접근이 허용되지 않았습니다. AI 호출이 실패합니다. 다시 저장하고 권한 요청을 허용하세요"
   },
   "testing": {
     "message": "$1 테스트 중…",

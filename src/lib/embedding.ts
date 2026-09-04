@@ -15,6 +15,7 @@
 
 import { setDenseRanker, setDenseSimFloor } from './memory.js';
 import { idbGet, idbPut } from './db.js';
+import { ensureHostPermission } from './llm/index.js';
 
 export type EmbedFn = (texts: string[], type: 'query' | 'passage') => Promise<number[][]>;
 
@@ -48,6 +49,8 @@ const norm = (v: number[]) => {
 // ---------- 通道实现 ----------
 
 async function localEmbedder(): Promise<{ embed: EmbedFn; model: string }> {
+  // 模型权重运行时从 HuggingFace 下载 —— 需要可选 host 权限（设置页保存时请求）
+  await ensureHostPermission('https://huggingface.co/');
   const mod: any = await import(chrome.runtime.getURL('lib/transformers.js'));
   mod.env.allowLocalModels = false;
   // wasm 在扩展包内（构建时拷自 onnxruntime-web），不走 CDN（MV3 CSP 禁远程代码）
@@ -72,6 +75,7 @@ function nvidiaEmbedder(apiKey: string): { embed: EmbedFn; model: string } {
   return {
     model,
     embed: async (texts, type) => {
+      await ensureHostPermission('https://integrate.api.nvidia.com/v1/embeddings');
       const resp = await fetch('https://integrate.api.nvidia.com/v1/embeddings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
@@ -88,6 +92,7 @@ function openrouterEmbedder(apiKey: string): { embed: EmbedFn; model: string } {
   return {
     model,
     embed: async (texts) => {
+      await ensureHostPermission('https://openrouter.ai/api/v1/embeddings');
       const resp = await fetch('https://openrouter.ai/api/v1/embeddings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + apiKey },
@@ -117,9 +122,13 @@ export async function initEmbedding(settings: any): Promise<string> {
   try {
     let impl: { embed: EmbedFn; model: string };
     if (channel === 'local') impl = await localEmbedder();
-    else if (channel === 'nvidia') impl = nvidiaEmbedder(settings.embedApiKey || '');
-    else if (channel === 'openrouter') impl = openrouterEmbedder(settings.embedApiKey || '');
-    else return 'off';
+    else if (channel === 'nvidia') {
+      await ensureHostPermission('https://integrate.api.nvidia.com/v1/embeddings');
+      impl = nvidiaEmbedder(settings.embedApiKey || '');
+    } else if (channel === 'openrouter') {
+      await ensureHostPermission('https://openrouter.ai/api/v1/embeddings');
+      impl = openrouterEmbedder(settings.embedApiKey || '');
+    } else return 'off';
     if (channel !== 'local' && !settings.embedApiKey) return 'off';
 
     _embed = impl.embed;

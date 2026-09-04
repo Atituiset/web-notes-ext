@@ -1,6 +1,6 @@
 import { getSettings, saveSettings, exportNotesData, importNotesData } from '../lib/db.js';
 import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
-import { PROVIDERS, listModels, streamChat } from '../lib/llm/index.js';
+import { PROVIDERS, listModels, streamChat, requiredOrigins } from '../lib/llm/index.js';
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
@@ -30,6 +30,9 @@ async function load() {
   $('apiKey').value = (s.apiKeys && s.apiKeys[s.provider]) || '';
   $('vaultDirTemplate').value = s.vaultDirTemplate || 'Clippings';
   $('exportAiQA').checked = !!s.exportAiQA;
+  $('obsidianExportMode').value = s.obsidianExportMode || 'fs-access';
+  $('obsidianRestKey').value = s.obsidianRestKey || '';
+  refreshExportModeUI();
   $('memoryInject').checked = s.memoryInject !== false;
   $('autoMemory').checked = !!s.autoMemory;
   $('semanticRecall').value = s.semanticRecall || 'off';
@@ -105,6 +108,9 @@ function aliasFor(id: string): string {
  */
 export async function fetchDisplayNameAliases(): Promise<Record<string, string>> {
   try {
+    // opencode.ai 走可选 host 权限（保存设置选择 opencode 时请求）；未授权则跳过增强
+    const granted = await chrome.permissions.contains({ origins: ['https://opencode.ai/*'] }).catch(() => false);
+    if (!granted) return {};
     const resp = await fetch('https://opencode.ai/docs/zen');
     if (!resp.ok) return {};
     const html = await resp.text();
@@ -196,6 +202,15 @@ async function refreshVaultState() {
     : t('vaultNeedPrompt');
 }
 
+/** 导出方式切换：rest-api 显示 API Key 输入、隐藏目录授权按钮；fs-access 反之 */
+function refreshExportModeUI() {
+  const rest = $('obsidianExportMode').value === 'rest-api';
+  $('rest-key-row').style.display = rest ? 'block' : 'none';
+  $('vault-pick-row').style.display = rest ? 'none' : 'flex';
+}
+
+$('obsidianExportMode').addEventListener('change', refreshExportModeUI);
+
 $('provider').addEventListener('change', async () => {
   const s = await getSettings();
   const p = $('provider').value;
@@ -209,11 +224,36 @@ $('provider').addEventListener('change', async () => {
   }
 });
 
+/**
+ * 按表单当前值确保可选 host 权限已授权（须在用户手势内调用）。
+ * 已授权直接通过；未授权当场发起 request；用户拒绝返回 false。
+ */
+async function ensureNetPermission(): Promise<boolean> {
+  const origins = requiredOrigins({
+    provider: $('provider').value,
+    baseUrl: $('baseUrl').value.trim(),
+    semanticRecall: $('semanticRecall').value,
+    obsidianExportMode: $('obsidianExportMode').value,
+  });
+  if (!origins.length) return true;
+  try {
+    if (await chrome.permissions.contains({ origins })) return true;
+    return await chrome.permissions.request({ origins });
+  } catch {
+    return false; /* 非手势上下文或用户拒绝 */
+  }
+}
+
 $('btn-models').addEventListener('click', async () => {
   const btn = $('btn-models');
   btn.disabled = true;
   $('model-status').textContent = t('modelFetching');
   try {
+    if (!(await ensureNetPermission())) {
+      $('model-status').textContent = t('hostPermDenied');
+      btn.disabled = false;
+      return;
+    }
     const models = await listModels({
       provider: $('provider').value,
       baseUrl: $('baseUrl').value.trim(),
@@ -258,6 +298,11 @@ async function testModel() {
   const timer = setTimeout(() => ctrl.abort(), 30000); // 有的上游只发 keep-alive 不出 token，30s 判死
   const t0 = Date.now();
   try {
+    if (!(await ensureNetPermission())) {
+      status.style.color = '#b45309';
+      status.textContent = t('hostPermDenied');
+      return;
+    }
     const { text } = await streamChat({
       settings: {
         provider,
@@ -302,20 +347,35 @@ $('btn-save').addEventListener('click', async () => {
   const prev = await getSettings();
   const apiKeys = Object.assign({}, prev.apiKeys);
   apiKeys[$('provider').value] = $('apiKey').value.trim();
-  await saveSettings({
+  const next = {
     provider: $('provider').value,
     baseUrl: $('baseUrl').value.trim(),
     model: $('model').value.trim(),
     apiKeys,
     vaultDirTemplate: $('vaultDirTemplate').value.trim() || 'Clippings',
     exportAiQA: $('exportAiQA').checked,
+    obsidianExportMode: $('obsidianExportMode').value,
+    obsidianRestKey: $('obsidianRestKey').value.trim(),
     memoryInject: $('memoryInject').checked,
     autoMemory: $('autoMemory').checked,
     systemPrompt: $('systemPrompt').value.trim(), // 空串 = 不带 system 消息
     semanticRecall: $('semanticRecall').value,
     embedApiKey: $('embedApiKey').value.trim(),
-  });
-  $('save-status').textContent = t('savedOk');
+  };
+  await saveSettings(next);
+  // 按需请求可选 host 权限（保存手势内）：LLM 端点 / 本地模型 / embedding 通道。
+  // 用户拒绝不阻断保存，但后续 AI 调用会被 ensureHostPermission 守卫拦下并提示。
+  let permOk = true;
+  const origins = requiredOrigins(next);
+  if (origins.length) {
+    try {
+      permOk = (await chrome.permissions.contains({ origins })) ||
+        (await chrome.permissions.request({ origins }));
+    } catch {
+      permOk = false;
+    }
+  }
+  $('save-status').textContent = permOk ? t('savedOk') : t('savedOk') + ' · ' + t('hostPermDenied');
   setTimeout(() => ($('save-status').textContent = ''), 2000);
 });
 

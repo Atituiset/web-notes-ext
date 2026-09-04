@@ -1,9 +1,10 @@
 /**
  * 正文提取（MAIN world 入口）— 算法实现已抽到 lib/page-extract.js
  *
- * 本文件仅以 MAIN world 注入并挂 window.__wneExtract，
- * 作为 extractPageText 的 executeScript 兜底路径（content script
- * 未注入的旧标签页）；主路径是 annotator.js 的 page:get-text 消息。
+ * 本文件不做静态 content script 注册，仅由 extractPageText 的
+ * executeScript 兜底路径按需以 MAIN world 注入（content script
+ * 尚未注入的旧标签页），挂 window.__wneExtract 供同世界调用；
+ * 主路径是 annotator.js 的 page:get-text 消息。
  */
 import { extractArticle } from '../lib/page-extract.js';
 

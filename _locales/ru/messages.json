@@ -271,6 +271,30 @@
   "labelDirTemplate": {
     "message": "Шаблон подпапки для экспорта"
   },
+  "labelExportMode": {
+    "message": "Способ экспорта"
+  },
+  "exportModeFs": {
+    "message": "Доступ к папке (рекомендуется)"
+  },
+  "exportModeRest": {
+    "message": "Плагин Local REST API"
+  },
+  "labelRestApiKey": {
+    "message": "Ключ REST API"
+  },
+  "restApiKeyPh": {
+    "message": "API-ключ со страницы настроек плагина"
+  },
+  "restApiHint": {
+    "message": "Требуется установленный и включённый плагин Local REST API в Obsidian (127.0.0.1:27123)"
+  },
+  "restApiConnFailed": {
+    "message": "Не удаётся подключиться к Obsidian Local REST API — убедитесь, что Obsidian запущен, а плагин Local REST API включён"
+  },
+  "restApiAuthFailed": {
+    "message": "Local REST API отклонил запрос (HTTP 401/403) — проверьте API-ключ на странице настроек"
+  },
   "labelExportAiQA": {
     "message": "Также экспортировать диалоги с ИИ (по умолчанию выкл.)"
   },
@@ -332,6 +356,13 @@
   },
   "savedOk": {
     "message": "Сохранено ✓"
+  },
+  "hostPermissionMissing": {
+    "message": "Нет доступа к сети для $1 — повторно сохраните настройки, чтобы предоставить разрешение",
+    "description": "$1 — шаблон источника, например https://api.example.com/*"
+  },
+  "hostPermDenied": {
+    "message": "Доступ к сети не предоставлен — вызовы ИИ будут завершаться ошибкой; сохраните снова и разрешите запрос"
   },
   "testing": {
     "message": "Тестирование $1 …",

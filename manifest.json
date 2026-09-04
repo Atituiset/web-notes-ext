@@ -18,21 +18,6 @@
     "http://*/*",
     "https://*/*"
   ],
-  "host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*",
-    "https://api.deepseek.com/*",
-    "https://open.bigmodel.cn/*",
-    "https://api.moonshot.cn/*",
-    "https://dashscope.aliyuncs.com/*",
-    "https://openrouter.ai/*",
-    "https://api.anthropic.com/*",
-    "https://api.openai.com/*",
-    "https://opencode.ai/*",
-    "https://integrate.api.nvidia.com/*",
-    "https://huggingface.co/*",
-    "https://*.huggingface.co/*"
-  ],
   "background": {
     "service_worker": "background/sw.js"
   },
@@ -44,16 +29,6 @@
     "default_title": "Markpilot"
   },
   "content_scripts": [
-    {
-      "matches": [
-        "<all_urls>"
-      ],
-      "js": [
-        "content/extract.js"
-      ],
-      "run_at": "document_idle",
-      "world": "MAIN"
-    },
     {
       "matches": [
         "<all_urls>"

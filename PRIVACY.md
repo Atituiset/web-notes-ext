@@ -25,6 +25,8 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 
 此外，设置页拉取模型列表时会向你配置的服务商端点发起只读请求；为增强模型搜索，会抓取 opencode.ai 的公开文档页（纯数据，不执行任何远程代码）。
 
+首次启用本地向量模型（语义召回）时，扩展会从 HuggingFace（huggingface.co）下载公开的模型权重到你的设备——这是纯下载，不会上传任何你的数据。
+
 ## 三、我们不做的事
 
 - 不收集、不传输任何数据到我们自己的服务器（我们没有服务器）
@@ -46,8 +48,9 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 | `sidePanel` | 提供侧栏界面 |
 | `activeTab` + `scripting` | 你主动提问/导出时提取当前页正文（兜底通道） |
 | 内容脚本（所有网站） | 划词工具条、笔记高亮需要在任意页面工作 |
-| 各 LLM 域名 | 调用你配置的服务商 API |
-| `localhost` / `127.0.0.1` | 本地 Ollama 模型与 Obsidian Local REST 插件 |
+| 可选主机权限：各 LLM 域名 | 调用你配置的服务商 API；在你保存设置选择对应服务商时按需请求授权，非声明的固定权限 |
+| 可选主机权限：`localhost` / `127.0.0.1` | 本地 Ollama 模型与 Obsidian Local REST 插件；在你保存设置选择本地模型时按需请求授权 |
+| 可选主机权限：huggingface.co | 首次使用本地向量模型（语义召回）时下载公开模型权重（纯下载）；在你保存设置启用该通道时按需请求授权 |
 | 可选站点权限（可选） | 仅在你主动提问且正文提取失败时，经你当场确认后用于提取该站正文 |
 
 ## 六、联系
@@ -83,6 +86,8 @@ Possible third-party providers (whichever you actually configure): DeepSeek, Zhi
 
 Additionally, the settings page makes read-only requests to your configured provider to list available models, and fetches a public documentation page from opencode.ai to enrich model search (data only — no remote code is ever executed).
 
+The first time you enable the local embedding model (semantic recall), the extension downloads public model weights from HuggingFace (huggingface.co) to your device — a pure download; no data of yours is ever uploaded.
+
 ## 3. What we never do
 
 - No data is collected or transmitted to any server of ours (we have none)
@@ -104,8 +109,9 @@ Additionally, the settings page makes read-only requests to your configured prov
 | `sidePanel` | The extension's side panel UI |
 | `activeTab` + `scripting` | Extract current page text when you explicitly ask or export (fallback channel) |
 | Content scripts (all sites) | The selection toolbar and note highlights must work on any page |
-| LLM API domains | Calls to the provider you configured |
-| `localhost` / `127.0.0.1` | Local Ollama and the Obsidian Local REST plugin |
+| Optional host access: LLM API domains | Calls to the provider you configured; requested on demand when you save settings with that provider selected — not a declared always-on permission |
+| Optional host access: `localhost` / `127.0.0.1` | Local Ollama and the Obsidian Local REST plugin; requested on demand when you save settings with a local model selected |
+| Optional host access: huggingface.co | One-time download of public model weights the first time you use the local embedding model (semantic recall); download only, nothing is uploaded; requested on demand when you enable that channel in settings |
 | Optional site access | Only used to extract page text when you explicitly ask and extraction fails; granted per-site with your consent |
 
 ## 6. Contact

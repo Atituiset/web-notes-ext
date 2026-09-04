@@ -38,7 +38,9 @@ Markpilot 把「读到 → 划下 → 记住 → 问透」压缩进浏览器侧�
 
 【本地 Obsidian 落盘】
 一次授权 vault 目录，之后一键把整页笔记 + AI 问答导出为带 frontmatter 的
-Markdown。长期记忆自动写入 Markpilot-Memory/，跨会话提问时按需注入。
+Markdown。产物是标准 Markdown 文件，也可以导出到任何 Markdown 笔记目录
+（Logseq、Foam 等通用）。长期记忆自动写入 Markpilot-Memory/，
+跨会话提问时按需注入。
 
 【备份与迁移】
 设置页一键导出全部笔记为 JSON；换浏览器、换设备（或从开发版切换到商店版）
@@ -64,15 +66,15 @@ Markdown。长期记忆自动写入 Markpilot-Memory/，跨会话提问时按需
 | `activeTab` | 用户主动点击导出/提问时，提取当前标签页的正文与 URL（仅在用户手势触发时使用） |
 | `scripting` | 与 activeTab 配合，在用户手势下向当前页注入正文提取脚本（兜底通道） |
 | 内容脚本 `<all_urls>` | 核心功能是在任意网页上划词弹出笔记工具条、并对已记笔记的文本恢复高亮，必须在所有页面注入 |
-| host：各 LLM API 域名 | 调用用户自己配置的服务商 API 进行问答与模型列表拉取（BYOK） |
-| host：`localhost` / `127.0.0.1` | 连接本机 Ollama 模型（localhost:11434）与 Obsidian Local REST 插件（127.0.0.1:27123） |
-| optional host（http/https） | 用户主动提问但正文提取失败时（如页面先于扩展打开），在用户手势内经确认后用于按需注入提取脚本；CWS 推荐的可选权限模式 |
+| optional host（http/https 通配，运行时按需请求） | 扩展不声明任何固定 host 权限，全部走可选权限在用户手势内当场请求：① 保存设置时，按所选服务商请求对应 LLM API 域名（BYOK 问答与模型列表拉取）、本地 Ollama（localhost:11434）/ Obsidian Local REST 插件（127.0.0.1:27123）、以及本地向量模型通道的 huggingface.co（首次使用仅下载公开模型权重，纯下载不上传）；② 用户主动提问但正文提取失败时（如页面先于扩展打开），经确认后按需注入提取脚本。CWS 推荐的可选权限模式 |
 
 ## 数据使用披露（Data safety 表单）
 
 - 是否收集用户数据：**否**（无自有服务器；一切存储在用户本机）
 - 页面内容是否传输给第三方：**是，但仅在用户主动发起问答时**，接收方是用户
   自行配置的 LLM 服务商；传输目的仅为生成当次回答
+- 本地向量模型（语义召回）：首次启用时从 HuggingFace 下载公开模型权重到用户
+  设备，为纯下载，不上传任何用户数据
 - API Key：仅存用户本机，不传输给开发者
 - 加密传输：全部 HTTPS
 

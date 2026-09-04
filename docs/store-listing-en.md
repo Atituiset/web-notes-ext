@@ -40,8 +40,10 @@ Streaming replies, multi-turn threads, and thread history included.
 
 LOCAL OBSIDIAN EXPORT
 Authorize your vault once, then export a page's notes and AI Q&A as Markdown
-with frontmatter in one click. Long-term memories are written to
-Markpilot-Memory/ and injected into future conversations when relevant.
+with frontmatter in one click. The output is plain Markdown, so any
+Markdown-based notes folder works too (Logseq, Foam, you name it).
+Long-term memories are written to Markpilot-Memory/ and injected into
+future conversations when relevant.
 
 BACKUP & MIGRATION
 Export all notes as JSON from the settings page in one click; import to
@@ -73,9 +75,7 @@ following your browser language automatically.
 | `activeTab` | Used only on explicit user action (export / ask) to read the active tab's URL and extract its main text. |
 | `scripting` | Companion to activeTab: injects the text-extraction fallback into the current page, only after a user gesture. |
 | Content scripts on all URLs | Core functionality — the selection toolbar and note highlights must work on any page the user reads. |
-| Host: LLM API domains | Calls the AI providers the user configures (BYOK) for chat completions and model listing. |
-| Host: `localhost` / `127.0.0.1` | Connects to a local Ollama instance (localhost:11434) and the Obsidian Local REST plugin (127.0.0.1:27123). |
-| Optional host access (http/https) | Requested at runtime, inside a user gesture, only when page-text extraction fails (e.g. the page predates the extension). Used solely to inject the extraction script on demand. |
+| Optional host access (http/https wildcard, requested at runtime) | The extension declares no fixed host permissions; everything is an optional permission requested inside a user gesture: ① on settings save, the origin of the configured LLM provider (BYOK chat and model listing), local Ollama (localhost:11434) / Obsidian Local REST plugin (127.0.0.1:27123), and huggingface.co for the local embedding channel (first use downloads public model weights only — nothing is uploaded); ② when page-text extraction fails after an explicit user question (e.g. the page predates the extension), per-site access is requested on confirmation to inject the extraction script on demand. |
 
 ## Data safety（英文答案）
 
@@ -84,6 +84,9 @@ following your browser language automatically.
 - Is page content transferred to third parties? **Only upon explicit user
   action** (asking the AI), and only to the LLM provider the user configured,
   solely to generate that answer.
+- Local embedding model (semantic recall): on first use, public model weights
+  are downloaded from HuggingFace to the user's device — a pure download; no
+  user data is uploaded.
 - API keys: stored locally on the user's device only; never transmitted to the
   developer.
 - All network traffic uses HTTPS.
