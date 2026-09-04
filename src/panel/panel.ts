@@ -692,6 +692,8 @@ function clearMainIfFirstChat() {
   if (chatStarted) return;
   $('main').textContent = '';
   chatStarted = true;
+  // chatStarted 刚翻转时 renderChat 不会重跑，按钮显隐要在这里同步
+  $('btn-new-chat').style.display = 'inline-block';
 }
 
 // 显式新会话（仅用户点击按钮触发；切 tab 不清空）
@@ -740,7 +742,7 @@ document.querySelectorAll('nav.tabs button').forEach((b: any) => {
     b.classList.add('active');
     // 切 tab 保留聊天记录，只切换视图与输入框显隐
     $('chat-input-wrap').style.display = tab === 'chat' ? 'block' : 'none';
-    $('btn-new-chat').style.display = tab === 'chat' ? 'inline-block' : 'none';
+    $('btn-new-chat').style.display = tab === 'chat' && chatStarted ? 'inline-block' : 'none';
     if (tab === 'notes') {
       renderNotes();
       updateScrollBtn();
