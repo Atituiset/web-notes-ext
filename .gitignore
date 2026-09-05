@@ -8,3 +8,9 @@ markpilot-key.pem
 
 # 博客草稿（本地留存，不入库）
 docs/blog/
+
+# 商店发布材料（含审核口径与 ID 信息，本地留存不入库）
+docs/store-submission.md
+docs/store-listing-en.md
+docs/store-en/
+promo/
