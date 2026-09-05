@@ -69,6 +69,12 @@ Design deep-dive: [docs/DESIGN.md](docs/DESIGN.md) · Memory system status: [doc
 
 复跑评测：`npm run build && node tests/eval-memory.mjs`（端侧模型免 key；A/B 通道见 PLAYBOOK）
 
+## Contributing
+
+Contributions welcome! Bug reports, feature ideas, and PRs are all appreciated. For anything bigger than a small fix, please open an issue first so we can align on direction before you invest the time.
+
+欢迎贡献！报 bug、提想法、发 PR 都欢迎。超过小修复的改动，建议先开 issue 对齐方向再动手。
+
 ## License
 
 [MIT](LICENSE)
