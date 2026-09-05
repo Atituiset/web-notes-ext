@@ -15,10 +15,10 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 
 ## 二、数据外传（仅在你主动发起时）
 
-只有在你**主动点击"问 AI"或发送提问**时，以下内容会通过 HTTPS 发送给**你自己在设置中选择的 LLM 服务商**，用于生成回答：
+只有在你**主动点击"问 AI"、发送提问、或使用划词翻译**时，以下内容会通过 HTTPS 发送给**你自己在设置中选择的 LLM 服务商**，用于生成回答或译文：
 
-- 当前页面的正文提取文本（或仅你选中的文字，取决于你选择的上下文范围）
-- 你在该页的笔记
+- 当前页面的正文提取文本（或仅你选中的文字，取决于你选择的上下文范围；划词翻译仅发送你选中的文字，不超过 2000 字符）
+- 你在该页的笔记（仅问答时发送，翻译不发送笔记）
 - 你的提问内容
 
 可能的第三方服务商包括（以你实际配置为准）：DeepSeek、智谱 GLM、月之暗面 Kimi、阿里通义千问、OpenRouter、Anthropic、OpenAI 兼容端点、opencode.ai，或你自建的本地模型（Ollama，数据不出本机）。这些传输遵循相应服务商的隐私政策，我们不经手、不留存这些数据。
@@ -32,7 +32,7 @@ Markpilot（以下简称"本扩展"）是一款划词笔记 + AI 问答工具。
 - 不收集、不传输任何数据到我们自己的服务器（我们没有服务器）
 - 不做任何分析统计、行为追踪、广告画像
 - 不要求注册账号
-- 不在后台静默读取或上传页面内容——页面内容只在你主动提问时被读取和发送
+- 不在后台静默读取或上传页面内容——页面内容只在你主动提问或翻译时被读取和发送
 
 ## 四、你的控制权
 
@@ -76,10 +76,10 @@ The following data is stored only in your browser's IndexedDB and in the Obsidia
 
 ## 2. Data transmission (only on your explicit action)
 
-Only when **you actively click "Ask AI" or send a question** is the following transmitted over HTTPS to the LLM provider **you configured**, solely to generate that answer:
+Only when **you actively click "Ask AI", send a question, or use selection translation** is the following transmitted over HTTPS to the LLM provider **you configured**, solely to generate that answer or translation:
 
-- Extracted text of the current page (or only your selection, depending on the context scope you choose)
-- Your notes on that page
+- Extracted text of the current page (or only your selection, depending on the context scope you choose; selection translation sends only the selected text, capped at 2000 characters)
+- Your notes on that page (sent only for Q&A, never for translation)
 - Your question
 
 Possible third-party providers (whichever you actually configure): DeepSeek, Zhipu GLM, Moonshot Kimi, Alibaba Qwen, OpenRouter, Anthropic, OpenAI-compatible endpoints, opencode.ai, or a self-hosted local model (Ollama — in which case nothing leaves your machine). These transfers are governed by the respective provider's privacy policy; we never touch or retain this data.
@@ -93,7 +93,7 @@ The first time you enable the local embedding model (semantic recall), the exten
 - No data is collected or transmitted to any server of ours (we have none)
 - No analytics, no behavioral tracking, no advertising profiles
 - No accounts
-- No silent background reading or uploading of page content — page content is read and sent only when you explicitly ask a question
+- No silent background reading or uploading of page content — page content is read and sent only when you explicitly ask a question or translate a selection
 
 ## 4. Your control
 
