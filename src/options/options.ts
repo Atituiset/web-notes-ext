@@ -453,15 +453,26 @@ $('btn-prompt-reset').addEventListener('click', () => {
 async function renderMemories() {
   const listEl = $('mem-list');
   listEl.textContent = '';
+  const showHint = (key: string) => {
+    const tip = document.createElement('p');
+    tip.className = 'hint';
+    tip.style.cssText = 'color:#6b7280;font-size:12px;margin:8px 0';
+    tip.textContent = t(key);
+    listEl.appendChild(tip);
+  };
   let memories;
   try {
     memories = await listMemories();
   } catch {
     $('mem-count').textContent = '';
+    showHint('memLoadFailed'); // 多为 vault 未授权或权限被收回
     return;
   }
   $('mem-count').textContent = memories.length ? t('memCount', memories.length) : '';
-  if (!memories.length) return;
+  if (!memories.length) {
+    showHint('profileEmpty'); // 「记忆库为空，先积累一些记忆」语义通用，复用
+    return;
+  }
 
   for (const m of memories.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updated.localeCompare(a.updated))) {
     const item = document.createElement('div');
@@ -529,7 +540,8 @@ async function renderMemories() {
 
 $('btn-mem-mgr').addEventListener('click', () => {
   const listEl = $('mem-list');
-  if (listEl.style.display === 'none') {
+  // 初始 inline display 为 ''，用 !== 'block' 判断「未展示」——否则首次点击会反转为隐藏（曾表现为"点击没反应"）
+  if (listEl.style.display !== 'block') {
     listEl.style.display = 'block';
     renderMemories();
   } else {

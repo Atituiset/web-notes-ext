@@ -386,6 +386,9 @@
     "message": "$1 則記憶",
     "description": "$1 為記憶數量"
   },
+  "memLoadFailed": {
+    "message": "無法讀取記憶：請先在上方授權 Obsidian vault 目錄"
+  },
   "pinBtn": {
     "message": "📌 釘選"
   },

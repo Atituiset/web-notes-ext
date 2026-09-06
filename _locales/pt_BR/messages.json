@@ -386,6 +386,9 @@
     "message": "$1 memórias",
     "description": "$1 é a quantidade de memórias"
   },
+  "memLoadFailed": {
+    "message": "Não foi possível ler as memórias: autorize primeiro acima a pasta do seu vault do Obsidian"
+  },
   "pinBtn": {
     "message": "📌 Fixar"
   },

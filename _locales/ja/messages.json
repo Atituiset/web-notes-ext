@@ -386,6 +386,9 @@
     "message": "$1 件の記憶",
     "description": "$1 は記憶数"
   },
+  "memLoadFailed": {
+    "message": "メモリーを読み取れません：まず上の Obsidian Vault フォルダーを認可してください"
+  },
   "pinBtn": {
     "message": "📌 ピン留め"
   },

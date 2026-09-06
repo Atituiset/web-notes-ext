@@ -386,6 +386,9 @@
     "message": "$1 Erinnerungen",
     "description": "$1 ist die Anzahl der Erinnerungen"
   },
+  "memLoadFailed": {
+    "message": "Erinnerungen können nicht gelesen werden: Autorisiere oben zuerst deinen Obsidian-Vault-Ordner"
+  },
   "pinBtn": {
     "message": "📌 Anpinnen"
   },

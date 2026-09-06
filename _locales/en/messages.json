@@ -386,6 +386,9 @@
     "message": "$1 memories",
     "description": "$1 is the memory count"
   },
+  "memLoadFailed": {
+    "message": "Cannot read memories: authorize your Obsidian vault folder above first"
+  },
   "pinBtn": {
     "message": "📌 Pin"
   },

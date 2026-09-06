@@ -386,6 +386,9 @@
     "message": "$1 条记忆",
     "description": "$1 为记忆数量"
   },
+  "memLoadFailed": {
+    "message": "无法读取记忆：请先在上方授权 Obsidian vault 目录"
+  },
   "pinBtn": {
     "message": "📌 钉选"
   },

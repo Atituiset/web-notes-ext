@@ -386,6 +386,9 @@
     "message": "$1 memorias",
     "description": "$1 es el número de memorias"
   },
+  "memLoadFailed": {
+    "message": "No se pueden leer los recuerdos: autoriza primero arriba la carpeta de tu vault de Obsidian"
+  },
   "pinBtn": {
     "message": "📌 Fijar"
   },

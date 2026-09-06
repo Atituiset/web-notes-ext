@@ -386,6 +386,9 @@
     "message": "$1 mémoires",
     "description": "$1 est le nombre de mémoires"
   },
+  "memLoadFailed": {
+    "message": "Impossible de lire les souvenirs : autorisez d'abord ci-dessus le dossier de votre coffre Obsidian"
+  },
   "pinBtn": {
     "message": "📌 Épingler"
   },
