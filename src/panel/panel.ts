@@ -15,11 +15,10 @@ import {
   runStream,
 } from '../lib/chat-pipeline.js';
 import { renderMarkdown } from '../lib/markdown-render.js';
-import { saveMemory, listMemories, deleteMemory, pinMemory, isCold } from '../lib/memory.js';
 import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
 import {
-  getVaultHandle, exportViaFsAccess, exportViaRestApi, vaultPermissionState,
-  ensureVaultPermission, exportViaUri, fileNameFor,
+  exportViaFsAccess, exportViaRestApi, vaultPermissionState,
+  ensureVaultPermission, fileNameFor,
 } from '../lib/obsidian.js';
 import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
 import { pageKey, siteKey } from '../lib/url-key.js';
@@ -34,18 +33,18 @@ function send(msg): Promise<any> {
 }
 
 async function activeTabInfo() {
-  const [t] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!t) return null;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return null;
   let selection = '', csUrl = '', csTitle = '';
   try {
     // 走 content script 回读，不依赖 activeTab/scripting 授权（切 tab 后授权常失效；
     // 未授权时 tabs.query 的 url/title 也是空串，同样由 content script 兜底）
-    const r = await chrome.tabs.sendMessage(t.id!, { type: 'page:get-selection' });
+    const r = await chrome.tabs.sendMessage(tab.id!, { type: 'page:get-selection' });
     selection = (r && r.selection) || '';
     csUrl = (r && r.url) || '';
     csTitle = (r && r.title) || '';
   } catch { /* 受限页面或 content script 未注入 */ }
-  return { tab: t, url: t.url || csUrl, title: t.title || csTitle, selection };
+  return { tab, url: tab.url || csUrl, title: tab.title || csTitle, selection };
 }
 
 // ---------- 笔记列表（本页 / 本站 两级分组） ----------
@@ -393,13 +392,14 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
 
   let mat = await gather();
   if (wantPageText && !mat.pageText) {
-    // 页面先于扩展打开（无 content script）或未授权：在点击手势内申请站点权限后
+    // 页面先于扩展打开（无 content script）或未授权：在点击手势内按站点申请权限后
     // 自动重试 —— 授权后注入提取脚本即可完成，无需用户手动刷新页面。
-    // url 可见则按站点申请（窄），不可见则申请 <all_urls>（一次性，装扩展时用户已接受过同等提示）
-    const granted = await requestSitePermission(
-      mat.info && /^https?:/.test(mat.info.url) ? mat.info.url : '<all_urls>'
-    );
-    if (granted) mat = await gather();
+    // 拿不到 tab URL（受限页/未授权）时跳过申请——没有合法 origin 可请求，
+    // 走下方 extractFailed 提示（activeTab/消息通道已在 gather 里试过）
+    if (mat.info && /^https?:/.test(mat.info.url)) {
+      const granted = await requestSitePermission(mat.info.url);
+      if (granted) mat = await gather();
+    }
   }
 
   if (scope !== 'selection' && !mat.pageText) {
@@ -627,9 +627,9 @@ function retryQuestion(bubble, ctxInfo) {
       currentThread.messages.splice(idx - 1, 2);
     }
   }
-  bubble.remove();
-  // 同时移除界面上紧邻的 user 气泡
+  // 同时移除界面上紧邻的 user 气泡（先存引用再 remove，remove 后 sibling 关系已变）
   const prev = bubble.previousElementSibling;
+  bubble.remove();
   if (prev && prev.classList.contains('user')) prev.remove();
   askLLMWith(ctxInfo.question, ctxInfo.scope);
 }
