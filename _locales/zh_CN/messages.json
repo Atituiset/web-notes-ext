@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "自动提取记忆候选（默认关；产生角标待你确认）"
   },
+  "memVaultRequired": {
+    "message": "记忆功能需要读写 vault 目录，当前未授权"
+  },
+  "memVaultAuthNow": {
+    "message": "立即授权"
+  },
   "btnMemMgr": {
     "message": "管理记忆…"
   },

@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "Gedächtnis-Kandidaten automatisch extrahieren (standardmäßig aus; Badge zur Bestätigung)"
   },
+  "memVaultRequired": {
+    "message": "Gedächtnisfunktionen benötigen Lese-/Schreibzugriff auf deinen Vault-Ordner — noch nicht autorisiert"
+  },
+  "memVaultAuthNow": {
+    "message": "Jetzt autorisieren"
+  },
   "btnMemMgr": {
     "message": "Erinnerungen verwalten…"
   },

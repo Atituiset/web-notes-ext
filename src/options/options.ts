@@ -52,6 +52,7 @@ async function load() {
   const presetModels = (PROVIDERS[$('provider').value] && PROVIDERS[$('provider').value].models) || [];
   fillModelList(presetModels.map((id) => ({ id, free: false })));
   refreshVaultState();
+  refreshMemVaultHint();
 }
 
 // ---------- 模型下拉（自定义，支持模糊过滤；免费/最新排序靠前）----------
@@ -208,6 +209,27 @@ async function refreshVaultState() {
     : state === 'granted' ? t('vaultGranted')
     : t('vaultNeedPrompt');
 }
+
+/**
+ * 记忆功能（注入/自动提取）依赖 vault 目录读写——开启开关但未授权时当场提示，
+ * 不要等写入失败/读取为空才发现（memDir 未授权返回 null 会被当空库）。
+ */
+async function refreshMemVaultHint() {
+  const memOn = $('memoryInject').checked || $('autoMemory').checked;
+  const hint = $('mem-vault-hint');
+  if (!memOn) { hint.style.display = 'none'; return; }
+  hint.style.display = (await vaultPermissionState()) === 'granted' ? 'none' : 'block';
+}
+
+$('memoryInject').addEventListener('change', refreshMemVaultHint);
+$('autoMemory').addEventListener('change', refreshMemVaultHint);
+$('btn-mem-vault-auth').addEventListener('click', async () => {
+  try {
+    await pickVault(); // 手势内触发目录选择/重新授权
+    await refreshVaultState();
+  } catch { /* 用户取消或不支持 */ }
+  refreshMemVaultHint();
+});
 
 /** 导出方式切换：rest-api 显示 API Key 输入、隐藏目录授权按钮；fs-access 反之 */
 function refreshExportModeUI() {
@@ -406,6 +428,7 @@ $('btn-pick').addEventListener('click', async () => {
   } catch (e: any) {
     if (e && e.name !== 'AbortError') $('vault-state').textContent = t('vaultAuthFailed', e.message);
   }
+  refreshMemVaultHint();
 });
 
 $('btn-save').addEventListener('click', async () => {

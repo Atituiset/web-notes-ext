@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "自動擷取記憶候選（預設關閉；產生角標待你確認）"
   },
+  "memVaultRequired": {
+    "message": "記憶功能需要讀寫 vault 目錄，目前未授權"
+  },
+  "memVaultAuthNow": {
+    "message": "立即授權"
+  },
   "btnMemMgr": {
     "message": "管理記憶…"
   },

@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "Extraire automatiquement des candidats mémoire (désactivé par défaut ; badge à confirmer)"
   },
+  "memVaultRequired": {
+    "message": "Les fonctions de mémoire nécessitent un accès en lecture/écriture à votre dossier de coffre — pas encore autorisé"
+  },
+  "memVaultAuthNow": {
+    "message": "Autoriser maintenant"
+  },
   "btnMemMgr": {
     "message": "Gérer les mémoires…"
   },

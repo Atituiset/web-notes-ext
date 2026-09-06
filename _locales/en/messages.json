@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "Auto-extract memory candidates (default off; badge for your confirmation)"
   },
+  "memVaultRequired": {
+    "message": "Memory features need read/write access to your vault folder — not authorized yet"
+  },
+  "memVaultAuthNow": {
+    "message": "Authorize now"
+  },
   "btnMemMgr": {
     "message": "Manage memories…"
   },

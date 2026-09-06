@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "Extraer candidatas de memoria automáticamente (desactivado por defecto; se muestra un distintivo para tu confirmación)"
   },
+  "memVaultRequired": {
+    "message": "Las funciones de memoria necesitan acceso de lectura/escritura a tu carpeta de vault — aún no autorizado"
+  },
+  "memVaultAuthNow": {
+    "message": "Autorizar ahora"
+  },
   "btnMemMgr": {
     "message": "Gestionar memorias…"
   },

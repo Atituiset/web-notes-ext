@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "기억 후보 자동 추출 (기본값 꺼짐; 배지로 확인 요청)"
   },
+  "memVaultRequired": {
+    "message": "메모리 기능은 vault 폴터에 대한 읽기/쓰기 권한이 필요합니다(아직 승인되지 않음)"
+  },
+  "memVaultAuthNow": {
+    "message": "지금 승인"
+  },
   "btnMemMgr": {
     "message": "기억 관리…"
   },

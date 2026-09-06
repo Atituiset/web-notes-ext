@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "Extrair candidatos de memória automaticamente (desativado por padrão; um selo aguarda sua confirmação)"
   },
+  "memVaultRequired": {
+    "message": "Os recursos de memória precisam de acesso de leitura/gravação à sua pasta do vault — ainda não autorizado"
+  },
+  "memVaultAuthNow": {
+    "message": "Autorizar agora"
+  },
   "btnMemMgr": {
     "message": "Gerenciar memórias…"
   },

@@ -307,6 +307,12 @@
   "labelAutoMemory": {
     "message": "記憶候補を自動抽出（既定はオフ。バッジで確認できます）"
   },
+  "memVaultRequired": {
+    "message": "メモリー機能は Vault フォルダーへの読み書きアクセスが必要です（未認可）"
+  },
+  "memVaultAuthNow": {
+    "message": "今すぐ認可"
+  },
   "btnMemMgr": {
     "message": "記憶を管理…"
   },
