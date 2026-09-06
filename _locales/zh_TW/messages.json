@@ -451,6 +451,33 @@
   "semanticHint": {
     "message": "啟用後記憶檢索升級為「詞彙 + 向量」混合召回，改寫或跨語言查詢也能命中。裝置端模型在本機運算，資料不會離開你的裝置。"
   },
+  "btnEmbedTest": {
+    "message": "測試"
+  },
+  "embedTestWorking": {
+    "message": "檢測中…"
+  },
+  "embedTestDownloading": {
+    "message": "模型下載中… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ 已生效（$1 · $2 · $3ms）"
+  },
+  "embedTestFailed": {
+    "message": "❌ 初始化失敗：$1"
+  },
+  "embedTestNoKey": {
+    "message": "請先填寫該通道的 API Key"
+  },
+  "embedTestOff": {
+    "message": "目前為關閉狀態，選擇通道後再測試"
+  },
+  "embedConfigured": {
+    "message": "已設定：$1（點「測試」驗證生效）"
+  },
+  "embedDowngraded": {
+    "message": "語義召回初始化失敗，已降級為詞法檢索：$1"
+  },
   "scopeSiteChk": {
     "message": "整個網站可見（此網域的所有頁面）"
   },

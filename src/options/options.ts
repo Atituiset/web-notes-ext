@@ -4,6 +4,7 @@ import { PROVIDERS, listModels, streamChat, requiredOrigins } from '../lib/llm/i
 import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
 import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
+import { testEmbedChannel } from '../lib/embedding.js';
 import { generateProfile } from '../lib/profile.js';
 
 const $ = (id: string): any => document.getElementById(id);
@@ -37,6 +38,12 @@ async function load() {
   $('autoMemory').checked = !!s.autoMemory;
   $('semanticRecall').value = s.semanticRecall || 'off';
   $('embedApiKey').value = s.embedApiKey || '';
+  // 已配置非 off 通道时给中性状态（不自动发起下载/请求，验证留给「测试」按钮）
+  const savedChannel = s.semanticRecall || 'off';
+  if (savedChannel !== 'off') {
+    $('embed-test-status').style.color = '#6b7280';
+    $('embed-test-status').textContent = t('embedConfigured', savedChannel);
+  }
   // 未设置过则展示默认 prompt；设置过（含清空成 ''）按原值展示
   $('systemPrompt').value = s.systemPrompt !== undefined && s.systemPrompt !== null
     ? s.systemPrompt
@@ -333,6 +340,64 @@ async function testModel() {
 }
 
 $('btn-test').addEventListener('click', testModel);
+
+// ---------- 语义召回通道验证 ----------
+
+let embedTesting = false;
+
+/** 按表单当前通道跑一次真实向量计算验证生效；local 通道首次会下载模型（带进度显示） */
+$('btn-embed-test').addEventListener('click', async () => {
+  if (embedTesting) return;
+  const status = $('embed-test-status');
+  const channel = $('semanticRecall').value;
+  if (channel === 'off') {
+    status.style.color = '#6b7280';
+    status.textContent = t('embedTestOff');
+    return;
+  }
+  embedTesting = true;
+  status.style.color = '#6b7280';
+  status.textContent = t('embedTestWorking');
+  try {
+    // BYOK 通道缺 key：直接提示，不发权限请求也不发网络请求
+    if (channel !== 'local' && !$('embedApiKey').value.trim()) {
+      status.style.color = '#b45309';
+      status.textContent = t('embedTestNoKey');
+      return;
+    }
+    // 手势内：再确保该通道的可选 host 权限（local→huggingface，nvidia/openrouter→各自端点）
+    const origins = requiredOrigins({ semanticRecall: channel });
+    if (origins.length) {
+      const granted =
+        (await chrome.permissions.contains({ origins }).catch(() => false)) ||
+        (await chrome.permissions.request({ origins }).catch(() => false));
+      if (!granted) {
+        status.style.color = '#b45309';
+        status.textContent = t('hostPermDenied');
+        return;
+      }
+    }
+    const r = await testEmbedChannel(
+      { semanticRecall: channel, embedApiKey: $('embedApiKey').value.trim() },
+      (pct) => { status.textContent = t('embedTestDownloading', Math.round(pct)); }
+    );
+    if (r.ok) {
+      status.style.color = '#059669';
+      status.textContent = t('embedTestOk', r.channel, r.model, r.ms);
+    } else if (r.error === 'no-key') {
+      status.style.color = '#b45309';
+      status.textContent = t('embedTestNoKey');
+    } else {
+      status.style.color = '#dc2626';
+      status.textContent = t('embedTestFailed', String(r.error || '').slice(0, 120));
+    }
+  } finally {
+    embedTesting = false;
+  }
+});
+
+// 切换通道后旧状态可能误导，清空待下次测试
+$('semanticRecall').addEventListener('change', () => { $('embed-test-status').textContent = ''; });
 
 $('btn-pick').addEventListener('click', async () => {
   try {

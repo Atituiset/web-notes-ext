@@ -48,7 +48,7 @@ const norm = (v: number[]) => {
 
 // ---------- 通道实现 ----------
 
-async function localEmbedder(): Promise<{ embed: EmbedFn; model: string }> {
+async function localEmbedder(onProgress?: (pct: number) => void): Promise<{ embed: EmbedFn; model: string }> {
   // 模型权重运行时从 HuggingFace 下载 —— 需要可选 host 权限（设置页保存时请求）
   await ensureHostPermission('https://huggingface.co/');
   const mod: any = await import(chrome.runtime.getURL('lib/transformers.js'));
@@ -56,7 +56,19 @@ async function localEmbedder(): Promise<{ embed: EmbedFn; model: string }> {
   // wasm 在扩展包内（构建时拷自 onnxruntime-web），不走 CDN（MV3 CSP 禁远程代码）
   mod.env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('lib/wasm/');
   mod.env.backends.onnx.wasm.numThreads = 1; // 单线程：线程后端要起 blob worker，受扩展页 CSP 限制
-  const pipe = await mod.pipeline('feature-extraction', LOCAL_MODEL, { quantized: true });
+  // 下载进度：progress_callback 按文件独立回调，简单按文件数平均聚合（已缓存则无回调）
+  const fileProg = new Map<string, number>();
+  const progress_callback = onProgress
+    ? (p: any) => {
+        if (!p || !p.file) return;
+        if (p.status === 'progress') fileProg.set(p.file, p.progress || 0);
+        else if (p.status === 'done') fileProg.set(p.file, 100);
+        else return;
+        const vals = [...fileProg.values()];
+        onProgress(vals.reduce((a, b) => a + b, 0) / vals.length);
+      }
+    : undefined;
+  const pipe = await mod.pipeline('feature-extraction', LOCAL_MODEL, { quantized: true, progress_callback });
   return {
     model: LOCAL_MODEL,
     embed: async (texts) => {
@@ -108,6 +120,12 @@ function openrouterEmbedder(apiKey: string): { embed: EmbedFn; model: string } {
 
 let _embed: EmbedFn | null = null;
 let _modelTag = '';
+let _lastInitError = '';
+
+/** 最近一次 initEmbedding 降级的原因（无降级为空串）；面板降级提示用 */
+export function lastEmbeddingError(): string {
+  return _lastInitError;
+}
 
 /**
  * 按设置初始化语义召回并接线到 searchMemories。
@@ -133,13 +151,47 @@ export async function initEmbedding(settings: any): Promise<string> {
 
     _embed = impl.embed;
     _modelTag = impl.model;
+    _lastInitError = '';
     setDenseSimFloor(CHANNEL_FLOOR[channel] ?? 0.33);
     setDenseRanker(denseRank);
     return channel;
   } catch (e: any) {
-    console.warn('[embedding] 初始化失败，降级为词法单路:', e && e.message || e);
+    _lastInitError = String((e && e.message) || e);
+    console.warn('[embedding] 初始化失败，降级为词法单路:', _lastInitError);
     setDenseRanker(null);
     return 'off';
+  }
+}
+
+/**
+ * 通道自检（设置页「测试」按钮）：按当前通道初始化并跑一次真实小向量计算。
+ * 纯验证 —— 不接线 setDenseRanker，不触碰全局通道状态。
+ * @param onProgress local 通道模型下载进度回调（0-100，仅首次下载有回调）
+ * @returns { ok, channel, model, ms, error? } error='no-key' 表示缺 API Key（未发请求）
+ */
+export async function testEmbedChannel(
+  settings: any,
+  onProgress?: (pct: number) => void
+): Promise<{ ok: boolean; channel: string; model: string; ms: number; error?: string }> {
+  const channel = (settings && settings.semanticRecall) || 'off';
+  const t0 = Date.now();
+  try {
+    if (channel === 'local') {
+      const impl = await localEmbedder(onProgress);
+      const vecs = await impl.embed(['语义召回自检 embedding self-test'], 'query');
+      if (!vecs || !vecs[0] || !vecs[0].length) throw new Error('empty vector');
+      return { ok: true, channel, model: impl.model, ms: Date.now() - t0 };
+    }
+    if (channel === 'nvidia' || channel === 'openrouter') {
+      if (!settings.embedApiKey) return { ok: false, channel, model: '', ms: 0, error: 'no-key' };
+      const impl = channel === 'nvidia' ? nvidiaEmbedder(settings.embedApiKey) : openrouterEmbedder(settings.embedApiKey);
+      const vecs = await impl.embed(['embedding self-test'], 'query');
+      if (!vecs || !vecs[0] || !vecs[0].length) throw new Error('empty vector');
+      return { ok: true, channel, model: impl.model, ms: Date.now() - t0 };
+    }
+    return { ok: false, channel, model: '', ms: 0, error: 'off' };
+  } catch (e: any) {
+    return { ok: false, channel, model: '', ms: Date.now() - t0, error: String((e && e.message) || e) };
   }
 }
 

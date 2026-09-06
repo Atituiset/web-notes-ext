@@ -451,6 +451,33 @@
   "semanticHint": {
     "message": "키워드 + 벡터 하이브리드 기억 검색을 활성화합니다 — 바꿔 쓴 표현이나 다른 언어로 된 쿼리도 검색됩니다. 온디바이스 모델은 로컬에서 연산되며 데이터가 기기 밖으로 나가지 않습니다."
   },
+  "btnEmbedTest": {
+    "message": "테스트"
+  },
+  "embedTestWorking": {
+    "message": "확인 중…"
+  },
+  "embedTestDownloading": {
+    "message": "모델 다운로드 중… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ 활성화됨 ($1 · $2 · $3ms)"
+  },
+  "embedTestFailed": {
+    "message": "❌ 초기화 실패: $1"
+  },
+  "embedTestNoKey": {
+    "message": "이 채널의 API 키를 먼저 입력하세요"
+  },
+  "embedTestOff": {
+    "message": "현재 꺼져 있습니다. 채널을 선택한 후 테스트하세요"
+  },
+  "embedConfigured": {
+    "message": "설정됨: $1 («테스트»를 클릭해 확인)"
+  },
+  "embedDowngraded": {
+    "message": "의미 검색 초기화에 실패하여 어휘 검색으로 전환했습니다: $1"
+  },
   "scopeSiteChk": {
     "message": "전체 사이트에서 보이기 (이 도메인의 모든 페이지)"
   },

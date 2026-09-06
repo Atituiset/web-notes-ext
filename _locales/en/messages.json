@@ -449,6 +449,33 @@
   "semanticHint": {
     "message": "Enables hybrid lexical+vector memory recall — paraphrase and cross-lingual queries hit too. The on-device model computes locally; nothing leaves your device."
   },
+  "btnEmbedTest": {
+    "message": "Test"
+  },
+  "embedTestWorking": {
+    "message": "Testing…"
+  },
+  "embedTestDownloading": {
+    "message": "Downloading model… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ Active ($1 · $2 · $3ms)"
+  },
+  "embedTestFailed": {
+    "message": "❌ Init failed: $1"
+  },
+  "embedTestNoKey": {
+    "message": "Enter the API key for this channel first"
+  },
+  "embedTestOff": {
+    "message": "Channel is off — pick a channel to test"
+  },
+  "embedConfigured": {
+    "message": "Configured: $1 (click \"Test\" to verify)"
+  },
+  "embedDowngraded": {
+    "message": "Semantic recall init failed; fell back to lexical search: $1"
+  },
   "scopeSiteChk": {
     "message": "Visible on the whole site (all pages of this domain)"
   },

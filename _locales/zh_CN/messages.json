@@ -451,6 +451,33 @@
   "semanticHint": {
     "message": "开启后记忆检索升级为「词法 + 向量」混合召回，改述/跨语种也能命中；端侧模型在本机计算，数据不出设备。"
   },
+  "btnEmbedTest": {
+    "message": "测试"
+  },
+  "embedTestWorking": {
+    "message": "检测中…"
+  },
+  "embedTestDownloading": {
+    "message": "模型下载中… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ 已生效（$1 · $2 · $3ms）"
+  },
+  "embedTestFailed": {
+    "message": "❌ 初始化失败：$1"
+  },
+  "embedTestNoKey": {
+    "message": "请先填写该通道的 API Key"
+  },
+  "embedTestOff": {
+    "message": "当前为关闭状态，选择通道后再测试"
+  },
+  "embedConfigured": {
+    "message": "已配置：$1（点「测试」验证生效）"
+  },
+  "embedDowngraded": {
+    "message": "语义召回初始化失败，已降级为词法检索：$1"
+  },
   "scopeSiteChk": {
     "message": "整个站点可见（本域名所有页面）"
   },

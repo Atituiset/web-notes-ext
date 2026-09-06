@@ -449,6 +449,33 @@
   "semanticHint": {
     "message": "Ativa a recuperação híbrida de memórias (lexical + vetorial) — paráfrases e consultas em outros idiomas também encontram resultados. O modelo no dispositivo processa localmente; nada sai do seu aparelho."
   },
+  "btnEmbedTest": {
+    "message": "Testar"
+  },
+  "embedTestWorking": {
+    "message": "Verificando…"
+  },
+  "embedTestDownloading": {
+    "message": "Baixando modelo… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ Ativo ($1 · $2 · $3ms)"
+  },
+  "embedTestFailed": {
+    "message": "❌ Falha na inicialização: $1"
+  },
+  "embedTestNoKey": {
+    "message": "Insira primeiro a chave de API deste canal"
+  },
+  "embedTestOff": {
+    "message": "Canal desativado — escolha um canal para testar"
+  },
+  "embedConfigured": {
+    "message": "Configurado: $1 (clique em \"Testar\" para verificar)"
+  },
+  "embedDowngraded": {
+    "message": "Falha ao iniciar o recall semântico; usando busca lexical: $1"
+  },
   "scopeSiteChk": {
     "message": "Visível em todo o site (todas as páginas deste domínio)"
   },

@@ -449,6 +449,33 @@
   "semanticHint": {
     "message": "Aktiviert hybride lexikalische + Vektor-Suche im Gedächtnis — auch Umschreibungen und sprachübergreifende Anfragen treffen. Das On-Device-Modell rechnet lokal; nichts verlässt dein Gerät."
   },
+  "btnEmbedTest": {
+    "message": "Testen"
+  },
+  "embedTestWorking": {
+    "message": "Prüfe…"
+  },
+  "embedTestDownloading": {
+    "message": "Modell wird geladen… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ Aktiv ($1 · $2 · $3ms)"
+  },
+  "embedTestFailed": {
+    "message": "❌ Initialisierung fehlgeschlagen: $1"
+  },
+  "embedTestNoKey": {
+    "message": "Bitte zuerst den API-Key für diesen Kanal eingeben"
+  },
+  "embedTestOff": {
+    "message": "Kanal ist deaktiviert — wählen Sie einen Kanal zum Testen"
+  },
+  "embedConfigured": {
+    "message": "Konfiguriert: $1 (zum Prüfen „Testen\" klicken)"
+  },
+  "embedDowngraded": {
+    "message": "Semantische Suche konnte nicht initialisiert werden, auf lexikalische Suche zurückgestuft: $1"
+  },
   "scopeSiteChk": {
     "message": "Auf der ganzen Website sichtbar (alle Seiten dieser Domain)"
   },

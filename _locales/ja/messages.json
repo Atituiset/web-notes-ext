@@ -449,6 +449,33 @@
   "semanticHint": {
     "message": "語彙+ベクトルのハイブリッド記憶リコールを有効化 — 言い換えや言語またがりのクエリにもヒットします。オンデバイスモデルはローカルで計算され、データはデバイス外に出ません。"
   },
+  "btnEmbedTest": {
+    "message": "テスト"
+  },
+  "embedTestWorking": {
+    "message": "確認中…"
+  },
+  "embedTestDownloading": {
+    "message": "モデルをダウンロード中… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ 有効（$1 · $2 · $3ms）"
+  },
+  "embedTestFailed": {
+    "message": "❌ 初期化に失敗しました：$1"
+  },
+  "embedTestNoKey": {
+    "message": "このチャネルの API キーを先に入力してください"
+  },
+  "embedTestOff": {
+    "message": "現在オフです。チャネルを選択してからテストしてください"
+  },
+  "embedConfigured": {
+    "message": "設定済み：$1（「テスト」で動作確認）"
+  },
+  "embedDowngraded": {
+    "message": "セマンティック検索の初期化に失敗したため、語彙検索に切り替えました：$1"
+  },
   "scopeSiteChk": {
     "message": "サイト全体で表示（このドメインの全ページ）"
   },

@@ -23,7 +23,7 @@ import {
 import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
 import { pageKey, siteKey } from '../lib/url-key.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
-import { initEmbedding } from '../lib/embedding.js';
+import { initEmbedding, lastEmbeddingError } from '../lib/embedding.js';
 
 const $ = (id: string): any => document.getElementById(id);
 let tab = 'notes';
@@ -836,7 +836,14 @@ activeTabInfo()
   .catch(() => {});
 // 语义召回接线：端侧模型后台下载/加载，就绪前自然降级为词法单路
 getSettings()
-  .then((s) => initEmbedding(s))
+  .then(async (s) => {
+    const ch = await initEmbedding(s);
+    const want = s.semanticRecall || 'off';
+    // 用户配置了通道但初始化被降级 —— 不静默，提示一次（含原因）
+    if (want !== 'off' && ch === 'off') {
+      appendError(t('embedDowngraded', lastEmbeddingError().slice(0, 120)));
+    }
+  })
   .catch(() => {});
 
 // ---------- 页面「问 AI」入口（SW 转发 + 缓冲消费）----------

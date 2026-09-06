@@ -449,6 +449,33 @@
   "semanticHint": {
     "message": "Active le rappel hybride lexical + vectoriel — les paraphrases et les requêtes multilingues fonctionnent aussi. Le modèle local calcule sur l'appareil ; rien ne quitte votre appareil."
   },
+  "btnEmbedTest": {
+    "message": "Tester"
+  },
+  "embedTestWorking": {
+    "message": "Vérification…"
+  },
+  "embedTestDownloading": {
+    "message": "Téléchargement du modèle… $1%"
+  },
+  "embedTestOk": {
+    "message": "✅ Actif ($1 · $2 · $3ms)"
+  },
+  "embedTestFailed": {
+    "message": "❌ Échec de l'initialisation : $1"
+  },
+  "embedTestNoKey": {
+    "message": "Saisissez d'abord la clé API de ce canal"
+  },
+  "embedTestOff": {
+    "message": "Canal désactivé — choisissez un canal à tester"
+  },
+  "embedConfigured": {
+    "message": "Configuré : $1 (cliquez sur « Tester » pour vérifier)"
+  },
+  "embedDowngraded": {
+    "message": "Échec de l'initialisation du rappel sémantique, retour à la recherche lexicale : $1"
+  },
   "scopeSiteChk": {
     "message": "Visible sur tout le site (toutes les pages de ce domaine)"
   },
