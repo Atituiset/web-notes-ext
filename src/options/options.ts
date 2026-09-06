@@ -468,6 +468,13 @@ async function renderMemories() {
     showHint('memLoadFailed'); // 多为 vault 未授权或权限被收回
     return;
   }
+  // memDir() 在 vault 未授权/权限 prompt 时返回 null，listMemories 当空库返回 []（不抛错）——
+  // 「未授权」与「空库」必须在 UI 上区分，否则用户以为记忆没存上
+  if (!memories.length && (await vaultPermissionState()) !== 'granted') {
+    $('mem-count').textContent = '';
+    showHint('memLoadFailed');
+    return;
+  }
   $('mem-count').textContent = memories.length ? t('memCount', memories.length) : '';
   if (!memories.length) {
     showHint('profileEmpty'); // 「记忆库为空，先积累一些记忆」语义通用，复用
