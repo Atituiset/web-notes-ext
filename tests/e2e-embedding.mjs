@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
-import { chromium } from '/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright/index.mjs';
+import { chromium } from '../scripts/resolve-playwright.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const EXT_DIR = '/tmp/wne-ext-staging';

@@ -2,7 +2,7 @@
 // 用本机 Playwright Chromium 截图导出。运行：node scripts/make-icons.cjs
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
+const { chromium } = require('./resolve-playwright.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'icons');

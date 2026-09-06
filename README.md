@@ -5,6 +5,13 @@ Highlight, take notes, and ask AI right on any web page. Notes and AI Q&A export
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![manifest v3](https://img.shields.io/badge/manifest-v3-green.svg)](manifest.json)
 [![chrome >= 114](https://img.shields.io/badge/chrome-%3E%3D114-orange.svg)](https://www.google.com/chrome/)
+[![CI](https://github.com/Atituiset/web-notes-ext/actions/workflows/ci.yml/badge.svg)](https://github.com/Atituiset/web-notes-ext/actions/workflows/ci.yml)
+
+## Engineering TL;DR
+
+- [On-device vector search under MV3 CSP constraints](#technical-highlights) — transformers.js + ONNX wasm bundled in-package, nothing loaded from a CDN
+- [Zero-install-warning runtime permission architecture](#technical-highlights) — no `host_permissions`; origins computed from settings, granted inside a user gesture
+- [Memory retrieval with automated evals](#memory-系统与检索评测) — recall@5 97.0% (NVIDIA channel) / 93.9% (key-free on-device channel); reproduction notes in the Chinese section
 
 ## Screenshots
 
@@ -26,7 +33,7 @@ Highlight, take notes, and ask AI right on any web page. Notes and AI Q&A export
 - **On-device vector search under MV3 CSP** — transformers.js ships as a prebuilt ESM inside the extension bundle, with the ONNX wasm binaries packed alongside (`dist/lib/wasm/`), so no remote code ever loads (MV3 CSP forbids it). Embeddings run single-threaded because the threaded backend would spawn blob workers, which extension-page CSP blocks. See [`src/lib/embedding.ts`](src/lib/embedding.ts).
 - **Zero-install-warning permissions** — no `host_permissions` at all. Host access is computed from your settings ([`requiredOrigins`](src/lib/llm/index.ts)) and requested at runtime inside a user gesture (`chrome.permissions.request`), with a friendly guard ([`ensureHostPermission`](src/lib/llm/index.ts)) before every fetch. Installing the extension shows no "read all your data on all websites" prompt for host access.
 - **Two-channel page-text extraction** — the primary path is a `page:get-text` message to the isolated-world content script ([`src/content/annotator.js`](src/content/annotator.js)); the fallback injects the extractor into the MAIN world on demand via `chrome.scripting.executeScript` for tabs that predate the extension. See [`extractPageText`](src/lib/chat-pipeline.ts).
-- **Memory retrieval with automated evals** — the hybrid retriever is regression-tested against a 40-memory corpus with 37 labeled queries: **recall@5 97.0% / precision@5 66.7% / abstention 100%**. Methodology and full engineering journal: [docs/MEMORY-EVAL.md](docs/MEMORY-EVAL.md), [docs/MEMORY-EVAL-PLAYBOOK.md](docs/MEMORY-EVAL-PLAYBOOK.md), [archive/memory-eval/JOURNAL.md](archive/memory-eval/JOURNAL.md).
+- **Memory retrieval with automated evals** — the hybrid retriever is regression-tested against a 40-memory corpus with 37 labeled queries: **recall@5 97.0% / precision@5 66.7% / abstention 100%** (NVIDIA embedding channel; the key-free on-device MiniLM channel scores 93.9% — see the reproduction notes in the Chinese section below). Methodology and full engineering journal: [docs/MEMORY-EVAL.md](docs/MEMORY-EVAL.md), [docs/MEMORY-EVAL-PLAYBOOK.md](docs/MEMORY-EVAL-PLAYBOOK.md), [archive/memory-eval/JOURNAL.md](archive/memory-eval/JOURNAL.md).
 
 Design deep-dive: [docs/DESIGN.md](docs/DESIGN.md) · Memory system status: [docs/MEMORY-STATUS.md](docs/MEMORY-STATUS.md)
 
@@ -60,14 +67,30 @@ Design deep-dive: [docs/DESIGN.md](docs/DESIGN.md) · Memory system status: [doc
 
 > **一页总览：[docs/MEMORY-STATUS.md](docs/MEMORY-STATUS.md)**（已上线 / 已验证 / 指标 / 下一步）
 
-检索系统带一套**自动化评测体系**（40 条记忆语料 + 37 条标注查询，recall@5 97.0% / precision@5 66.7% / 拒答 100%）：
+检索系统带一套**自动化评测体系**（40 条记忆语料 + 37 条标注查询）：最优成绩 recall@5 97.0% / precision@5 66.7% / 拒答 100%（NVIDIA embedding 通道，即 `tests/eval/baseline.json` 记录的基线）；默认免 key 的端侧 MiniLM 通道为 recall@5 93.9% / precision@5 59.9% / 拒答 100%。
 
 - [docs/MEMORY-EVAL-PLAYBOOK.md](docs/MEMORY-EVAL-PLAYBOOK.md) — 评测方法论与复刻指南（怎么建数据集、怎么跑、指标口径）
 - [archive/memory-eval/JOURNAL.md](archive/memory-eval/JOURNAL.md) — **全程工程日志**：优化过程的完整回放（每个决策的证据、被数据否决的 6 个方案）
 - [docs/plans/memory-opt-roadmap.md](docs/plans/memory-opt-roadmap.md) — 分阶段优化路线图与达标记录
 - [archive/memory-eval/](archive/memory-eval/) — 执行报告与模型选型探针脚本
 
-复跑评测：`npm run build && node tests/eval-memory.mjs`（端侧模型免 key；A/B 通道见 PLAYBOOK）
+复跑评测（通道由 `DENSE_CHANNEL` 环境变量切换，默认 `minilm`）：
+
+```bash
+npm run build && node tests/eval-memory.mjs          # 默认 minilm 端侧通道，免 key，成绩约 93.9% recall@5
+DENSE_CHANNEL=nvidia NV_KEY=<你的 key> node tests/eval-memory.mjs   # NVIDIA 通道，复现 97.0% 基线（baseline.json 的 channel 即 nvidia）
+DENSE_CHANNEL=openrouter OR_KEY=<你的 key> node tests/eval-memory.mjs  # OpenRouter 备选通道
+```
+
+## Known limitations / 已知限制
+
+- The one-click translation stream has no abort path yet — closing the floating bubble does not cancel the in-flight request.
+- `src/panel/panel.ts` has grown large and is due for a split (UI rendering vs. chat logic).
+- The e2e scripts under `tests/` require a headed Chromium on the local machine; they are not part of CI.
+
+- 划词一键翻译的流式请求尚无 abort 机制——关掉浮窗不会中断正在进行的请求。
+- `src/panel/panel.ts` 体量偏大，待拆分（渲染与聊天逻辑分离）。
+- `tests/` 下的 e2e 脚本依赖本机 headed Chromium 运行，不在 CI 内。
 
 ## Contributing
 

@@ -7,7 +7,7 @@
 // 所以本测试不通过 UI 授权，而是直接在扩展页面上下文用 OPFS (Origin Private
 // File System) 验证同一套写文件代码路径（saveMemory / writePage 共享 createWritable 逻辑），
 // 并单独验证 manifest 的 content_scripts world 配置与 dist 产物一致性。
-import { chromium } from '/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright/index.mjs';
+import { chromium } from '../scripts/resolve-playwright.mjs';
 import { mkdtempSync, readdirSync, readFileSync, existsSync, cpSync, rmSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';

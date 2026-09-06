@@ -2,7 +2,7 @@
 // 运行：node tests/debug-live-page.cjs（需先 npm run build；headed）
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
+const { chromium } = require('../scripts/resolve-playwright.cjs');
 const ROOT = path.resolve(__dirname, '..');
 // 加载的扩展目录 = dist 产物 + manifest（仓库根没有构建产物，不能直接加载）
 const EXT_DIR = '/tmp/wne-ext-staging';

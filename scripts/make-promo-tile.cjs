@@ -4,7 +4,7 @@
 //   英文版加 SHOT_LOCALE=en，输出到 docs/store-en/
 const path = require('path');
 const fs = require('fs');
-const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
+const { chromium } = require('./resolve-playwright.cjs');
 
 const LOCALE = process.env.SHOT_LOCALE === 'en' ? 'en' : 'zh';
 const MARQUEE = process.env.SHOT_MARQUEE === '1';

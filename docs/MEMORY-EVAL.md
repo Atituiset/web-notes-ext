@@ -19,7 +19,7 @@
 ## 2. 架构：在真实代码路径上评测
 
 ```
-dataset.mjs (40 记忆 + 25 查询 + 噪声生成器)
+dataset.mjs (40 记忆 + 37 查询 + 噪声生成器)
       │
 Playwright 启动扩展（staging = dist + manifest + icons + _locales + eval/memory.mjs）
       │
@@ -27,7 +27,7 @@ Playwright 启动扩展（staging = dist + manifest + icons + _locales + eval/me
       │  1. OPFS root 句柄写入 IndexedDB handles/vault  ← OPFS 充当 vault
       │  2. esbuild 单文件 import src/lib/memory.ts（bundle 自动带入 obsidian/db/markdown 依赖）
       │  3. saveMemory ×40（按 daysOld 回填 frontmatter 日期）
-      │  4. searchMemories ×25（performance.now 逐条计时）
+      │  4. searchMemories ×37（performance.now 逐条计时）
       │  5. 注入噪声至 100/500/1000 条，固定 5 查询测延迟-规模曲线
       │
 node 侧：指标计算 → console 表格 + /tmp/memory-eval-report.json → 基线回归对比
@@ -48,15 +48,16 @@ preference / fact / correction / conclusion 四类均衡，**中文 70% + 英文
 - **2 条 pinned**：测「pinned 永远注入且排最前」的设计行为
 - **hits / daysOld 分布**：覆盖复述效应与 recency 衰减两个排序因子
 
-### 3.2 查询（25 条，带标准答案）
+### 3.2 查询（37 条，带标准答案）
 
 | 类别 | 数量 | 测什么 |
 |---|---|---|
+| paraphrase | 12 | 改述/换说法查询的语义召回（dense 通道主战场） |
 | fact-recall | 7 | 单事实命中（含 CSS 标签检索） |
 | preference-recall | 4 | 偏好类记忆（多答案） |
+| abstain | 4 | 语料无相关记忆 → 期望零注入（**排除 pinned 后判定**，pinned 必注入是设计特性） |
 | knowledge-update | 3 | 新版必须排在旧版前 |
 | tag-boost | 3 | 正文无关键词、靠 tags 命中 |
-| abstain | 4 | 语料无相关记忆 → 期望零注入（**排除 pinned 后判定**，pinned 必注入是设计特性） |
 | en-mixed | 3 | 英文分词路径 |
 | noise-robust | 1 | 词面高重合但语义无关，不应误导 |
 
@@ -142,11 +143,13 @@ preference / fact / correction / conclusion 四类均衡，**中文 70% + 英文
 
 ```bash
 npm run build
-node tests/eval-memory.mjs                  # 跑评测 + 基线回归对比
+node tests/eval-memory.mjs                  # 跑评测 + 基线回归对比（默认 minilm 端侧通道，免 key）
 node tests/eval-memory.mjs --write-baseline # 检索算法变更验证后，记录新基线
 # 或
 npm run eval:memory
 ```
+
+dense 通道由 `DENSE_CHANNEL` 环境变量切换：`minilm`（端侧默认，免 key）/ `nvidia`（需 `NV_KEY`，v4 基线 97.0% 即此通道，`baseline.json` 的 `channel` 字段有记录）/ `openrouter`（需 `OR_KEY`）。基线回归对比在通道不一致时只展示不判 FAIL。
 
 明细报告（逐 query 命中/耗时）输出到 `/tmp/memory-eval-report.json`。
 

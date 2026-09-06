@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const { chromium } = require('/home/atituiset/.nvm/versions/node/v24.14.1/lib/node_modules/@playwright/cli/node_modules/playwright');
+const { chromium } = require('../scripts/resolve-playwright.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const EXT_DIR = '/tmp/wne-ext-staging';
