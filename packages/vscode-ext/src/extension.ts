@@ -141,6 +141,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   );
 
   refreshAll();
+
+  // 测试钩子：extension host 内共享 globalThis，自动化测试经此取真实 context（globalState 等）
+  (globalThis as any).__markpilotContext = context;
 }
 
 export function deactivate(): void {}
