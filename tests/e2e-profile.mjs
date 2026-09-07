@@ -16,7 +16,7 @@ fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: tr
 fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
 // profile.ts + memory.ts 各打一个 ESM 入口
-for (const [src, out] of [['src/lib/memory.ts', 'memory.mjs'], ['src/lib/profile.ts', 'profile.mjs'], ['src/lib/chat-pipeline.ts', 'chat-pipeline.mjs']]) {
+for (const [src, out] of [['packages/chrome-ext/src/lib/memory.ts', 'memory.mjs'], ['packages/chrome-ext/src/lib/profile.ts', 'profile.mjs'], ['packages/chrome-ext/src/lib/chat-pipeline.ts', 'chat-pipeline.mjs']]) {
   execSync(`npx esbuild ${path.join(ROOT, src)} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval', out)}`, { stdio: 'inherit' });
 }
 

@@ -4,7 +4,7 @@ import assert from 'node:assert';
 import { test } from 'node:test';
 
 // ---- buildContext: 材料组装 ----
-const { buildContext } = await import('../../src/lib/llm/context.js');
+const { buildContext } = await import('../../packages/chrome-ext/src/lib/llm/context.js');
 
 test('buildContext: pageText 注入【页面正文】', () => {
   const { messages } = buildContext({
@@ -85,7 +85,7 @@ globalThis.fetch = async () => ({
   text: async () => '',
 });
 
-const { streamChat } = await import('../../src/lib/llm/index.js');
+const { streamChat } = await import('../../packages/chrome-ext/src/lib/llm/index.js');
 
 test('streamChat: delta.reasoning_content 单独回调，不混入 text', async () => {
   const tokens = [];

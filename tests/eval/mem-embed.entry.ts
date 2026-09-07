@@ -1,2 +1,2 @@
-export * from '../../src/lib/memory.js';
-export * from '../../src/lib/embedding.js';
+export * from '../../packages/chrome-ext/src/lib/memory.js';
+export * from '../../packages/chrome-ext/src/lib/embedding.js';

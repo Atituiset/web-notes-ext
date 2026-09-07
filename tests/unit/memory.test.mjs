@@ -2,9 +2,9 @@
 // 运行方式: npm test （见 package.json，走 build.mjs 里的 test 步骤或直接 node --test）
 import assert from 'node:assert';
 import { test } from 'node:test';
-import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody, naiveStem, fuseWeighted, DENSE_SIM_FLOOR, DENSE_GAIN, DENSE_TOP_N, DENSE_VACUUM_MAX_SPARSE } from '../../src/lib/memory.js';
-import { shouldIgnore, guessTags } from '../../src/lib/memory-extract.js';
-import { parseFrontmatter } from '../../src/lib/markdown.js';
+import { tokenize, scoreMemory, isCold, overlapCount, bodySimilarity, enrichBody, naiveStem, fuseWeighted, DENSE_SIM_FLOOR, DENSE_GAIN, DENSE_TOP_N, DENSE_VACUUM_MAX_SPARSE } from '../../packages/chrome-ext/src/lib/memory.js';
+import { shouldIgnore, guessTags } from '../../packages/chrome-ext/src/lib/memory-extract.js';
+import { parseFrontmatter } from '../../packages/chrome-ext/src/lib/markdown.js';
 
 test('tokenize: english words', () => {
   const t = tokenize('clangd protocol header file');

@@ -1,0 +1,7 @@
+{
+  "name": "@markpilot/chrome-ext",
+  "version": "0.4.9",
+  "private": true,
+  "license": "MIT",
+  "type": "module"
+}
