@@ -5,7 +5,8 @@
  *   - 稠密排序经 setDenseRanker 注入 memory.ts，本模块只负责「怎么算向量」
  *   - 三通道优先级：nvidia（BYOK 效果最优）> local（端侧零成本零外传，默认）
  *     > openrouter（BYOK 备选）；off = 关闭（词法单路）
- *   - 向量缓存进 IndexedDB embeddings store，键 = `${model}|${type}|${hash(body)}`
+ *   - 向量缓存经 KVStore 端口（chrome 适配器落 IndexedDB embeddings store），
+ *     键 = `${model}|${type}|${hash(body)}`
  *     —— e5 系模型（nvidia）query/passage 非对称，键必须带类型（踩坑记录见 MEMORY-EVAL §8）
  *   - local 通道：transformers.js 预构建 ESM（dist/lib/transformers.js）+
  *     本包内 wasm（dist/lib/wasm/），模型运行时从 HuggingFace 下载（数据非代码）
@@ -14,7 +15,7 @@
  */
 
 import { setDenseRanker, setDenseSimFloor } from './memory.js';
-import { idbGet, idbPut } from './db.js';
+import { kvStore, assetResolver } from './ports.js';
 import { ensureHostPermission } from './llm/index.js';
 
 export type EmbedFn = (texts: string[], type: 'query' | 'passage') => Promise<number[][]>;
@@ -51,10 +52,10 @@ const norm = (v: number[]) => {
 async function localEmbedder(onProgress?: (pct: number) => void): Promise<{ embed: EmbedFn; model: string }> {
   // 模型权重运行时从 HuggingFace 下载 —— 需要可选 host 权限（设置页保存时请求）
   await ensureHostPermission('https://huggingface.co/');
-  const mod: any = await import(chrome.runtime.getURL('lib/transformers.js'));
+  const mod: any = await import(assetResolver().resolveAssetUrl('lib/transformers.js'));
   mod.env.allowLocalModels = false;
   // wasm 在扩展包内（构建时拷自 onnxruntime-web），不走 CDN（MV3 CSP 禁远程代码）
-  mod.env.backends.onnx.wasm.wasmPaths = chrome.runtime.getURL('lib/wasm/');
+  mod.env.backends.onnx.wasm.wasmPaths = assetResolver().resolveAssetUrl('lib/wasm/');
   mod.env.backends.onnx.wasm.numThreads = 1; // 单线程：线程后端要起 blob worker，受扩展页 CSP 限制
   // 下载进度：progress_callback 按文件独立回调，简单按文件数平均聚合（已缓存则无回调）
   const fileProg = new Map<string, number>();
@@ -196,11 +197,12 @@ export async function testEmbedChannel(
 }
 
 async function embedCached(texts: string[], type: 'query' | 'passage'): Promise<number[][]> {
+  const kv = kvStore();
   const out: (number[] | null)[] = [];
   const missingIdx: number[] = [];
   for (let i = 0; i < texts.length; i++) {
     const key = `${_modelTag}|${type}|${hash(texts[i])}`;
-    const cached = await idbGet('embeddings', key).catch(() => null);
+    const cached = await kv.get(key).catch(() => null);
     if (cached) out.push(cached);
     else {
       out.push(null);
@@ -213,7 +215,7 @@ async function embedCached(texts: string[], type: 'query' | 'passage'): Promise<
     for (let k = 0; k < idxs.length; k++) {
       const j = idxs[k];
       out[j] = vecs[k];
-      idbPut('embeddings', `${_modelTag}|${type}|${hash(texts[j])}`, vecs[k]).catch(() => {});
+      kv.set(`${_modelTag}|${type}|${hash(texts[j])}`, vecs[k]).catch(() => {});
     }
   }
   return out as number[][];

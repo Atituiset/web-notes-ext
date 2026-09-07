@@ -8,7 +8,7 @@
  */
 import { extractArticle } from '../lib/page-extract.js';
 import { msg as t } from '../lib/i18n.js';
-import { pageKey, siteKey, matchesPage } from '../lib/url-key.js';
+import { pageKey, siteKey, matchesPage } from '../../../core/src/url-key.js';
 
 (() => {
   'use strict';

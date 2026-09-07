@@ -3,7 +3,7 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
 
-const { requiredOrigins } = await import('../../packages/chrome-ext/src/lib/llm/index.js');
+const { requiredOrigins } = await import('../../packages/core/src/llm/index.js');
 
 test('requiredOrigins: preset provider 取 presetBase origin', () => {
   assert.deepStrictEqual(requiredOrigins({ provider: 'deepseek' }), ['https://api.deepseek.com/*']);

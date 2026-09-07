@@ -11,6 +11,8 @@
  * 不经过 service worker，规避 MV3 SW 休眠打断长流。
  */
 
+import { permissionGate, i18n } from '../ports.js';
+
 export const PROVIDERS = {
   opencode: { label: 'OpenCode 免费模型 (零配置)', needsKey: false, presetBase: 'https://opencode.ai/zen/v1', models: ['mimo-v2.5-free', 'nemotron-3.5-lightning-free', 'hy3-free'] },
   'openai-compatible': { label: 'OpenAI 兼容 (自定义 baseUrl)', needsKey: false },
@@ -60,25 +62,10 @@ export function requiredOrigins(settings: any): string[] {
 
 /**
  * fetch 前守卫：目标 origin 未授权时抛出引导性错误。
- * 无 chrome.permissions 的环境（单测）直接放行。
+ * 经 PermissionGate 端口 —— 默认 no-op，无权限概念的环境（单测）直接放行。
  */
 export async function ensureHostPermission(url: string): Promise<void> {
-  const perms = globalThis.chrome && globalThis.chrome.permissions;
-  if (!perms) return;
-  let origin: string;
-  try {
-    const u = new URL(url);
-    origin = u.protocol + '//' + u.hostname + '/*';
-  } catch {
-    return;
-  }
-  const granted = await perms.contains({ origins: [origin] }).catch(() => false);
-  if (!granted) {
-    throw new Error(
-      (globalThis.chrome?.i18n?.getMessage?.('hostPermissionMissing', origin)) ||
-      `Missing network access for ${origin} — re-save the settings page to grant it`
-    );
-  }
+  await permissionGate().ensureHost(url);
 }
 
 /**
@@ -180,7 +167,7 @@ export async function streamChat({ settings, messages, signal, onToken, onReason
   onReasoning?: (tok: string) => void;
 }) {
   const model = settings.model;
-  if (!model) throw new Error((globalThis.chrome?.i18n?.getMessage?.('modelNotConfiguredError')) || 'No model configured — set it in the settings page');
+  if (!model) throw new Error(i18n().msg('modelNotConfiguredError') || 'No model configured — set it in the settings page');
   const url = endpointFor(settings);
   const key = (settings.apiKeys && settings.apiKeys[settings.provider]) || '';
   const headers = { 'Content-Type': 'application/json' };

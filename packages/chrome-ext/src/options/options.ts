@@ -1,11 +1,15 @@
 import { getSettings, saveSettings, exportNotesData, importNotesData } from '../lib/db.js';
-import { pickVault, vaultPermissionState } from '../lib/obsidian.js';
-import { PROVIDERS, listModels, streamChat, requiredOrigins } from '../lib/llm/index.js';
-import { DEFAULT_SYSTEM_PROMPT } from '../lib/llm/context.js';
+import { setupChromePlatform } from '../platform/index.js';
+import { pickVault, vaultPermissionState } from '../platform/vault-fs.js';
+import { PROVIDERS, listModels, streamChat, requiredOrigins } from '../../../core/src/llm/index.js';
+import { DEFAULT_SYSTEM_PROMPT } from '../../../core/src/llm/context.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
-import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../lib/memory.js';
-import { testEmbedChannel } from '../lib/embedding.js';
-import { generateProfile } from '../lib/profile.js';
+import { listMemories, deleteMemory, pinMemory, saveMemory, isCold } from '../../../core/src/memory.js';
+import { testEmbedChannel } from '../../../core/src/embedding.js';
+import { generateProfile } from '../../../core/src/profile.js';
+
+// 平台端口装配：须在任何 core 业务调用前完成
+setupChromePlatform();
 
 const $ = (id: string): any => document.getElementById(id);
 

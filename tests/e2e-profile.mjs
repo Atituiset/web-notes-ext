@@ -15,10 +15,8 @@ fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.j
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
 fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
-// profile.ts + memory.ts 各打一个 ESM 入口
-for (const [src, out] of [['packages/chrome-ext/src/lib/memory.ts', 'memory.mjs'], ['packages/chrome-ext/src/lib/profile.ts', 'profile.mjs'], ['packages/chrome-ext/src/lib/chat-pipeline.ts', 'chat-pipeline.mjs']]) {
-  execSync(`npx esbuild ${path.join(ROOT, src)} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval', out)}`, { stdio: 'inherit' });
-}
+// memory/profile/chat-pipeline 合打一个 ESM 入口（共享模块状态：记忆缓存 + 端口注册表）
+execSync(`npx esbuild ${path.join(ROOT, 'tests/eval/profile-test.entry.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval', 'profile-test.mjs')}`, { stdio: 'inherit' });
 
 let pass = 0, fail = 0;
 const check = (n, c, extra) => {
@@ -68,10 +66,11 @@ const SEED = [
       req.onsuccess = () => { const t = req.result.transaction('handles', 'readwrite'); t.objectStore('handles').put({ name: 'vault', handle: root }); t.oncomplete = res; t.onerror = rej; };
       req.onerror = rej;
     });
-    const mem = await import(chrome.runtime.getURL('eval/memory.mjs'));
+    const mem = await import(chrome.runtime.getURL('eval/profile-test.mjs'));
+    mem.setupChromePlatform(); // 平台端口装配（VaultFS→OPFS 句柄，上方已写入 handles store）
     for (const m of SEED) await mem.saveMemory({ scope: 'user', body: m.body, tags: m.tags, confidence: 'high' });
 
-    const prof = await import(chrome.runtime.getURL('eval/profile.mjs'));
+    const prof = mem; // 同一 bundle，共享模块状态
     const settings = { provider: 'opencode', model: 'hy3-free', apiKeys: {}, baseUrl: '', memoryInject: true };
     try {
       const gen = await prof.generateProfile(settings);
@@ -82,7 +81,7 @@ const SEED = [
       out.profile = await prof.getProfile();
       out.memCount = (await mem.listMemories()).length;
       // 注入验证
-      const cp = await import(chrome.runtime.getURL('eval/chat-pipeline.mjs'));
+      const cp = mem;
       const { messages } = await cp.buildLlmMessages({
         settings, question: '我该用什么语言写注释？', pageText: null, notes: [], selection: null, history: [],
       });

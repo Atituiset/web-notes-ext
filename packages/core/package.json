@@ -1,0 +1,10 @@
+{
+  "name": "@markpilot/core",
+  "version": "0.4.9",
+  "private": true,
+  "type": "module",
+  "description": "Markpilot 平台无关核心：LLM 问答管线 / 长期记忆 / Obsidian 导出（ports & adapters）",
+  "exports": {
+    "./*": "./src/*"
+  }
+}

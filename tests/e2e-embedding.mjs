@@ -15,11 +15,16 @@ fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(EXT_DIR, 'manifest.j
 fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: true });
 fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
-// memory+embedding 必须打进同一 bundle——分开打会让 setDenseRanker 写进
+// memory+embedding 必须打进同一 bundle——分开打会让 setDenseRanker/端口注册表写进
 // 各自拷贝的模块状态（searchMemories 读到的是另一份的 null）
 const entry = path.join(ROOT, 'tests/eval/mem-embed.entry.ts');
 fs.writeFileSync(entry,
-  "export * from '../../packages/chrome-ext/src/lib/memory.js';\nexport * from '../../packages/chrome-ext/src/lib/embedding.js';\n");
+  "// 评测入口（e2e-embedding）：memory+embedding 必须打进同一 bundle——分开打会让\n" +
+  "// setDenseRanker/端口注册表写进各自拷贝的模块状态（searchMemories 读到另一份）。\n" +
+  "// 注意：tests/e2e-embedding.mjs 会重新生成本文件，两处内容须保持一致。\n" +
+  "export * from '../../packages/core/src/memory.js';\n" +
+  "export * from '../../packages/core/src/embedding.js';\n" +
+  "export { setupChromePlatform } from '../../packages/chrome-ext/src/platform/index.js';\n");
 execSync(`npx esbuild ${entry} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval', 'mem-embed.mjs')}`, { stdio: 'inherit' });
 
 let pass = 0, fail = 0;
@@ -70,6 +75,7 @@ const NOISE = [
         req.onerror = rej;
       });
       const mem = await import(chrome.runtime.getURL('eval/mem-embed.mjs'));
+      mem.setupChromePlatform(); // 平台端口装配（VaultFS/KV/AssetResolver 等）
       let targetFile = '';
       for (const body of [TARGET, ...NOISE]) {
         const f = await mem.saveMemory({ scope: 'user', body, tags: ['fact'], confidence: 'high' });
