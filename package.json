@@ -13,7 +13,8 @@
     "watch": "node build.mjs --watch",
     "test": "node tests/run-unit.mjs",
     "check": "tsc --noEmit && tsc --noEmit -p packages/vscode-ext/tsconfig.json",
-    "eval:memory": "node tests/eval-memory.mjs"
+    "eval:memory": "node tests/eval-memory.mjs",
+    "test:vscode": "npm run test:vscode -w @markpilot/vscode-ext"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.280",

@@ -47,6 +47,14 @@
 3. 配置 `vaultPath` 指向一个 Obsidian vault → 再提问（长期记忆注入不报错即降级正确）；侧栏「导出本文件笔记」→ vault 下出现 `Markpilot-Code/code-*.md`
 4. 选中一段中文 → Translate Selection → 侧栏流式出译文 → 「替换选区」→ 编辑器内选区被译文替换
 
+## 集成测试（真实扩展宿主）
+
+```bash
+npm run test:vscode
+```
+
+经 @vscode/test-electron 下载 VS Code 并以 headed 方式（WSLg）启动扩展宿主，跑 `src/test/suite.ts`（Mocha）：激活与命令注册、VaultFS+记忆检索回路、笔记锚点平移（真实编辑事件驱动）、mock LLM SSE 的翻译/问答端到端。首次运行下载 ~100MB，需要显示环境；不纳入 `npm test`。
+
 ## 打包
 
 ```bash

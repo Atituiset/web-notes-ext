@@ -23,27 +23,67 @@
   ],
   "contributes": {
     "commands": [
-      { "command": "markpilot.note", "title": "Add Note on Selection", "category": "Markpilot" },
-      { "command": "markpilot.ask", "title": "Ask AI about Selection", "category": "Markpilot" },
-      { "command": "markpilot.translate", "title": "Translate Selection", "category": "Markpilot" },
-      { "command": "markpilot.exportNotes", "title": "Export File Notes to Obsidian", "category": "Markpilot" },
-      { "command": "markpilot.setApiKey", "title": "Set LLM API Key", "category": "Markpilot" }
+      {
+        "command": "markpilot.note",
+        "title": "Add Note on Selection",
+        "category": "Markpilot"
+      },
+      {
+        "command": "markpilot.ask",
+        "title": "Ask AI about Selection",
+        "category": "Markpilot"
+      },
+      {
+        "command": "markpilot.translate",
+        "title": "Translate Selection",
+        "category": "Markpilot"
+      },
+      {
+        "command": "markpilot.exportNotes",
+        "title": "Export File Notes to Obsidian",
+        "category": "Markpilot"
+      },
+      {
+        "command": "markpilot.setApiKey",
+        "title": "Set LLM API Key",
+        "category": "Markpilot"
+      }
     ],
     "menus": {
       "editor/context": [
-        { "command": "markpilot.note", "when": "editorHasSelection", "group": "markpilot@1" },
-        { "command": "markpilot.ask", "when": "editorHasSelection", "group": "markpilot@2" },
-        { "command": "markpilot.translate", "when": "editorHasSelection", "group": "markpilot@3" }
+        {
+          "command": "markpilot.note",
+          "when": "editorHasSelection",
+          "group": "markpilot@1"
+        },
+        {
+          "command": "markpilot.ask",
+          "when": "editorHasSelection",
+          "group": "markpilot@2"
+        },
+        {
+          "command": "markpilot.translate",
+          "when": "editorHasSelection",
+          "group": "markpilot@3"
+        }
       ]
     },
     "viewsContainers": {
       "activitybar": [
-        { "id": "markpilot", "title": "Markpilot", "icon": "media/icon.svg" }
+        {
+          "id": "markpilot",
+          "title": "Markpilot",
+          "icon": "media/icon.svg"
+        }
       ]
     },
     "views": {
       "markpilot": [
-        { "id": "markpilot.chat", "type": "webview", "name": "Chat" }
+        {
+          "id": "markpilot.chat",
+          "type": "webview",
+          "name": "Chat"
+        }
       ]
     },
     "configuration": {
@@ -81,7 +121,10 @@
         },
         "markpilot.semanticRecall": {
           "type": "string",
-          "enum": ["off", "local"],
+          "enum": [
+            "off",
+            "local"
+          ],
           "default": "off",
           "description": "语义召回通道：local = 端侧 MiniLM（需可解析 @xenova/transformers，首次运行下载模型）"
         }
@@ -91,10 +134,14 @@
   "scripts": {
     "compile": "node build.mjs && tsc --noEmit -p tsconfig.json",
     "watch": "node build.mjs --watch",
-    "package": "node scripts/vsix.mjs"
+    "package": "node scripts/vsix.mjs",
+    "test:vscode": "node scripts/test.mjs"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.10",
     "@types/node": "^26.4.1",
-    "@types/vscode": "^1.95.0"
+    "@types/vscode": "^1.95.0",
+    "@vscode/test-electron": "^3.1.0",
+    "mocha": "^12.0.0"
   }
 }
