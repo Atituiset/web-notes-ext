@@ -195,3 +195,18 @@ db: web-notes-ext v3
 - [ ] token 预算估算：字符数/4 够不够（沿用 my-agent 项目的经验值即可起步）
 - [ ] AI 问答默认是否入导出（倾向：设置项开关，默认关）
 - [ ] 是否给两个 mdBook 出一个"检测到站内笔记，是否导入插件"的一次性迁移按钮
+
+## 10. 双平台架构（2026-09，feat/vscode-ext 分支）
+
+仓库改为 npm workspaces monorepo，核心与平台壳分离：
+
+- **`packages/core`** — 平台无关核心：llm/（provider 抽象 + SSE）、memory（混合检索）、embedding、chat-pipeline、obsidian（REST 通道 + markdown 组装）、translate、file-key、url-key、markdown。平台依赖全部走 `src/ports.ts` 的端口接口（VaultFS / KVStore / SettingsStore / PermissionGate / I18n / AssetResolver / TextSource），用 `configurePlatform()` 模块级注册表注入（沿用 setDenseRanker 的既有风格）。核心文件不引用 chrome / DOM / node。
+- **`packages/chrome-ext`** — Chrome MV3 壳：content/panel/options/sw + `src/platform/` 适配器（FS Access、IndexedDB、chrome.i18n、chrome.permissions、tab 提取）。构建产物路径（根 `dist/`、`release/`）不变。
+- **`packages/vscode-ext`** — VS Code 壳 MVP：选区笔记（文件+行号锚点 + decoration 高亮 + 编辑偏移平移）、问 AI（webview 聊天 + memory 注入）、翻译（流式 + 替换选区），笔记落 Obsidian vault（node:fs 直连），API key 走 SecretStorage，端侧向量用 Node 版 transformers.js。
+
+关键约束：
+
+1. **每个 bundle 一份注册表** — esbuild 每个入口独立打包，各入口都要自己调 configurePlatform（eval 入口同理）；memory.ts 与 embedding.ts 必须同 bundle 才能共享 setDenseRanker 状态。
+2. **检索逻辑零改动红线** — memory.ts 的评分/融合/常量不许动，重构后必须复跑 `node tests/eval-memory.mjs` 对齐基线（minilm recall@5 93.9%）。
+3. **VS Code 端无 CORS/权限模型** — PermissionGate no-op；embedding 不走 AssetResolver（那是浏览器通道），直接 Node API + setDenseRanker。
+4. vsce 打包在 monorepo 下有两个坑：拒绝 scoped 包名、依赖收集会爬到 workspace 根（误打包 169MB 含私钥）——`packages/vscode-ext/scripts/vsix.mjs` 用临时改名 + `--no-dependencies` 规避，勿绕过该脚本直接 npx vsce。

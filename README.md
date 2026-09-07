@@ -30,9 +30,9 @@ Highlight, take notes, and ask AI right on any web page. Notes and AI Q&A export
 
 ## Technical highlights
 
-- **On-device vector search under MV3 CSP** — transformers.js ships as a prebuilt ESM inside the extension bundle, with the ONNX wasm binaries packed alongside (`dist/lib/wasm/`), so no remote code ever loads (MV3 CSP forbids it). Embeddings run single-threaded because the threaded backend would spawn blob workers, which extension-page CSP blocks. See [`src/lib/embedding.ts`](src/lib/embedding.ts).
-- **Zero-install-warning permissions** — no `host_permissions` at all. Host access is computed from your settings ([`requiredOrigins`](src/lib/llm/index.ts)) and requested at runtime inside a user gesture (`chrome.permissions.request`), with a friendly guard ([`ensureHostPermission`](src/lib/llm/index.ts)) before every fetch. Installing the extension shows no "read all your data on all websites" prompt for host access.
-- **Two-channel page-text extraction** — the primary path is a `page:get-text` message to the isolated-world content script ([`src/content/annotator.js`](src/content/annotator.js)); the fallback injects the extractor into the MAIN world on demand via `chrome.scripting.executeScript` for tabs that predate the extension. See [`extractPageText`](src/lib/chat-pipeline.ts).
+- **On-device vector search under MV3 CSP** — transformers.js ships as a prebuilt ESM inside the extension bundle, with the ONNX wasm binaries packed alongside (`dist/lib/wasm/`), so no remote code ever loads (MV3 CSP forbids it). Embeddings run single-threaded because the threaded backend would spawn blob workers, which extension-page CSP blocks. See [`src/lib/embedding.ts`](packages/core/src/embedding.ts).
+- **Zero-install-warning permissions** — no `host_permissions` at all. Host access is computed from your settings ([`requiredOrigins`](packages/core/src/llm/index.ts)) and requested at runtime inside a user gesture (`chrome.permissions.request`), with a friendly guard ([`ensureHostPermission`](packages/core/src/llm/index.ts)) before every fetch. Installing the extension shows no "read all your data on all websites" prompt for host access.
+- **Two-channel page-text extraction** — the primary path is a `page:get-text` message to the isolated-world content script ([`packages/chrome-ext/src/content/annotator.js`](packages/chrome-ext/src/content/annotator.js)); the fallback injects the extractor into the MAIN world on demand via `chrome.scripting.executeScript` for tabs that predate the extension. See [`extractPageText`](packages/core/src/chat-pipeline.ts).
 - **Memory retrieval with automated evals** — the hybrid retriever is regression-tested against a 40-memory corpus with 37 labeled queries: **recall@5 97.0% / precision@5 66.7% / abstention 100%** (NVIDIA embedding channel; the key-free on-device MiniLM channel scores 93.9% — see the reproduction notes in the Chinese section below). Methodology and full engineering journal: [docs/MEMORY-EVAL.md](docs/MEMORY-EVAL.md), [docs/MEMORY-EVAL-PLAYBOOK.md](docs/MEMORY-EVAL-PLAYBOOK.md), [archive/memory-eval/JOURNAL.md](archive/memory-eval/JOURNAL.md).
 
 Design deep-dive: [docs/DESIGN.md](docs/DESIGN.md) · Memory system status: [docs/MEMORY-STATUS.md](docs/MEMORY-STATUS.md)
@@ -52,14 +52,19 @@ Design deep-dive: [docs/DESIGN.md](docs/DESIGN.md) · Memory system status: [doc
 
 ## 结构
 
-- `src/content/annotator.js` — 划词捕获 / 字符偏移锚定 / 重高亮（notes.js 移植），兼正文提取消息主路径
-- `src/content/extract.js` — 正文提取的 executeScript 兜底：由 `extractPageText` 按需以 MAIN world 注入（覆盖扩展安装前打开的旧标签页），算法实现为简化版 Readability（`src/lib/page-extract.js`）
-- `src/lib/db.js` — IndexedDB（pages/notes/handles/settings）
-- `src/lib/url-key.js` — 笔记「本页 / 本站」两级 key（page = URL 去跟踪参数、保留 ?id= 类内容参数；site = 域名互通）
-- `src/lib/obsidian.js` — 三通道导出（fs-access 目录授权主通道 / obsidian:// URI 兜底 / Local REST API 插件）
-- `src/lib/embedding.ts` — 端侧向量召回（transformers.js + 包内 wasm），向量缓存进 IndexedDB
-- `src/lib/llm/` — provider 抽象 + SSE 流式 + 上下文构建器 + 按需 host 权限（`requiredOrigins` / `ensureHostPermission`）
-- `src/panel/` — side panel 笔记列表 + 聊天
+monorepo（npm workspaces）：`packages/core` 为平台无关核心（LLM / memory 检索 / obsidian / 翻译，经 `src/ports.ts` 端口注入平台能力），`packages/chrome-ext` 与 `packages/vscode-ext` 为两个平台壳。详见 [docs/DESIGN.md](docs/DESIGN.md) 第 10 节。
+
+- `packages/core/src/llm/` — provider 抽象 + SSE 流式 + 上下文构建器
+- `packages/core/src/memory.ts` — 长期记忆混合检索（词法 sparse + 向量 dense 融合）
+- `packages/core/src/embedding.ts` — 端侧向量召回通道抽象（local / NVIDIA / OpenRouter）
+- `packages/core/src/chat-pipeline.ts` — 问答业务逻辑（预算、memory/profile 注入、AI-QA 笔记保存）
+- `packages/chrome-ext/src/content/annotator.js` — 划词捕获 / 字符偏移锚定 / 重高亮，兼正文提取消息主路径
+- `packages/chrome-ext/src/content/extract.js` — 正文提取的 executeScript 兜底（MAIN world 注入，简化版 Readability 在 `lib/page-extract.js`）
+- `packages/chrome-ext/src/lib/db.js` — IndexedDB（pages/notes/handles/settings/embeddings/threads）
+- `packages/chrome-ext/src/lib/url-key.js` → 已迁至 `packages/core/src/url-key.js` — 笔记「本页 / 本站」两级 key
+- `packages/chrome-ext/src/platform/` — Chrome 适配器（FS Access vault、IDB KV、chrome.i18n、host 权限、tab 正文提取）
+- `packages/chrome-ext/src/panel/` — side panel 笔记列表 + 聊天
+- `packages/vscode-ext/` — VS Code 扩展 MVP（选区笔记 / 问 AI / 翻译，见包内 README）
 
 ## Memory 系统与检索评测
 
@@ -85,11 +90,11 @@ DENSE_CHANNEL=openrouter OR_KEY=<你的 key> node tests/eval-memory.mjs  # OpenR
 ## Known limitations / 已知限制
 
 - The one-click translation stream has no abort path yet — closing the floating bubble does not cancel the in-flight request.
-- `src/panel/panel.ts` has grown large and is due for a split (UI rendering vs. chat logic).
+- `packages/chrome-ext/src/panel/panel.ts` has grown large and is due for a split (UI rendering vs. chat logic).
 - The e2e scripts under `tests/` require a headed Chromium on the local machine; they are not part of CI.
 
 - 划词一键翻译的流式请求尚无 abort 机制——关掉浮窗不会中断正在进行的请求。
-- `src/panel/panel.ts` 体量偏大，待拆分（渲染与聊天逻辑分离）。
+- `packages/chrome-ext/src/panel/panel.ts` 体量偏大，待拆分（渲染与聊天逻辑分离）。
 - `tests/` 下的 e2e 脚本依赖本机 headed Chromium 运行，不在 CI 内。
 
 ## Contributing
