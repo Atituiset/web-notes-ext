@@ -12,13 +12,15 @@ const common = {
   target: 'chrome120',
 };
 
+const SRC = 'packages/chrome-ext/src';
+
 const entries = [
   // [entry, outfile, format]
-  ['src/background/sw.ts', 'dist/background/sw.js', 'iife'],
-  ['src/content/extract.js', 'dist/content/extract.js', 'iife'],
-  ['src/content/annotator.js', 'dist/content/annotator.js', 'iife'],
-  ['src/panel/panel.ts', 'dist/panel/panel.js', 'iife'],
-  ['src/options/options.ts', 'dist/options/options.js', 'iife'],
+  [`${SRC}/background/sw.ts`, 'dist/background/sw.js', 'iife'],
+  [`${SRC}/content/extract.js`, 'dist/content/extract.js', 'iife'],
+  [`${SRC}/content/annotator.js`, 'dist/content/annotator.js', 'iife'],
+  [`${SRC}/panel/panel.ts`, 'dist/panel/panel.js', 'iife'],
+  [`${SRC}/options/options.ts`, 'dist/options/options.js', 'iife'],
 ];
 
 const builds = entries.map(([entry, outfile, format]) =>
@@ -39,7 +41,7 @@ for (const f of ['ort-wasm.wasm', 'ort-wasm-simd.wasm', 'ort-wasm-threaded.wasm'
 }
 // 静态 HTML 不进 bundle，但 dist 的 html 是被 git 跟踪的打包资产，
 // 每次构建同步源文件，避免 zip 里 HTML 与 JS 版本错位（曾靠手动拷贝维持）
-cpSync('src/panel/panel.html', 'dist/panel/panel.html');
+cpSync('packages/chrome-ext/src/panel/panel.html', 'dist/panel/panel.html');
 
 const ctxs = await Promise.all(builds);
 if (watch) {

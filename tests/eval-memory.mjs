@@ -22,7 +22,7 @@ fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: tr
 fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
 execSync(
-  `npx esbuild ${path.join(ROOT, 'src/lib/memory.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval/memory.mjs')}`,
+  `npx esbuild ${path.join(ROOT, 'packages/chrome-ext/src/lib/memory.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval/memory.mjs')}`,
   { stdio: 'inherit' }
 );
 

@@ -31,7 +31,7 @@ globalThis.document = {
   createElement: makeElement,
 };
 
-const { renderMarkdown } = await import('../../src/lib/markdown-render.js');
+const { renderMarkdown } = await import('../../packages/chrome-ext/src/lib/markdown-render.js');
 
 test('XSS: <img onerror> 不产生 img 节点，文本被转义', () => {
   const root = renderMarkdown('<img src=x onerror=alert(1)>');

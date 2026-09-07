@@ -3,7 +3,7 @@
 import assert from 'node:assert';
 import { test } from 'node:test';
 
-const { pageKey, siteKey, matchesPage, lookupKeys } = await import('../../src/lib/url-key.js');
+const { pageKey, siteKey, matchesPage, lookupKeys } = await import('../../packages/chrome-ext/src/lib/url-key.js');
 
 // ---- pageKey ----
 

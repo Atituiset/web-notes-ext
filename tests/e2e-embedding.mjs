@@ -19,7 +19,7 @@ fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
 // 各自拷贝的模块状态（searchMemories 读到的是另一份的 null）
 const entry = path.join(ROOT, 'tests/eval/mem-embed.entry.ts');
 fs.writeFileSync(entry,
-  "export * from '../../src/lib/memory.js';\nexport * from '../../src/lib/embedding.js';\n");
+  "export * from '../../packages/chrome-ext/src/lib/memory.js';\nexport * from '../../packages/chrome-ext/src/lib/embedding.js';\n");
 execSync(`npx esbuild ${entry} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval', 'mem-embed.mjs')}`, { stdio: 'inherit' });
 
 let pass = 0, fail = 0;
