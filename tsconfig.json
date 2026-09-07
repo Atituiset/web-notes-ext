@@ -10,6 +10,6 @@
     "allowJs": false,
     "types": ["chrome"]
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.js"],
-  "exclude": ["packages/chrome-ext/src/background/sw.ts"]
+  "include": ["packages/chrome-ext/src/**/*.ts", "packages/chrome-ext/src/**/*.js", "packages/core/src/**/*.ts", "packages/core/src/**/*.js"],
+  "exclude": ["packages/chrome-ext/src/background/sw.ts", "packages/vscode-ext"]
 }
