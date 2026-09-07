@@ -13,10 +13,9 @@
  */
 
 import { listMemories, MEM_DIR } from './memory.js';
-import { vaultPermissionState, ensureVaultPermission } from './obsidian.js';
+import { vaultFS, settingsStore, type VaultFS } from './ports.js';
 import { parseFrontmatter } from './markdown.js';
 import { streamChat } from './llm/index.js';
-import { saveSettings } from './db.js';
 
 export const PROFILE_FILE = '_profile.md';
 
@@ -34,10 +33,11 @@ export function buildProfilePrompt(memories: { body: string; tags: string[] }[])
   return '以下是用户的记忆条目，请生成用户画像：\n\n' + lines.join('\n');
 }
 
-async function profileDir(): Promise<FileSystemDirectoryHandle | null> {
-  if ((await vaultPermissionState()) !== 'granted') return null;
-  const root = await ensureVaultPermission();
-  return root.getDirectoryHandle(MEM_DIR, { create: true });
+async function profileDir(): Promise<VaultFS | null> {
+  const vfs = vaultFS();
+  if ((await vfs.permissionState()) !== 'granted') return null;
+  await vfs.ensureAccess();
+  return vfs;
 }
 
 /** 读取当前画像正文；不存在返回 null */
@@ -45,8 +45,9 @@ export async function getProfile(): Promise<string | null> {
   const dir = await profileDir();
   if (!dir) return null;
   try {
-    const fh = await dir.getFileHandle(PROFILE_FILE);
-    const parsed = parseFrontmatter(await (await fh.getFile()).text());
+    const text = await dir.readText(MEM_DIR + '/' + PROFILE_FILE);
+    if (text == null) return null;
+    const parsed = parseFrontmatter(text);
     return parsed.attrs.type === 'profile' ? parsed.body.trim() : null;
   } catch {
     return null;
@@ -95,11 +96,8 @@ export async function generateProfile(settings: any): Promise<{ file: string; me
     body,
     '',
   ].join('\n');
-  const fh = await dir.getFileHandle(PROFILE_FILE, { create: true });
-  const w = await fh.createWritable();
-  await w.write(md);
-  await w.close();
+  await dir.writeText(MEM_DIR + '/' + PROFILE_FILE, md);
 
-  await saveSettings({ profileMemoryCount: memories.length, profileUpdated: today });
+  await settingsStore().saveSettings({ profileMemoryCount: memories.length, profileUpdated: today });
   return { file: PROFILE_FILE, memoryCount: memories.length };
 }

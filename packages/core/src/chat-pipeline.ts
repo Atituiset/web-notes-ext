@@ -4,7 +4,7 @@
  * panel.ts 只做渲染与事件绑定；本模块负责：
  *   - token 预算常量集中管理（BUDGET）
  *   - LLM 消息组装：system → 长期记忆 → 多轮 history → 当前问题
- *   - 页面正文提取（chrome.scripting）
+ *   - 页面正文提取（TextSource 端口；chrome 适配器走 scripting/content script）
  *   - AI 问答存为本页笔记（kind=ai-qa），含同页数量上限裁剪
  *
  * 与 UI 解耦：不操作 DOM，不持有面板状态。
@@ -14,6 +14,7 @@ import { buildContext } from './llm/context.js';
 import { streamChat } from './llm/index.js';
 import { searchMemories } from './memory.js';
 import { getProfile } from './profile.js';
+import { permissionGate, textSource } from './ports.js';
 
 // ---------- token / 数量预算（集中管理，接长上下文模型时只改这里） ----------
 export const BUDGET = {
@@ -36,9 +37,7 @@ export const BUDGET = {
  */
 export async function requestSitePermission(url: string): Promise<boolean> {
   try {
-    const origin = new URL(url).origin + '/*';
-    if (await chrome.permissions.contains({ origins: [origin] })) return true;
-    return await chrome.permissions.request({ origins: [origin] });
+    return await permissionGate().requestHost(url);
   } catch {
     return false; /* 非手势上下文或用户拒绝 */
   }
@@ -47,39 +46,12 @@ export async function requestSitePermission(url: string): Promise<boolean> {
 /**
  * 页面正文提取（受限页面返回 null）。
  *
- * 主路径：tabs.sendMessage → annotator.js（isolated world）的 page:get-text，
- * 不依赖 activeTab/scripting 授权（切 tab 后授权常失效，曾导致静默拿不到正文）。
- *
- * 兜底：executeScript 注入 MAIN world 调 __wneExtract（extract.js 挂载），
- * 覆盖 content script 尚未注入的旧标签页。isolated world 看不到 MAIN world
- * window 上的 __wneExtract，所以兜底必须 world: 'MAIN'。
+ * chrome 实现（TextSource 适配器）：tabs.sendMessage → annotator.js 的
+ * page:get-text 为主路径，executeScript MAIN world 调 __wneExtract 兜底
+ * （覆盖 content script 尚未注入的旧标签页）。
  */
 export async function extractPageText(tabId: number): Promise<string | null> {
-  try {
-    const r = await chrome.tabs.sendMessage(tabId, { type: 'page:get-text' });
-    if (r && r.ok && r.text) return String(r.text);
-  } catch { /* content script 未注入，走注入兜底 */ }
-  try {
-    const call = () => chrome.scripting.executeScript({
-      target: { tabId },
-      world: 'MAIN', // 与页面 window 同世界才能看到 __wneExtract
-      func: () => ((window as any).__wneExtract ? (window as any).__wneExtract() : null),
-    });
-    let [res] = await call();
-    if (!res || !res.result) {
-      // 页面先于扩展安装/更新打开：__wneExtract 不存在。
-      // activeTab 授权下按需注入 extract.js 再取（自愈，省去手动刷新页面）
-      await chrome.scripting.executeScript({
-        target: { tabId },
-        world: 'MAIN',
-        files: ['content/extract.js'],
-      });
-      [res] = await call();
-    }
-    return res && res.result ? String(res.result.text || '') : null;
-  } catch {
-    return null; /* 受限页面 / 无 activeTab 授权 */
-  }
+  return textSource().getPageText(tabId);
 }
 
 /**

@@ -6,9 +6,10 @@
  * 检索: 词面重叠评分 + pin/hits/recency 排序（个人规模 <1000 条无需向量）
  *
  * 本文件是纯 vault 存取层，不依赖 chrome.* API，可在单测中直接跑。
+ * vault 读写经 VaultFS 端口（ports.ts），平台句柄细节由宿主适配器实现。
  */
 
-import { getVaultHandle, vaultPermissionState, ensureVaultPermission } from './obsidian.js';
+import { vaultFS, type VaultFS } from './ports.js';
 import { parseFrontmatter } from './markdown.js';
 
 export interface MemoryMeta {
@@ -44,10 +45,11 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-async function memDir(): Promise<FileSystemDirectoryHandle | null> {
-  if ((await vaultPermissionState()) !== 'granted') return null;
-  const root = await ensureVaultPermission();
-  return root.getDirectoryHandle(MEM_DIR, { create: true });
+async function memDir(): Promise<VaultFS | null> {
+  const vfs = vaultFS();
+  if ((await vfs.permissionState()) !== 'granted') return null;
+  await vfs.ensureAccess();
+  return vfs;
 }
 
 function renderMemoryFile(meta: MemoryMeta, body: string): string {
@@ -87,16 +89,19 @@ export async function saveMemory(entry: {
   if (!dir) throw new Error('vault 未授权 — 请到设置页授权目录');
 
   const file = entry.file || `${entry.domain || 'user'}-${slugify(entry.body)}.md`;
+  const path = MEM_DIR + '/' + file;
   let created = today();
   let hits = 0;
 
   // 更新已有：保留 created/hits
   try {
-    const fh = await dir.getFileHandle(file, { create: false });
-    const existing = parseFrontmatter(await (await fh.getFile()).text());
-    if (existing.attrs.type === 'memory') {
-      created = String(existing.attrs.created || created);
-      hits = Number(existing.attrs.hits) || 0;
+    const existingText = await dir.readText(path);
+    if (existingText != null) {
+      const existing = parseFrontmatter(existingText);
+      if (existing.attrs.type === 'memory') {
+        created = String(existing.attrs.created || created);
+        hits = Number(existing.attrs.hits) || 0;
+      }
     }
   } catch { /* 新文件 */ }
 
@@ -113,10 +118,7 @@ export async function saveMemory(entry: {
     tags: entry.tags || [],
   };
 
-  const fh = await dir.getFileHandle(file, { create: true });
-  const w = await fh.createWritable();
-  await w.write(renderMemoryFile(meta, entry.body));
-  await w.close();
+  await dir.writeText(path, renderMemoryFile(meta, entry.body));
   return file;
 }
 
@@ -202,14 +204,15 @@ export async function listMemories(): Promise<MemoryEntry[]> {
   if (!dir) { _entryCache.clear(); return []; }
   const out: MemoryEntry[] = [];
   const seen = new Set<string>();
-  for await (const [name, handle] of (dir as any).entries()) {
-    if (handle.kind !== 'file' || !name.endsWith('.md')) continue;
+  for (const { name, mtime } of await dir.listFiles(MEM_DIR)) {
+    if (!name.endsWith('.md')) continue;
     seen.add(name);
     try {
-      const f = await (handle as FileSystemFileHandle).getFile(); // 元数据，不读全文
       const cached = _entryCache.get(name);
-      if (cached && cached.mtime === f.lastModified) { out.push(cached.entry); continue; }
-      const parsed = parseFrontmatter(await f.text());
+      if (cached && cached.mtime === mtime) { out.push(cached.entry); continue; }
+      const text = await dir.readText(MEM_DIR + '/' + name);
+      if (text == null) { _entryCache.delete(name); continue; }
+      const parsed = parseFrontmatter(text);
       if (parsed.attrs.type !== 'memory') { _entryCache.delete(name); continue; }
       const entry: MemoryEntry = {
         type: 'memory',
@@ -225,7 +228,7 @@ export async function listMemories(): Promise<MemoryEntry[]> {
         file: name,
         body: parsed.body.trim(),
       };
-      _entryCache.set(name, { mtime: f.lastModified, entry });
+      _entryCache.set(name, { mtime, entry });
       out.push(entry);
     } catch { /* 跳过坏文件 */ }
   }
@@ -238,7 +241,7 @@ export async function listMemories(): Promise<MemoryEntry[]> {
 export async function deleteMemory(file: string): Promise<void> {
   const dir = await memDir();
   if (!dir) throw new Error('vault 未授权');
-  await dir.removeEntry(file);
+  await dir.deleteFile(MEM_DIR + '/' + file);
 }
 
 /** 钉选/取消钉选 */
@@ -494,13 +497,11 @@ async function bumpHits(files: string[]): Promise<void> {
   if (!dir) return;
   for (const f of files) {
     try {
-      const fh = await dir.getFileHandle(f, { create: false });
-      const text = await (await fh.getFile()).text();
+      const text = await dir.readText(MEM_DIR + '/' + f);
+      if (text == null) continue;
       const cur = Number(/(^|\n)hits:\s*(\d+)/.exec(text)?.[2] ?? 0);
       const updated = text.replace(/(^|\n)hits:\s*\d+/, `$1hits: ${cur + 1}`);
-      const w = await fh.createWritable();
-      await w.write(updated);
-      await w.close();
+      await dir.writeText(MEM_DIR + '/' + f, updated);
     } catch { /* ignore */ }
   }
 }

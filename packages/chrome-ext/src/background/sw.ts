@@ -10,7 +10,11 @@
 import {
   putNote, deleteNote, getNotesForUrl, getAllNotes, touchPage, getSettings,
 } from '../lib/db.js';
-import { streamChat } from '../lib/llm/index.js';
+import { setupChromePlatform } from '../platform/index.js';
+import { runTranslate } from '../../../core/src/translate.js';
+
+// 平台端口装配：须在任何 core 业务调用前完成
+setupChromePlatform();
 
 chrome.runtime.onInstalled.addListener((details) => {
   // 点击工具栏图标打开 side panel
@@ -97,22 +101,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           }, 20000);
           try {
             const settings = await getSettings();
-            const uiLang = chrome.i18n.getUILanguage();
-            let langName = uiLang;
-            try {
-              langName = new Intl.DisplayNames([uiLang], { type: 'language' }).of(uiLang) || uiLang;
-            } catch { /* 未知语言码时直接用码本身，模型同样认 */ }
-            await streamChat({
+            // 目标语言：浏览器 UI 语言（prompt 组装在 core/translate.ts）
+            await runTranslate({
               settings,
-              messages: [
-                {
-                  role: 'system',
-                  content:
-                    `You are a translation engine. Translate the user's text into ${langName} (${uiLang}). ` +
-                    'Preserve the original meaning and formatting. Output only the translation — no explanations, no quotes.',
-                },
-                { role: 'user', content: text },
-              ],
+              text,
+              langTag: chrome.i18n.getUILanguage(),
               onToken: (tok) => notify({ type: 'translate:chunk', reqId, tok }),
             });
             notify({ type: 'translate:done', reqId });

@@ -22,7 +22,7 @@ fs.cpSync(path.join(ROOT, 'icons'), path.join(EXT_DIR, 'icons'), { recursive: tr
 fs.cpSync(path.join(ROOT, '_locales'), path.join(EXT_DIR, '_locales'), { recursive: true });
 fs.mkdirSync(path.join(EXT_DIR, 'eval'), { recursive: true });
 execSync(
-  `npx esbuild ${path.join(ROOT, 'packages/chrome-ext/src/lib/memory.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval/memory.mjs')}`,
+  `npx esbuild ${path.join(ROOT, 'tests/eval/mem-platform.entry.ts')} --bundle --format=esm --outfile=${path.join(EXT_DIR, 'eval/memory.mjs')}`,
   { stdio: 'inherit' }
 );
 
@@ -174,20 +174,21 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
   const evalResult = await page.evaluate(async ({ memories, queries, LATENCY_SCALES, LATENCY_QUERIES, noiseAll, DENSE_FLOOR_OVERRIDE }) => {
     // 1. IDB：建库 + OPFS root 写入 handles/vault
     await new Promise((res, rej) => {
-      const req = indexedDB.open('web-notes-ext', 2);
+      const req = indexedDB.open('web-notes-ext', 3);
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains('pages')) db.createObjectStore('pages', { keyPath: 'url' });
         if (!db.objectStoreNames.contains('notes')) db.createObjectStore('notes', { keyPath: 'id' }).createIndex('url', 'url');
         if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles', { keyPath: 'name' });
         if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'key' });
+        if (!db.objectStoreNames.contains('embeddings')) db.createObjectStore('embeddings', { keyPath: 'key' });
         if (!db.objectStoreNames.contains('threads')) db.createObjectStore('threads', { keyPath: 'id' }).createIndex('updatedAt', 'updatedAt');
       };
       req.onsuccess = res; req.onerror = rej;
     });
     const opfsRoot = await navigator.storage.getDirectory();
     await new Promise((res, rej) => {
-      const req = indexedDB.open('web-notes-ext', 2);
+      const req = indexedDB.open('web-notes-ext', 3);
       req.onsuccess = () => {
         const t = req.result.transaction('handles', 'readwrite');
         t.objectStore('handles').put({ name: 'vault', handle: opfsRoot });
@@ -197,6 +198,8 @@ const LATENCY_QUERIES = ['clangd 的 Protocol.h', '我的回答风格偏好', 'S
     });
 
     const mem = await import(chrome.runtime.getURL('eval/memory.mjs'));
+    // 平台端口装配（VaultFS→OPFS 句柄在 handles IDB store，上方已写入）
+    mem.setupChromePlatform();
     if (DENSE_FLOOR_OVERRIDE) mem.setDenseSimFloor(DENSE_FLOOR_OVERRIDE);
     mem.setDenseRanker((q, c) => window.__denseRankNode(q, c));
 

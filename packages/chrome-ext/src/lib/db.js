@@ -4,13 +4,13 @@
  * stores:
  *   pages    keyPath=url
  *   notes    keyPath=id, index:url
- *            note.url 为分级 key（见 lib/url-key.js）：page=页面 key，site=hostname
+ *            note.url 为分级 key（见 core url-key.js）：page=页面 key，site=hostname
  *   handles  key=name      (vault FileSystemDirectoryHandle 持久化)
  *   settings key=key
  *
  * 在 service worker 与扩展页面 (panel/options) 中均可使用。
  */
-import { lookupKeys } from './url-key.js';
+import { lookupKeys } from '../../../core/src/url-key.js';
 
 const DB_NAME = 'web-notes-ext';
 const DB_VERSION = 3;
@@ -115,7 +115,7 @@ export function getNotesByUrl(url) {
 
 /**
  * 取某页面可见的全部笔记：本页 page key + 旧裸 path key + 本站 site key。
- * 调用方传原始 URL（或任一 key），key 归一与集合组装见 lib/url-key.js。
+ * 调用方传原始 URL（或任一 key），key 归一与集合组装见 core url-key.js。
  */
 export function getNotesForUrl(url) {
   const keys = lookupKeys(url);
@@ -220,6 +220,18 @@ export function idbGet(store, key) {
   }).then((row) => {
     if (!row) return null;
     return store === 'handles' ? row.handle : row.value;
+  });
+}
+
+export function idbDelete(store, key) {
+  return tx(store, 'readwrite', (os) => os.delete(key));
+}
+
+/** 列出 store 全部主键（KVStore 前缀过滤用） */
+export function idbKeys(store) {
+  return tx(store, 'readonly', (os) => {
+    const r = os.getAllKeys();
+    return { _req: r };
   });
 }
 

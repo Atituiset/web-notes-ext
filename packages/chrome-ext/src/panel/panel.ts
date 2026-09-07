@@ -2,9 +2,10 @@
  * Side panel: 本页笔记列表 + LLM 流式问答
  *
  * LLM fetch 直接在 panel 侧执行（DESIGN.md 坑 #3：不经过 SW，规避休眠）。
- * 问答业务逻辑在 lib/chat-pipeline.ts，本文件只做渲染与事件绑定。
+ * 问答业务逻辑在 core 的 chat-pipeline.ts（@markpilot/core），本文件只做渲染与事件绑定。
  */
 import { getSettings, putThread, getThread, listThreadMeta, deleteThread } from '../lib/db.js';
+import { setupChromePlatform } from '../platform/index.js';
 import {
   BUDGET,
   buildLlmMessages,
@@ -13,17 +14,20 @@ import {
   requestSitePermission,
   saveAiQaNote,
   runStream,
-} from '../lib/chat-pipeline.js';
+} from '../../../core/src/chat-pipeline.js';
 import { renderMarkdown } from '../lib/markdown-render.js';
-import { extractAndStore, proposeExtraction, storeProposed } from '../lib/memory-extract.js';
+import { extractAndStore, proposeExtraction, storeProposed } from '../../../core/src/memory-extract.js';
 import {
-  exportViaFsAccess, exportViaRestApi, vaultPermissionState,
-  ensureVaultPermission, fileNameFor,
-} from '../lib/obsidian.js';
-import { renderPageMarkdown, noteToMarkdown } from '../lib/markdown.js';
-import { pageKey, siteKey } from '../lib/url-key.js';
+  exportViaFsAccess, exportViaRestApi, fileNameFor,
+} from '../../../core/src/obsidian.js';
+import { vaultPermissionState, ensureVaultPermission } from '../platform/vault-fs.js';
+import { renderPageMarkdown, noteToMarkdown } from '../../../core/src/markdown.js';
+import { pageKey, siteKey } from '../../../core/src/url-key.js';
 import { msg as t, applyI18n } from '../lib/i18n.js';
-import { initEmbedding, lastEmbeddingError } from '../lib/embedding.js';
+import { initEmbedding, lastEmbeddingError } from '../../../core/src/embedding.js';
+
+// 平台端口装配：须在任何 core 业务调用前完成
+setupChromePlatform();
 
 const $ = (id: string): any => document.getElementById(id);
 let tab = 'notes';
@@ -184,7 +188,7 @@ $('btn-export').addEventListener('click', async () => {
   if (state === 'no-handle' || state === 'prompt') {
     // 需要一次用户手势 → 此点击即是手势，直接请求授权
     try {
-      if (state === 'no-handle') await import('../lib/obsidian.js').then((m) => m.pickVault());
+      if (state === 'no-handle') await import('../platform/vault-fs.js').then((m) => m.pickVault());
       else await ensureVaultPermission();
       const out = await exportViaFsAccess({ url: pageUrl, title: info.title, notes, pageMarkdown });
       toast(t('exportOk', out.file));
