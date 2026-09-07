@@ -30,6 +30,12 @@ jobs:
       - name: Build & package
         run: npm run package
 
+      - name: Build VS Code extension (.vsix)
+        run: |
+          npm run compile -w @markpilot/vscode-ext
+          cd packages/vscode-ext && node scripts/vsix.mjs
+          mv *.vsix "$GITHUB_WORKSPACE/release/"
+
       # tag 名应与 manifest.json version 一致（v0.2.3 ↔ 0.2.3），不一致直接失败
       - name: Verify version matches tag
         run: |
@@ -43,5 +49,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release/markpilot-v*.zip
+          files: |
+            release/markpilot-v*.zip
+            release/markpilot-code-*.vsix
           generate_release_notes: true
