@@ -13,15 +13,18 @@
 
 ## 设置
 
-**推荐路径：命令面板 → 「Markpilot: 快速配置」**（侧栏 Chat 里也有「快速配置」按钮）。三步向导：
+**推荐路径：命令面板 → 「Markpilot: 打开设置」**（侧栏 Chat 标题栏齿轮按钮直达）—— 统一设置页（整页 WebviewPanel），即改即存、无需保存按钮：
 
-1. **选平台** — 9 个 provider 下拉（与 Chrome 版同一套 PROVIDERS 注册表），opencode 标注「零配置」、ollama 标注「本地」
-2. **API Key** — 仅需要 key 的平台出现；存 SecretStorage，不落 settings.json
-3. **选模型** — 预设模型列表 + 「拉取在线模型列表…」（OpenRouter 免费模型带标记）+「手动输入…」；openai-compatible 未配 baseUrl 时会先问端点
+- **平台** — 9 个 provider 下拉（与 Chrome 版同一套 PROVIDERS 注册表）
+- **API Key** — password 输入 + 保存状态指示（「已保存 ✓」/「未设置」/「无需 Key」）；密钥存 SecretStorage，页面只显示存在标志，密钥本体永不下发 webview
+- **Base URL** — 仅 openai-compatible 可编辑
+- **模型** — 可编辑输入 + 预设/在线 datalist；「⟳ 在线列表」拉取该平台的模型（OpenRouter 免费带标记）；「测试连接」即时验证 平台+Key+端点 是否可用
+- **Obsidian vault 路径** — 文本框 +「浏览…」文件夹选择
+- **开关** — 记忆注入 / 导出含 AI 问答 / 语义召回（off|local）
 
-任一步 Esc 静默中止，已保存的部分不回滚。完成后提示当前生效的 平台/模型。
+首次上手也可走「Markpilot: 快速配置」三步向导（平台 → Key → 模型，Esc 静默中止），完成后同样可在设置页里细调。零配置体验：向导或设置页选 opencode → 模型选 `mimo-v2.5-free` 等免费模型，无需 API Key。
 
-手动设置（settings.json，前缀 `markpilot.`；`provider` 在设置 UI 里是下拉框）：
+手动设置（settings.json，前缀 `markpilot.`；`provider` 在原生设置 UI 里同样是下拉框）：
 
 | 键 | 默认 | 说明 |
 |---|---|---|
@@ -52,7 +55,8 @@
 
 ## 手动验证清单（扩展宿主内）
 
-0. 命令面板 →「Markpilot: 快速配置」→ 选 opencode（QuickPick/inputBox 无法自动化驱动，需手测）→ 模型选免费预设 → 提示「配置完成：OpenCode … / 模型」；再跑一次选 deepseek 验证 API Key 步骤（Esc 中止也应静默）
+0. 侧栏 Chat 标题栏齿轮 →「打开设置」→ 切换平台（Key 状态指示跟随变化）、粘贴 Key 保存（显示「已保存 ✓」）、「⟳ 在线列表」拉模型、「测试连接」出 ✓/✗、「浏览…」选 vault；重开页面确认全部已持久化（webview UI 无法自动化驱动，需手测）
+1. 命令面板 →「Markpilot: 快速配置」→ 选 opencode（QuickPick/inputBox 无法自动化驱动，需手测）→ 模型选免费预设 → 提示「配置完成：OpenCode … / 模型」；再跑一次选 deepseek 验证 API Key 步骤（Esc 中止也应静默）
 1. 选中一段代码 → 右键 Add Note on Selection → 输入笔记 → 选区出现黄底高亮；在笔记上方插入/删除行，高亮跟随平移
 2. 选中一段 → Ask AI about Selection → 侧栏出现选区上下文卡片 → 提问 → 流式回答；点「存为笔记」
 3. 配置 `vaultPath` 指向一个 Obsidian vault → 再提问（长期记忆注入不报错即降级正确）；侧栏「导出本文件笔记」→ vault 下出现 `Markpilot-Code/code-*.md`

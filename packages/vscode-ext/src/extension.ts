@@ -12,6 +12,7 @@ import { NotesStore, refreshDecorations } from './notes-store.js';
 import { ChatViewProvider, exportNotes } from './chat-view.js';
 import { initNodeEmbedding } from './embedding-node.js';
 import { runSetupWizard, saveApiKey } from './setup-wizard.js';
+import { SettingsPanel } from './settings-page.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // 平台端口装配：单 bundle 一次，须在任何 core 业务调用前完成
@@ -107,6 +108,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     vscode.commands.registerCommand('markpilot.setup', async () => {
       await runSetupWizard(context.secrets);
+    }),
+
+    vscode.commands.registerCommand('markpilot.openSettings', () => {
+      SettingsPanel.createOrShow(context.secrets);
     }),
 
     vscode.commands.registerCommand('markpilot.setApiKey', async () => {
