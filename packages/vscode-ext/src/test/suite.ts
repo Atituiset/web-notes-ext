@@ -36,6 +36,10 @@ let mock: http.Server | null = null;
 let mockPort = 0;
 const capturedBodies: any[] = [];
 
+// /models 端点的应答模式（fetchModels 测试用）
+let mockModelsMode: 'ok' | '401' = 'ok';
+const MOCK_MODELS = [{ id: 'v4-flash-mock' }, { id: 'v4-pro-mock' }];
+
 function ssePayload(text: string, chunk = 4): string {
   const parts: string[] = [];
   for (let i = 0; i < text.length; i += chunk) parts.push(text.slice(i, i + chunk));
@@ -48,6 +52,17 @@ function ssePayload(text: string, chunk = 4): string {
 function startMock(): Promise<void> {
   return new Promise((resolve, reject) => {
     mock = http.createServer((req, res) => {
+      // OpenAI 兼容 /models：按 mockModelsMode 回模型列表或 401
+      if (req.url && req.url.endsWith('/models')) {
+        if (mockModelsMode === '401') {
+          res.writeHead(401, { 'content-type': 'application/json' });
+          res.end('{"error":{"message":"Invalid API key"}}');
+        } else {
+          res.writeHead(200, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ data: MOCK_MODELS }));
+        }
+        return;
+      }
       let body = '';
       req.on('data', (c) => (body += c));
       req.on('end', () => {
@@ -143,6 +158,44 @@ function defineTests(): void {
         assert.equal(cfg.get('evil.key'), undefined);
       } finally {
         await cfg.update('provider', prev, vscode.ConfigurationTarget.Global);
+      }
+    });
+
+    it('设置页 fetchModels：在线列表优先，401 报错且不回退预设', async () => {
+      const ctx = (globalThis as any).__markpilotContext as vscode.ExtensionContext;
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      const replies: any[] = [];
+      const deps = { secrets: ctx.secrets, post: (m: any) => replies.push(m) };
+      const P = PROVIDERS as any;
+      const prevBase = P.deepseek.presetBase;
+      const prevProvider = cfg.get('provider');
+      try {
+        // 测试 bundle 与 handleSettingsMessage 共享同一份 core 模块状态 ——
+        // 临时把 deepseek 端点指到 mock，验证「在线 vs 预设」分辨逻辑
+        P.deepseek.presetBase = `http://127.0.0.1:${mockPort}/v1`;
+        await cfg.update('provider', 'deepseek', vscode.ConfigurationTarget.Global);
+
+        mockModelsMode = 'ok';
+        await handleSettingsMessage({ type: 'fetchModels' }, deps);
+        let m = replies.find((r) => r.type === 'models');
+        assert.ok(m && !m.error, '在线拉取应成功');
+        assert.deepStrictEqual(
+          m.models.map((x: any) => x.id).sort(),
+          MOCK_MODELS.map((x) => x.id).sort(),
+          '应返回 mock 在线列表而非预设 deepseek-chat/reasoner'
+        );
+
+        mockModelsMode = '401';
+        replies.length = 0;
+        await handleSettingsMessage({ type: 'fetchModels' }, deps);
+        m = replies.find((r) => r.type === 'models');
+        assert.ok(m && m.error, '401 应回错误而非静默回退');
+        assert.ok(m.error.includes('401'), '错误应含 401: ' + m.error);
+        assert.equal(m.models.length, 0, '错误时不得附带预设列表');
+      } finally {
+        P.deepseek.presetBase = prevBase;
+        mockModelsMode = 'ok';
+        await cfg.update('provider', prevProvider, vscode.ConfigurationTarget.Global);
       }
     });
 

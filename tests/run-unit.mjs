@@ -9,6 +9,7 @@ const cases = [
   ['tests/unit/url-key.test.mjs', '/tmp/wne-urlkey-test.mjs'],
   ['tests/unit/file-key.test.mjs', '/tmp/wne-filekey-test.mjs'],
   ['tests/unit/host-origins.test.mjs', '/tmp/wne-origins-test.mjs'],
+  ['tests/unit/list-models.test.mjs', '/tmp/wne-models-test.mjs'],
 ];
 for (const [src, out] of cases) {
   execSync(

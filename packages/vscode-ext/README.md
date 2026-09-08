@@ -18,7 +18,7 @@
 - **平台** — 9 个 provider 下拉（与 Chrome 版同一套 PROVIDERS 注册表）
 - **API Key** — password 输入 + 保存状态指示（「已保存 ✓」/「未设置」/「无需 Key」）；密钥存 SecretStorage，页面只显示存在标志，密钥本体永不下发 webview
 - **Base URL** — 仅 openai-compatible 可编辑
-- **模型** — 可编辑输入 + 预设/在线 datalist；「⟳ 在线列表」拉取该平台的模型（OpenRouter 免费带标记）；「测试连接」即时验证 平台+Key+端点 是否可用
+- **模型** — 可编辑输入 + datalist，来源标签常驻：「预设列表（未拉取）」或「在线列表 ✓ N 个模型」；「⟳ 在线列表」拉取该平台真实模型（OpenRouter 免费带标记；失败如 401 直接报错，绝不静默回退预设；needsKey 平台未存 Key 时按钮禁用）；「测试连接」即时验证 平台+Key+端点 是否可用
 - **Obsidian vault 路径** — 文本框 +「浏览…」文件夹选择
 - **开关** — 记忆注入 / 导出含 AI 问答 / 语义召回（off|local）
 
