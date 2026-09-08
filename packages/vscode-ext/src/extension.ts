@@ -21,7 +21,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const store = new NotesStore(context.globalState);
   const chat = new ChatViewProvider(store);
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('markpilot.chat', chat)
+    // retainContextWhenHidden：侧栏隐藏时保留 webview（不重建），ready 握手状态不失效
+    vscode.window.registerWebviewViewProvider('markpilot.chat', chat, {
+      webviewOptions: { retainContextWhenHidden: true },
+    })
   );
 
   // 语义召回接线（端侧 MiniLM，后台下载/加载；失败降级词法单路）
@@ -152,6 +155,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // 测试钩子：extension host 内共享 globalThis，自动化测试经此取真实 context（globalState 等）
   (globalThis as any).__markpilotContext = context;
+  (globalThis as any).__markpilotChat = chat;
 }
 
 export function deactivate(): void {}

@@ -26,18 +26,30 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** 最近一次翻译结果与其来源选区（「替换选区」用） */
   private lastTranslation = '';
   private translateOrigin: { uri: vscode.Uri; range: vscode.Range } | null = null;
+  /**
+   * webview 就绪握手：脚本加载完成后发 {type:'ready'}，此前所有出站消息进队列。
+   * 没有这层时，命令首次打开面板后立刻 post 的消息会被静默丢弃
+   * （postMessage 在 webview 加载完成前不排队）——表现为「点了翻译/问 AI 毫无反应」。
+   */
+  private ready = false;
+  private outbox: any[] = [];
 
   constructor(private store: NotesStore) {}
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
+    this.ready = false; // （重）加载即重新武装握手
     view.webview.options = { enableScripts: true };
     view.webview.html = chatHtml();
     view.webview.onDidReceiveMessage((msg) => {
       switch (msg && msg.type) {
+        case 'ready':
+          this.ready = true;
+          this.flush();
+          break;
         case 'ask':
           this.handleAsk(String(msg.question || '')).catch((e) =>
-            this.post({ type: 'error', message: String((e as Error)?.message || e) })
+            this.post({ type: 'error', message: describeError(e) })
           );
           break;
         case 'saveQa':
@@ -51,7 +63,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         case 'exportNotes':
           exportNotes(this.store)
             .then((f) => this.post({ type: 'status', text: '已导出: ' + f }))
-            .catch((e) => this.post({ type: 'error', message: String((e as Error)?.message || e) }));
+            .catch((e) => this.post({ type: 'error', message: describeError(e) }));
           break;
         case 'setup':
           vscode.commands.executeCommand('markpilot.setup');
@@ -61,7 +73,16 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 
   private post(msg: any): void {
-    this.view?.webview.postMessage(msg);
+    if (this.view && this.ready) this.view.webview.postMessage(msg);
+    else {
+      this.outbox.push(msg);
+      if (this.outbox.length > 500) this.outbox.shift(); // 面板始终未打开时防无限积压
+    }
+  }
+
+  private flush(): void {
+    if (!this.view) return;
+    while (this.outbox.length) this.view.webview.postMessage(this.outbox.shift());
   }
 
   /** markpilot.ask：聚焦侧栏并把选区挂为提问上下文 */
@@ -93,7 +114,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
       this.lastTranslation = out;
       this.post({ type: 'translateDone' });
     } catch (e) {
-      this.post({ type: 'error', message: String((e as Error)?.message || e) });
+      this.post({ type: 'error', message: describeError(e) });
     }
   }
 
@@ -163,6 +184,19 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   }
 }
 
+/** 错误文本 + 已知场景的配置指引（全部经 post 进聊天 UI，绝不静默） */
+export function describeError(e: any): string {
+  const msg = String((e as Error)?.message || e);
+  if (/HTTP 40[13]/.test(msg)) return msg + ' — 请检查 API Key 是否正确（Markpilot: 打开设置）';
+  if (/No model configured|modelNotConfigured|未配置模型/i.test(msg)) {
+    return msg + ' — 请先在设置页选择平台与模型（Markpilot: 打开设置）';
+  }
+  if (/HTTP 404|model.*not.*found|does not exist/i.test(msg)) {
+    return msg + ' — 模型可能不存在或已下线，请到设置页用 ⟳ 在线列表重选模型';
+  }
+  return msg;
+}
+
 /** 导出当前文件笔记到 vault：Markpilot-Code/code-<slug>.md（幂等，source 匹配整文件重写） */
 export async function exportNotes(store: NotesStore): Promise<string> {
   const ctx = activeEditorContext();
@@ -230,102 +264,8 @@ function chatHtml(): string {
     <button id="btn-send">发送</button>
   </div>
 <script nonce="${nonce}">
-  const vscode = acquireVsCodeApi();
-  const log = document.getElementById('log');
-  let cur = null; // 流式中的回答气泡
-  let translateDone = false;
-
-  function add(who, cls) {
-    const d = document.createElement('div');
-    d.className = 'msg ' + (cls || '');
-    const w = document.createElement('div');
-    w.className = 'who';
-    w.textContent = who;
-    const b = document.createElement('div');
-    b.className = 'body';
-    d.appendChild(w);
-    d.appendChild(b);
-    log.appendChild(d);
-    log.scrollTop = log.scrollHeight;
-    return b;
-  }
-
-  function send() {
-    const q = document.getElementById('q');
-    if (!q.value.trim()) return;
-    add('你', '').textContent = q.value;
-    vscode.postMessage({ type: 'ask', question: q.value });
-    q.value = '';
-  }
-  document.getElementById('btn-send').addEventListener('click', send);
-  document.getElementById('q').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') send();
-  });
-  document.getElementById('btn-export').addEventListener('click', () => {
-    vscode.postMessage({ type: 'exportNotes' });
-  });
-  document.getElementById('btn-setup').addEventListener('click', () => {
-    vscode.postMessage({ type: 'setup' });
-  });
-
-  window.addEventListener('message', (e) => {
-    const m = e.data;
-    switch (m.type) {
-      case 'context': {
-        const c = document.getElementById('ctx');
-        c.style.display = 'block';
-        c.textContent = '📎 ' + m.file + '\n' + (m.selection || '').slice(0, 300);
-        break;
-      }
-      case 'start':
-        cur = add('AI', '');
-        translateDone = false;
-        break;
-      case 'token':
-        if (cur) { cur.textContent += m.tok; log.scrollTop = log.scrollHeight; }
-        break;
-      case 'done': {
-        cur = null;
-        const ops = document.createElement('div');
-        ops.className = 'ops';
-        const b = document.createElement('button');
-        b.className = 'secondary';
-        b.textContent = '存为笔记';
-        b.addEventListener('click', () => {
-          vscode.postMessage({ type: 'saveQa', question: m.question, answer: m.answer });
-          b.disabled = true;
-        });
-        ops.appendChild(b);
-        log.lastChild.appendChild(ops);
-        break;
-      }
-      case 'translateStart':
-        add('翻译', 'status').textContent = '原文：' + (m.source || '') + (m.source && m.source.length >= 200 ? '…' : '');
-        cur = add('译文', '');
-        break;
-      case 'translateDone': {
-        cur = null;
-        const ops = document.createElement('div');
-        ops.className = 'ops';
-        const b = document.createElement('button');
-        b.textContent = '替换选区';
-        b.addEventListener('click', () => {
-          vscode.postMessage({ type: 'replaceSelection' });
-          b.disabled = true;
-        });
-        ops.appendChild(b);
-        log.lastChild.appendChild(ops);
-        break;
-      }
-      case 'error':
-        add('错误', 'err').textContent = m.message;
-        cur = null;
-        break;
-      case 'status':
-        add('', 'status').textContent = m.text;
-        break;
-    }
-  });
+  const vs = acquireVsCodeApi();
+  vs.postMessage({ type: 'ready' });
 </script>
 </body>
 </html>`;

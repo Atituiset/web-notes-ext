@@ -213,7 +213,9 @@ function settingsHtml(): string {
   </div>
 
 <script nonce="${nonce}">
-  const vscode = acquireVsCodeApi();
+  // 变量名不能叫 vscode：新版 VS Code 的 webview 全局已有 vscode 绑定，
+  // const vscode 会整脚本 SyntaxError（静默死屏的根因）
+  const vs = acquireVsCodeApi();
   const el = (id) => document.getElementById(id);
   let meta = [];
   // 模型列表来源标签：用户必须能分辨「预设（未拉取）」与「在线列表」
@@ -279,28 +281,28 @@ function settingsHtml(): string {
     }
   }
 
-  el('provider').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'provider', value: el('provider').value }));
-  el('model').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'model', value: el('model').value.trim() }));
-  el('baseUrl').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'baseUrl', value: el('baseUrl').value.trim() }));
-  el('vaultPath').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'vaultPath', value: el('vaultPath').value.trim() }));
-  el('memoryInject').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'memoryInject', value: el('memoryInject').checked }));
-  el('exportAiQA').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'exportAiQA', value: el('exportAiQA').checked }));
-  el('semanticRecall').addEventListener('change', () => vscode.postMessage({ type: 'set', key: 'semanticRecall', value: el('semanticRecall').value }));
+  el('provider').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'provider', value: el('provider').value }));
+  el('model').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'model', value: el('model').value.trim() }));
+  el('baseUrl').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'baseUrl', value: el('baseUrl').value.trim() }));
+  el('vaultPath').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'vaultPath', value: el('vaultPath').value.trim() }));
+  el('memoryInject').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'memoryInject', value: el('memoryInject').checked }));
+  el('exportAiQA').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'exportAiQA', value: el('exportAiQA').checked }));
+  el('semanticRecall').addEventListener('change', () => vs.postMessage({ type: 'set', key: 'semanticRecall', value: el('semanticRecall').value }));
   el('btn-key').addEventListener('click', () => {
-    vscode.postMessage({ type: 'setApiKey', provider: el('provider').value, key: el('apiKey').value });
+    vs.postMessage({ type: 'setApiKey', provider: el('provider').value, key: el('apiKey').value });
     el('apiKey').value = '';
   });
   el('btn-fetch').addEventListener('click', () => {
     sticky = true;
     setStatus('拉取中…', '');
-    vscode.postMessage({ type: 'fetchModels' });
+    vs.postMessage({ type: 'fetchModels' });
   });
   el('btn-test').addEventListener('click', () => {
     sticky = true;
     setStatus('测试连接中…', '');
-    vscode.postMessage({ type: 'testConnection' });
+    vs.postMessage({ type: 'testConnection' });
   });
-  el('btn-browse').addEventListener('click', () => vscode.postMessage({ type: 'pickVault' }));
+  el('btn-browse').addEventListener('click', () => vs.postMessage({ type: 'pickVault' }));
 
   window.addEventListener('message', (e) => {
     const m = e.data;
@@ -322,7 +324,7 @@ function settingsHtml(): string {
     }
   });
 
-  vscode.postMessage({ type: 'init' });
+  vs.postMessage({ type: 'init' });
 </script>
 </body>
 </html>`;

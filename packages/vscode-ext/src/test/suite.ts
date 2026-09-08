@@ -27,6 +27,15 @@ import { handleSettingsMessage, buildState } from '../settings-page.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+async function waitFor(cond: () => boolean, ms: number): Promise<boolean> {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    if (cond()) return true;
+    await sleep(100);
+  }
+  return cond();
+}
+
 const MARKER = 'markeralpha77'; // 记忆正文/查询共用标记（tokenize 两侧一致）
 const MOCK_REPLY = '这是一段来自模拟模型的流式回答。';
 
@@ -39,6 +48,8 @@ const capturedBodies: any[] = [];
 // /models 端点的应答模式（fetchModels 测试用）
 let mockModelsMode: 'ok' | '401' = 'ok';
 const MOCK_MODELS = [{ id: 'v4-flash-mock' }, { id: 'v4-pro-mock' }];
+// /chat/completions 的应答模式（错误路径测试用）
+let mockChatMode: 'ok' | '401' = 'ok';
 
 function ssePayload(text: string, chunk = 4): string {
   const parts: string[] = [];
@@ -69,6 +80,11 @@ function startMock(): Promise<void> {
         try {
           capturedBodies.push(JSON.parse(body));
         } catch { /* 忽略非 JSON */ }
+        if (mockChatMode === '401') {
+          res.writeHead(401, { 'content-type': 'application/json' });
+          res.end('{"error":{"message":"Invalid API key"}}');
+          return;
+        }
         res.writeHead(200, { 'content-type': 'text/event-stream' });
         res.end(ssePayload(MOCK_REPLY));
       });
@@ -299,10 +315,16 @@ function defineTests(): void {
       const edit = new vscode.WorkspaceEdit();
       edit.insert(uri, new vscode.Position(0, 0), '插入行\n');
       assert.ok(await vscode.workspace.applyEdit(edit));
-      await sleep(400); // shiftLines 是事件驱动的异步落盘
-      const after = store.forFile(fk, wsFolder.name);
-      assert.equal(after[0].startLine, 3, 'startLine 应 +1');
-      assert.equal(after[0].endLine, 4, 'endLine 应 +1');
+      // shiftLines 是事件驱动的异步落盘：轮询而非定长 sleep（400ms 在负载下会偶发不够）
+      const shifted = await waitFor(() => {
+        const ns = store.forFile(fk, wsFolder.name);
+        return ns.length === 1 && ns[0].startLine === 3 && ns[0].endLine === 4;
+      }, 8000);
+      assert.ok(shifted, 'startLine/endLine 应 +1（当前: ' + JSON.stringify(store.forFile(fk, wsFolder.name)) + '）');
+
+      // 收尾：撤销插入（缓冲区跨运行经 hot-exit 累积会污染后续运行）并清理笔记
+      await vscode.commands.executeCommand('undo');
+      await ctx.globalState.update('markpilot.notes', []);
     });
 
     it('翻译：mock LLM SSE 流式端到端', async () => {
@@ -345,6 +367,100 @@ function defineTests(): void {
       assert.equal(capturedBodies.length, 1);
       const sent = JSON.stringify(capturedBodies[0].messages);
       assert.ok(sent.includes('【用户长期记忆】') && sent.includes(MARKER), '请求体应含记忆注入');
+    });
+
+    it('命令端到端：translate 冷启动（面板未打开）经 ready 握手流到 webview', async () => {
+      const chat = (globalThis as any).__markpilotChat as any;
+      assert.ok(chat, '扩展应暴露 __markpilotChat');
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      const prev = { provider: cfg.get('provider'), model: cfg.get('model'), baseUrl: cfg.get('baseUrl') };
+      // spy provider 的出站通道（实例属性覆盖原型方法，this.post 全部经过）
+      const posted: any[] = [];
+      const origPost = chat.post.bind(chat);
+      chat.post = (m: any) => {
+        posted.push(m);
+        return origPost(m);
+      };
+      try {
+        await cfg.update('provider', 'openai-compatible', vscode.ConfigurationTarget.Global);
+        await cfg.update('baseUrl', `http://127.0.0.1:${mockPort}/v1`, vscode.ConfigurationTarget.Global);
+        await cfg.update('model', 'mock-model', vscode.ConfigurationTarget.Global);
+        mockChatMode = 'ok';
+
+        // 真实编辑器 + 真实选区；chat 视图此前从未 resolve（前面用例均不碰侧栏）—— 冷启动
+        const wsFolder = vscode.workspace.workspaceFolders![0];
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(wsFolder.uri, 'src', 'sample.md'));
+        const ed = await vscode.window.showTextDocument(doc);
+        ed.selection = new vscode.Selection(1, 0, 2, 0);
+        await vscode.commands.executeCommand('markpilot.translate');
+
+        const done = await waitFor(() => posted.some((m) => m.type === 'translateDone'), 15000);
+        assert.ok(done, 'translateDone 应到达（实际消息: ' + posted.map((m) => m.type).join(',') + ')');
+        assert.equal(posted[0].type, 'translateStart', '首条消息应为 translateStart（队列保序）');
+        assert.ok(posted.some((m) => m.type === 'token'), '应有流式 token');
+        await waitFor(() => chat.ready === true, 5000);
+        assert.ok(chat.ready, 'webview 应完成 ready 握手');
+        assert.equal(chat.outbox.length, 0, '出站队列应排空');
+
+        // warm 路径：直接 spy webview.postMessage 验证真实到达
+        const received: any[] = [];
+        const wv = chat.view.webview;
+        const origWvPost = wv.postMessage.bind(wv);
+        wv.postMessage = (m: any) => {
+          received.push(m);
+          return origWvPost(m);
+        };
+        try {
+          await vscode.commands.executeCommand('markpilot.translate');
+          const done2 = await waitFor(() => received.some((m) => m.type === 'translateDone'), 15000);
+          assert.ok(done2, 'warm 路径 translateDone 应到达 webview');
+          assert.ok(received.some((m) => m.type === 'token'), 'warm 路径应有 token 到达');
+        } finally {
+          wv.postMessage = origWvPost;
+        }
+      } finally {
+        chat.post = origPost;
+        await cfg.update('provider', prev.provider, vscode.ConfigurationTarget.Global);
+        await cfg.update('model', prev.model, vscode.ConfigurationTarget.Global);
+        await cfg.update('baseUrl', prev.baseUrl, vscode.ConfigurationTarget.Global);
+      }
+    });
+
+    it('命令端到端：mock 401 → 错误气泡（含配置指引）到达 webview，不静默', async () => {
+      const chat = (globalThis as any).__markpilotChat as any;
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      const prev = { provider: cfg.get('provider'), model: cfg.get('model'), baseUrl: cfg.get('baseUrl') };
+      const posted: any[] = [];
+      const origPost = chat.post.bind(chat);
+      chat.post = (m: any) => {
+        posted.push(m);
+        return origPost(m);
+      };
+      try {
+        await cfg.update('provider', 'openai-compatible', vscode.ConfigurationTarget.Global);
+        await cfg.update('baseUrl', `http://127.0.0.1:${mockPort}/v1`, vscode.ConfigurationTarget.Global);
+        await cfg.update('model', 'mock-model', vscode.ConfigurationTarget.Global);
+        mockChatMode = '401';
+
+        const wsFolder = vscode.workspace.workspaceFolders![0];
+        const doc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(wsFolder.uri, 'src', 'sample.md'));
+        const ed = await vscode.window.showTextDocument(doc);
+        ed.selection = new vscode.Selection(0, 0, 1, 0);
+        await vscode.commands.executeCommand('markpilot.translate');
+
+        const got = await waitFor(() => posted.some((m) => m.type === 'error'), 15000);
+        assert.ok(got, '401 应产生错误消息（实际消息: ' + posted.map((m) => m.type).join(',') + ')');
+        const err = posted.find((m) => m.type === 'error');
+        assert.ok(err.message.includes('401'), '错误应含 401: ' + err.message);
+        assert.ok(/API Key/.test(err.message), '错误应含配置指引: ' + err.message);
+        assert.equal(chat.outbox.length, 0, '错误消息不应滞留在队列（webview 已 ready）');
+      } finally {
+        chat.post = origPost;
+        mockChatMode = 'ok';
+        await cfg.update('provider', prev.provider, vscode.ConfigurationTarget.Global);
+        await cfg.update('model', prev.model, vscode.ConfigurationTarget.Global);
+        await cfg.update('baseUrl', prev.baseUrl, vscode.ConfigurationTarget.Global);
+      }
     });
   });
 }
