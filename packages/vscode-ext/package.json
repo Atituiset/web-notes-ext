@@ -2,7 +2,7 @@
   "name": "@markpilot/vscode-ext",
   "displayName": "Markpilot — Code Notes to Obsidian & AI",
   "description": "Code notes & highlights synced to an Obsidian vault, BYOK LLM Q&A with long-term memory, and streaming selection translation.",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "atituiset",
   "private": true,
   "license": "MIT",
@@ -15,6 +15,7 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "onCommand:markpilot.setup",
+    "onCommand:markpilot.openSettings",
     "onCommand:markpilot.note",
     "onCommand:markpilot.ask",
     "onCommand:markpilot.translate",
@@ -28,6 +29,12 @@
         "command": "markpilot.setup",
         "title": "快速配置（平台 / API Key / 模型）",
         "category": "Markpilot"
+      },
+      {
+        "command": "markpilot.openSettings",
+        "title": "打开设置",
+        "category": "Markpilot",
+        "icon": "$(gear)"
       },
       {
         "command": "markpilot.note",
@@ -71,6 +78,13 @@
           "command": "markpilot.translate",
           "when": "editorHasSelection",
           "group": "markpilot@3"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "markpilot.openSettings",
+          "when": "view == markpilot.chat",
+          "group": "navigation"
         }
       ]
     },

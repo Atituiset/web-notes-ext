@@ -23,6 +23,7 @@ import { fileKey } from '../../../core/src/file-key.js';
 import { PROVIDERS } from '../../../core/src/llm/index.js';
 import { NotesStore, refreshDecorations } from '../notes-store.js';
 import { makeSettingsStore } from '../platform/settings-store.js';
+import { handleSettingsMessage, buildState } from '../settings-page.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -107,9 +108,61 @@ function defineTests(): void {
       const ctx = (globalThis as any).__markpilotContext;
       assert.ok(ctx, 'activate 应暴露 __markpilotContext');
       const cmds = await vscode.commands.getCommands(true);
-      for (const c of ['markpilot.note', 'markpilot.ask', 'markpilot.translate', 'markpilot.setApiKey', 'markpilot.exportNotes', 'markpilot.setup']) {
+      for (const c of ['markpilot.note', 'markpilot.ask', 'markpilot.translate', 'markpilot.setApiKey', 'markpilot.exportNotes', 'markpilot.setup', 'markpilot.openSettings']) {
         assert.ok(cmds.includes(c), '命令未注册: ' + c);
       }
+    });
+
+    it('设置页：state 快照含 9 平台元数据与密钥存在标志', async () => {
+      const ctx = (globalThis as any).__markpilotContext as vscode.ExtensionContext;
+      const state = await buildState(ctx.secrets);
+      assert.equal(state.providers.length, 9);
+      assert.ok(state.providers.every((p: any) => p.label));
+      assert.ok('apiKeySet' in state && typeof state.apiKeySet.deepseek === 'boolean');
+      assert.ok(!JSON.stringify(state).includes('markpilot.apiKey.'), '快照不应含任何密钥本体/键名');
+      assert.ok('memoryInject' in state.settings && 'semanticRecall' in state.settings);
+    });
+
+    it('设置页：set 消息写 Global 配置并回发真实 state', async () => {
+      const ctx = (globalThis as any).__markpilotContext as vscode.ExtensionContext;
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      const replies: any[] = [];
+      const deps = { secrets: ctx.secrets, post: (m: any) => replies.push(m) };
+      const prev = cfg.get('provider');
+      try {
+        await handleSettingsMessage({ type: 'set', key: 'provider', value: 'deepseek' }, deps);
+        // getConfiguration 是快照 —— 写入后须重新获取才能读到新值
+        assert.equal(vscode.workspace.getConfiguration('markpilot').get('provider'), 'deepseek', 'Global 配置应已写入');
+        const state = replies.find((r) => r.type === 'state');
+        assert.ok(state, 'set 后应回发 state');
+        assert.equal(state.settings.provider, 'deepseek');
+        // deepseek 有预设模型 → 读时回退到首个预设
+        assert.equal(state.settings.model, (PROVIDERS as any).deepseek.models[0]);
+        // 白名单外的键被拒绝
+        await handleSettingsMessage({ type: 'set', key: 'evil.key', value: 'x' }, deps);
+        assert.equal(cfg.get('evil.key'), undefined);
+      } finally {
+        await cfg.update('provider', prev, vscode.ConfigurationTarget.Global);
+      }
+    });
+
+    it('设置页：setApiKey 存 SecretStorage 且不落配置，可清除', async () => {
+      const ctx = (globalThis as any).__markpilotContext as vscode.ExtensionContext;
+      const replies: any[] = [];
+      const deps = { secrets: ctx.secrets, post: (m: any) => replies.push(m) };
+      await handleSettingsMessage({ type: 'setApiKey', provider: 'deepseek', key: 'sk-test-9527' }, deps);
+      assert.equal(await ctx.secrets.get('markpilot.apiKey.deepseek'), 'sk-test-9527', '密钥应存 SecretStorage');
+      const state = replies.find((r) => r.type === 'state');
+      assert.equal(state.apiKeySet.deepseek, true, 'state 应报告密钥已存在');
+      assert.ok(!JSON.stringify(state).includes('sk-test-9527'), 'state 不应含密钥本体');
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      assert.ok(!JSON.stringify(cfg).includes('sk-test-9527'), '密钥不应写入任何配置');
+      // 空串 = 清除
+      await handleSettingsMessage({ type: 'setApiKey', provider: 'deepseek', key: '' }, deps);
+      assert.equal(await ctx.secrets.get('markpilot.apiKey.deepseek'), undefined, '清除后密钥应不存在');
+      // 未知 provider 拒绝
+      await handleSettingsMessage({ type: 'setApiKey', provider: 'not-a-provider', key: 'x' }, deps);
+      assert.equal(await ctx.secrets.get('markpilot.apiKey.not-a-provider'), undefined);
     });
 
     it('配置贡献：provider 为 9 平台下拉（enum + 中文描述）', () => {

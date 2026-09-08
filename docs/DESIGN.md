@@ -202,7 +202,7 @@ db: web-notes-ext v3
 
 - **`packages/core`** — 平台无关核心：llm/（provider 抽象 + SSE）、memory（混合检索）、embedding、chat-pipeline、obsidian（REST 通道 + markdown 组装）、translate、file-key、url-key、markdown。平台依赖全部走 `src/ports.ts` 的端口接口（VaultFS / KVStore / SettingsStore / PermissionGate / I18n / AssetResolver / TextSource），用 `configurePlatform()` 模块级注册表注入（沿用 setDenseRanker 的既有风格）。核心文件不引用 chrome / DOM / node。
 - **`packages/chrome-ext`** — Chrome MV3 壳：content/panel/options/sw + `src/platform/` 适配器（FS Access、IndexedDB、chrome.i18n、chrome.permissions、tab 提取）。构建产物路径（根 `dist/`、`release/`）不变。
-- **`packages/vscode-ext`** — VS Code 壳 MVP：选区笔记（文件+行号锚点 + decoration 高亮 + 编辑偏移平移）、问 AI（webview 聊天 + memory 注入）、翻译（流式 + 替换选区），笔记落 Obsidian vault（node:fs 直连），API key 走 SecretStorage，端侧向量用 Node 版 transformers.js。
+- **`packages/vscode-ext`** — VS Code 壳 MVP：选区笔记（文件+行号锚点 + decoration 高亮 + 编辑偏移平移）、问 AI（webview 聊天 + memory 注入）、翻译（流式 + 替换选区），笔记落 Obsidian vault（node:fs 直连），API key 走 SecretStorage，端侧向量用 Node 版 transformers.js。配置统一入口为 `markpilot.openSettings` 设置页（整页 WebviewPanel，即改即存；密钥只回传存在标志不下发本体），快速配置向导为精简备选。
 
 关键约束：
 
