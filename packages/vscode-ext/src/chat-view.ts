@@ -229,7 +229,7 @@ export async function exportNotes(store: NotesStore): Promise<string> {
   return dirName + '/' + fileName;
 }
 
-function chatHtml(): string {
+export function chatHtml(): string {
   const nonce = String(Date.now()) + String(Math.random()).slice(2, 8);
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -265,6 +265,103 @@ function chatHtml(): string {
   </div>
 <script nonce="${nonce}">
   const vs = acquireVsCodeApi();
+  const log = document.getElementById('log');
+  let cur = null; // 流式中的回答气泡
+  let translateDone = false;
+
+  function add(who, cls) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + (cls || '');
+    const w = document.createElement('div');
+    w.className = 'who';
+    w.textContent = who;
+    const b = document.createElement('div');
+    b.className = 'body';
+    d.appendChild(w);
+    d.appendChild(b);
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+    return b;
+  }
+
+  function send() {
+    const q = document.getElementById('q');
+    if (!q.value.trim()) return;
+    add('你', '').textContent = q.value;
+    vs.postMessage({ type: 'ask', question: q.value });
+    q.value = '';
+  }
+  document.getElementById('btn-send').addEventListener('click', send);
+  document.getElementById('q').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') send();
+  });
+  document.getElementById('btn-export').addEventListener('click', () => {
+    vs.postMessage({ type: 'exportNotes' });
+  });
+  document.getElementById('btn-setup').addEventListener('click', () => {
+    vs.postMessage({ type: 'setup' });
+  });
+
+  window.addEventListener('message', (e) => {
+    const m = e.data;
+    switch (m.type) {
+      case 'context': {
+        const c = document.getElementById('ctx');
+        c.style.display = 'block';
+        c.textContent = '\\u{1F4CE} ' + m.file + '\\n' + (m.selection || '').slice(0, 300);
+        break;
+      }
+      case 'start':
+        cur = add('AI', '');
+        translateDone = false;
+        break;
+      case 'token':
+        if (cur) { cur.textContent += m.tok; log.scrollTop = log.scrollHeight; }
+        break;
+      case 'done': {
+        cur = null;
+        const ops = document.createElement('div');
+        ops.className = 'ops';
+        const b = document.createElement('button');
+        b.className = 'secondary';
+        b.textContent = '存为笔记';
+        b.addEventListener('click', () => {
+          vs.postMessage({ type: 'saveQa', question: m.question, answer: m.answer });
+          b.disabled = true;
+        });
+        ops.appendChild(b);
+        log.lastChild.appendChild(ops);
+        break;
+      }
+      case 'translateStart':
+        add('翻译', 'status').textContent = '原文：' + (m.source || '') + (m.source && m.source.length >= 200 ? '…' : '');
+        cur = add('译文', '');
+        break;
+      case 'translateDone': {
+        cur = null;
+        const ops = document.createElement('div');
+        ops.className = 'ops';
+        const b = document.createElement('button');
+        b.textContent = '替换选区';
+        b.addEventListener('click', () => {
+          vs.postMessage({ type: 'replaceSelection' });
+          b.disabled = true;
+        });
+        ops.appendChild(b);
+        log.lastChild.appendChild(ops);
+        break;
+      }
+      case 'error':
+        add('错误', 'err').textContent = m.message;
+        cur = null;
+        break;
+      case 'status':
+        add('', 'status').textContent = m.text;
+        break;
+    }
+  });
+
+  // 就绪握手：宿主在此之前的出站消息会排队，收到 ready 后才 flush
   vs.postMessage({ type: 'ready' });
 </script>
 </body>

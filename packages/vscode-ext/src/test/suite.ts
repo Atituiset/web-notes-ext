@@ -24,6 +24,7 @@ import { PROVIDERS } from '../../../core/src/llm/index.js';
 import { NotesStore, refreshDecorations } from '../notes-store.js';
 import { makeSettingsStore } from '../platform/settings-store.js';
 import { handleSettingsMessage, buildState } from '../settings-page.js';
+import { chatHtml } from '../chat-view.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -142,6 +143,32 @@ function defineTests(): void {
       for (const c of ['markpilot.note', 'markpilot.ask', 'markpilot.translate', 'markpilot.setApiKey', 'markpilot.exportNotes', 'markpilot.setup', 'markpilot.openSettings']) {
         assert.ok(cmds.includes(c), '命令未注册: ' + c);
       }
+    });
+
+    // 回归守卫：chatHtml 的内联脚本曾被一次中断的重构剥光（页面渲染但全哑），
+    // 宿主侧 spy 测不到真实 webview 交互——这里静态钉住全部关键接线
+    it('聊天页 HTML：内联脚本包含完整 UI 接线（防剥光回归）', () => {
+      const html = chatHtml();
+      const required = [
+        "getElementById('btn-send')",          // 发送按钮
+        "type: 'ask'",                          // 提问消息
+        "addEventListener('message'",           // 宿主→webview 渲染入口
+        "case 'token'",                         // 流式渲染
+        "case 'error'",                         // 错误气泡
+        "case 'translateStart'",                // 翻译
+        "case 'translateDone'",
+        'replaceSelection',                     // 替换选区
+        'saveQa',                               // 存为笔记
+        "type: 'ready'",                        // 就绪握手
+        'acquireVsCodeApi()',
+      ];
+      for (const marker of required) assert.ok(html.includes(marker), 'chatHtml 缺少接线: ' + marker);
+      assert.ok(!html.includes('const vscode ='), 'webview 全局 vscode 已被新版 VS Code 占用，禁止再声明 const vscode');
+      // 语法级校验：TS 模板会吃掉 \n 等转义（生成裸换行→整脚本 SyntaxError 静默死屏），
+      // 静态标记查不出——new Function 只解析不执行，等效 node --check
+      const script = html.match(/<script nonce="[^"]*">([\s\S]*?)<\/script>/);
+      assert.ok(script, '应能提取内联脚本');
+      assert.doesNotThrow(() => new Function(script![1]), '内联脚本存在语法错误');
     });
 
     it('设置页：state 快照含 9 平台元数据与密钥存在标志', async () => {
