@@ -114,7 +114,9 @@ export async function listModels(settings, opts?: { fallbackToPresets?: boolean 
   } catch (e: any) {
     // 拉取失败回退到预置列表（零配置 provider 网络抖动时不阻塞设置）
     if (fallbackToPresets && presetModels.length) return presetModels.map((id) => ({ id, free: true }));
-    throw new Error('拉取模型列表失败: ' + (e?.message || e));
+    // 网络层错误（undici 'fetch failed'）的真正原因在 e.cause（ENOTFOUND/ECONNREFUSED/ETIMEDOUT/CERT_*）——必须带上，否则用户无从排查
+    const cause = e?.cause ? ` [${e.cause.code || e.cause.message || e.cause}]` : '';
+    throw new Error('拉取模型列表失败: ' + (e?.message || e) + cause + ` (${base}/models)`);
   }
   if (p === 'openrouter') {
     // 免费模型判定：pricing.prompt/completion 均为 "0"
