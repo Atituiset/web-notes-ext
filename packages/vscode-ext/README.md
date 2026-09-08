@@ -11,19 +11,29 @@
 - **Markpilot: Set LLM API Key**（`markpilot.setApiKey`）— API Key 存 SecretStorage，不落 settings.json
 - 长期记忆：问答时注入 `<vaultPath>/Markpilot-Memory/` 下的记忆检索结果（与 Chrome 版同一套混合召回）；用户画像 `_profile.md` 若存在（由 Chrome 版生成）同样注入
 
-## 设置（settings.json，前缀 `markpilot.`）
+## 设置
+
+**推荐路径：命令面板 → 「Markpilot: 快速配置」**（侧栏 Chat 里也有「快速配置」按钮）。三步向导：
+
+1. **选平台** — 9 个 provider 下拉（与 Chrome 版同一套 PROVIDERS 注册表），opencode 标注「零配置」、ollama 标注「本地」
+2. **API Key** — 仅需要 key 的平台出现；存 SecretStorage，不落 settings.json
+3. **选模型** — 预设模型列表 + 「拉取在线模型列表…」（OpenRouter 免费模型带标记）+「手动输入…」；openai-compatible 未配 baseUrl 时会先问端点
+
+任一步 Esc 静默中止，已保存的部分不回滚。完成后提示当前生效的 平台/模型。
+
+手动设置（settings.json，前缀 `markpilot.`；`provider` 在设置 UI 里是下拉框）：
 
 | 键 | 默认 | 说明 |
 |---|---|---|
 | `provider` | `openai-compatible` | opencode / openai-compatible / ollama / openrouter / anthropic / deepseek / zhipu / moonshot / qwen |
-| `model` | `""` | 模型 ID |
+| `model` | `""` | 模型 ID；留空且 provider 有预设模型时，读时回退到首个预设（不写配置） |
 | `baseUrl` | `""` | 仅 openai-compatible 需要 |
 | `vaultPath` | `""` | Obsidian vault 绝对路径；留空则记忆/导出停用（问答仍可用） |
 | `memoryInject` | `true` | 提问时注入长期记忆 |
 | `exportAiQA` | `false` | 导出时包含 AI 问答记录 |
 | `semanticRecall` | `off` | `local` = 端侧 MiniLM 语义召回（见下） |
 
-零配置上手：provider 选 `opencode` + 模型 `mimo-v2.5-free` 等免费模型，无需 API Key。
+零配置上手：「快速配置」选 opencode → 模型选 `mimo-v2.5-free` 等免费模型，无需 API Key。
 
 ## 语义召回（可选）
 
@@ -42,6 +52,7 @@
 
 ## 手动验证清单（扩展宿主内）
 
+0. 命令面板 →「Markpilot: 快速配置」→ 选 opencode（QuickPick/inputBox 无法自动化驱动，需手测）→ 模型选免费预设 → 提示「配置完成：OpenCode … / 模型」；再跑一次选 deepseek 验证 API Key 步骤（Esc 中止也应静默）
 1. 选中一段代码 → 右键 Add Note on Selection → 输入笔记 → 选区出现黄底高亮；在笔记上方插入/删除行，高亮跟随平移
 2. 选中一段 → Ask AI about Selection → 侧栏出现选区上下文卡片 → 提问 → 流式回答；点「存为笔记」
 3. 配置 `vaultPath` 指向一个 Obsidian vault → 再提问（长期记忆注入不报错即降级正确）；侧栏「导出本文件笔记」→ vault 下出现 `Markpilot-Code/code-*.md`
