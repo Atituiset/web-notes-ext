@@ -2,7 +2,7 @@
   "name": "@markpilot/vscode-ext",
   "displayName": "Markpilot — Code Notes to Obsidian & AI",
   "description": "Code notes & highlights synced to an Obsidian vault, BYOK LLM Q&A with long-term memory, and streaming selection translation.",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "publisher": "atituiset",
   "private": true,
   "license": "MIT",
