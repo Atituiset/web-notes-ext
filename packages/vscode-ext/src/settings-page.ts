@@ -81,7 +81,8 @@ export async function handleSettingsMessage(msg: any, deps: SettingsDeps): Promi
     case 'testConnection': {
       try {
         const settings = await makeSettingsStore(secrets).getSettings();
-        const models: { id: string; free: boolean }[] = await listModels(settings);
+        // 不回退预设：设置页必须能分辨真实错误（401/断网）与陈旧预设
+        const models: { id: string; free: boolean }[] = await listModels(settings, { fallbackToPresets: false });
         if (msg.type === 'fetchModels') {
           post({ type: 'models', models });
         } else {
@@ -185,6 +186,7 @@ function settingsHtml(): string {
       <button class="secondary" id="btn-fetch" title="拉取在线模型列表">⟳ 在线列表</button>
       <button class="secondary" id="btn-test">测试连接</button>
     </div>
+    <div class="hint"><span id="fetch-hint"></span></div>
     <div class="hint" id="model-status"></div>
   </div>
 
@@ -214,6 +216,16 @@ function settingsHtml(): string {
   const vscode = acquireVsCodeApi();
   const el = (id) => document.getElementById(id);
   let meta = [];
+  // 模型列表来源标签：用户必须能分辨「预设（未拉取）」与「在线列表」
+  let srcLabel = '预设列表（未拉取）';
+  let sticky = false; // 错误/测试结果停留时不被 state 重渲染覆盖
+  let lastProvider = '';
+
+  function setStatus(text, cls) {
+    const s = el('model-status');
+    s.textContent = text;
+    s.className = 'hint' + (cls ? ' ' + cls : '');
+  }
 
   function presetOf(provider) {
     const p = meta.find((x) => x.key === provider);
@@ -236,6 +248,11 @@ function settingsHtml(): string {
       for (const p of st.providers) sel.add(new Option(p.label, p.key));
     }
     sel.value = st.settings.provider;
+    if (lastProvider !== st.settings.provider) {
+      lastProvider = st.settings.provider;
+      srcLabel = '预设列表（未拉取）';
+      sticky = false;
+    }
     el('model').value = st.settings.model;
     fillDatalist(presetOf(st.settings.provider), null);
     el('baseUrl').value = st.settings.baseUrl;
@@ -246,6 +263,11 @@ function settingsHtml(): string {
     el('semanticRecall').value = st.settings.semanticRecall;
     const m = meta.find((x) => x.key === st.settings.provider) || {};
     const ks = el('key-status');
+    const needKey = !!m.needsKey && !st.apiKeySet[st.settings.provider];
+    // 无 key 的平台拉在线列表注定 401 —— 直接禁用并提示，不放行无效请求
+    el('btn-fetch').disabled = needKey;
+    el('fetch-hint').textContent = needKey ? '先保存 API Key 再拉取在线列表' : '';
+    if (!sticky) setStatus(srcLabel, '');
     if (!m.needsKey) {
       ks.textContent = '该平台无需 API Key';
       el('apiKey').disabled = true;
@@ -269,11 +291,13 @@ function settingsHtml(): string {
     el('apiKey').value = '';
   });
   el('btn-fetch').addEventListener('click', () => {
-    el('model-status').textContent = '拉取中…';
+    sticky = true;
+    setStatus('拉取中…', '');
     vscode.postMessage({ type: 'fetchModels' });
   });
   el('btn-test').addEventListener('click', () => {
-    el('model-status').textContent = '测试连接中…';
+    sticky = true;
+    setStatus('测试连接中…', '');
     vscode.postMessage({ type: 'testConnection' });
   });
   el('btn-browse').addEventListener('click', () => vscode.postMessage({ type: 'pickVault' }));
@@ -284,16 +308,17 @@ function settingsHtml(): string {
       render(m);
     } else if (m.type === 'models') {
       if (m.error) {
-        el('model-status').textContent = '拉取失败: ' + m.error;
-        el('model-status').className = 'hint err';
+        sticky = true;
+        setStatus('拉取失败: ' + m.error, 'err');
       } else {
+        sticky = false;
         fillDatalist(m.models.map((x) => x.id), new Set(m.models.filter((x) => x.free).map((x) => x.id)));
-        el('model-status').textContent = '已拉取 ' + m.models.length + ' 个模型（下拉可选，或直接输入）';
-        el('model-status').className = 'hint';
+        srcLabel = '在线列表 ✓ ' + m.models.length + ' 个模型';
+        setStatus(srcLabel, 'ok');
       }
     } else if (m.type === 'testResult') {
-      el('model-status').textContent = (m.ok ? '✓ ' : '✗ ') + m.detail;
-      el('model-status').className = 'hint ' + (m.ok ? 'ok' : 'err');
+      sticky = true;
+      setStatus((m.ok ? '✓ ' : '✗ ') + m.detail, m.ok ? 'ok' : 'err');
     }
   });
 

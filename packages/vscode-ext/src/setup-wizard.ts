@@ -81,13 +81,13 @@ export async function runSetupWizard(secrets: vscode.SecretStorage): Promise<voi
   vscode.window.showInformationMessage(`Markpilot 配置完成：${meta.label || provider} / ${model}`);
 }
 
-/** 拉取在线模型列表（core listModels，读刚保存的设置）；openrouter 免费模型带标记 */
+/** 拉取在线模型列表（core listModels，读刚保存的设置；不回退预设，失败直接告警）；openrouter 免费模型带标记 */
 async function pickOnlineModel(): Promise<string | undefined> {
   try {
     const settings = await settingsStore().getSettings();
     const models: { id: string; free: boolean }[] = await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: '拉取模型列表…' },
-      () => listModels(settings)
+      () => listModels(settings, { fallbackToPresets: false })
     );
     if (!models.length) {
       vscode.window.showWarningMessage('在线模型列表为空，请手动输入');

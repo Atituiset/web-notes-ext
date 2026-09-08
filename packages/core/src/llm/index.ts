@@ -73,8 +73,13 @@ export async function ensureHostPermission(url: string): Promise<void> {
  * - openrouter: 无 key 也可列；标记出免费模型（pricing 全 0）
  * - 其他 OpenAI 兼容 provider: 需要 key
  * 返回 [{id, free}]
+ *
+ * opts.fallbackToPresets（默认 true）：拉取失败且 provider 有预设模型时回退预设
+ * （零配置 provider 网络抖动不阻塞设置）。设置页等需要分辨真实错误
+ * （401/断网）与陈旧预设的调用方传 false —— 错误直接抛出。
  */
-export async function listModels(settings) {
+export async function listModels(settings, opts?: { fallbackToPresets?: boolean }) {
+  const fallbackToPresets = !opts || opts.fallbackToPresets !== false;
   const p = settings.provider;
   if (p === 'anthropic') {
     const key = (settings.apiKeys && settings.apiKeys.anthropic) || '';
@@ -108,7 +113,7 @@ export async function listModels(settings) {
     freeData = data;
   } catch (e: any) {
     // 拉取失败回退到预置列表（零配置 provider 网络抖动时不阻塞设置）
-    if (presetModels.length) return presetModels.map((id) => ({ id, free: true }));
+    if (fallbackToPresets && presetModels.length) return presetModels.map((id) => ({ id, free: true }));
     throw new Error('拉取模型列表失败: ' + (e?.message || e));
   }
   if (p === 'openrouter') {
