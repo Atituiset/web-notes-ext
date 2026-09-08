@@ -11,6 +11,7 @@ import { fileKey } from '../../core/src/file-key.js';
 import { NotesStore, refreshDecorations } from './notes-store.js';
 import { ChatViewProvider, exportNotes } from './chat-view.js';
 import { initNodeEmbedding } from './embedding-node.js';
+import { runSetupWizard, saveApiKey } from './setup-wizard.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   // 平台端口装配：单 bundle 一次，须在任何 core 业务调用前完成
@@ -104,19 +105,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
 
+    vscode.commands.registerCommand('markpilot.setup', async () => {
+      await runSetupWizard(context.secrets);
+    }),
+
     vscode.commands.registerCommand('markpilot.setApiKey', async () => {
       const provider = await vscode.window.showQuickPick(Object.keys(PROVIDERS), {
         placeHolder: '为哪个 provider 设置 API Key？',
       });
       if (!provider) return;
       const key = await vscode.window.showInputBox({
-        prompt: provider + ' 的 API Key（存于 SecretStorage，不写 settings.json）',
+        prompt: provider + ' 的 API Key（存于 SecretStorage，不写 settings.json；留空清除）',
         password: true,
       });
       if (key === undefined) return;
-      const s = settingsStore();
-      const cur = await s.getSettings();
-      await s.saveSettings({ apiKeys: { ...cur.apiKeys, [provider]: key.trim() } });
+      await saveApiKey(context.secrets, provider, key.trim());
       vscode.window.showInformationMessage(key.trim() ? 'API Key 已保存' : 'API Key 已清除');
     })
   );

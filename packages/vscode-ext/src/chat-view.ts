@@ -53,6 +53,9 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
             .then((f) => this.post({ type: 'status', text: '已导出: ' + f }))
             .catch((e) => this.post({ type: 'error', message: String((e as Error)?.message || e) }));
           break;
+        case 'setup':
+          vscode.commands.executeCommand('markpilot.setup');
+          break;
       }
     });
   }
@@ -219,6 +222,7 @@ function chatHtml(): string {
   <div id="ctx"></div>
   <div id="log"></div>
   <div id="bar">
+    <button class="secondary" id="btn-setup">快速配置</button>
     <button class="secondary" id="btn-export">导出本文件笔记</button>
   </div>
   <div id="input">
@@ -259,6 +263,9 @@ function chatHtml(): string {
   });
   document.getElementById('btn-export').addEventListener('click', () => {
     vscode.postMessage({ type: 'exportNotes' });
+  });
+  document.getElementById('btn-setup').addEventListener('click', () => {
+    vscode.postMessage({ type: 'setup' });
   });
 
   window.addEventListener('message', (e) => {

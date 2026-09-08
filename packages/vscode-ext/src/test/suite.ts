@@ -20,7 +20,9 @@ import { runTranslate } from '../../../core/src/translate.js';
 import { buildLlmMessages } from '../../../core/src/chat-pipeline.js';
 import { streamChat } from '../../../core/src/llm/index.js';
 import { fileKey } from '../../../core/src/file-key.js';
+import { PROVIDERS } from '../../../core/src/llm/index.js';
 import { NotesStore, refreshDecorations } from '../notes-store.js';
+import { makeSettingsStore } from '../platform/settings-store.js';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -105,8 +107,52 @@ function defineTests(): void {
       const ctx = (globalThis as any).__markpilotContext;
       assert.ok(ctx, 'activate 应暴露 __markpilotContext');
       const cmds = await vscode.commands.getCommands(true);
-      for (const c of ['markpilot.note', 'markpilot.ask', 'markpilot.translate', 'markpilot.setApiKey', 'markpilot.exportNotes']) {
+      for (const c of ['markpilot.note', 'markpilot.ask', 'markpilot.translate', 'markpilot.setApiKey', 'markpilot.exportNotes', 'markpilot.setup']) {
         assert.ok(cmds.includes(c), '命令未注册: ' + c);
+      }
+    });
+
+    it('配置贡献：provider 为 9 平台下拉（enum + 中文描述）', () => {
+      const ext = vscode.extensions.all.find((e) =>
+        (e.packageJSON?.contributes?.commands || []).some((c: any) => c.command === 'markpilot.note')
+      );
+      const props = ext!.packageJSON.contributes.configuration.properties;
+      const p = props['markpilot.provider'];
+      assert.ok(Array.isArray(p.enum), 'provider 应有 enum');
+      assert.equal(p.enum.length, 9, 'enum 应含 9 个平台');
+      for (const k of ['opencode', 'openai-compatible', 'ollama', 'openrouter', 'anthropic', 'deepseek', 'zhipu', 'moonshot', 'qwen']) {
+        assert.ok(p.enum.includes(k), 'enum 缺平台: ' + k);
+      }
+      assert.equal(p.enumDescriptions.length, 9, 'enumDescriptions 数量应与 enum 对齐');
+      assert.ok(p.enumDescriptions[0].includes('零配置'), 'opencode 应标注零配置');
+    });
+
+    it('settings-store：未配模型时读时回退到 provider 首个预设（非破坏性）', async () => {
+      const cfg = vscode.workspace.getConfiguration('markpilot');
+      const fakeSecrets: any = { get: async () => undefined, store: async () => {}, delete: async () => {} };
+      const store = makeSettingsStore(fakeSecrets);
+      const prevProvider = cfg.get('provider');
+      const prevModel = cfg.get('model');
+      try {
+        await cfg.update('provider', 'opencode', vscode.ConfigurationTarget.Global);
+        await cfg.update('model', '', vscode.ConfigurationTarget.Global);
+        const s1 = await store.getSettings();
+        assert.equal(s1.provider, 'opencode');
+        assert.equal(s1.model, (PROVIDERS as any).opencode.models[0], '空模型应回退首个预设');
+        // 显式配置优先，不被回退覆盖
+        await cfg.update('model', 'custom-model-x', vscode.ConfigurationTarget.Global);
+        const s2 = await store.getSettings();
+        assert.equal(s2.model, 'custom-model-x');
+        // 无预设模型的 provider 不回退
+        await cfg.update('provider', 'openai-compatible', vscode.ConfigurationTarget.Global);
+        await cfg.update('model', '', vscode.ConfigurationTarget.Global);
+        const s3 = await store.getSettings();
+        assert.equal(s3.model, '');
+        // 配置未被回退写脏（非破坏性验证）
+        assert.equal(cfg.get('model'), '');
+      } finally {
+        await cfg.update('provider', prevProvider, vscode.ConfigurationTarget.Global);
+        await cfg.update('model', prevModel, vscode.ConfigurationTarget.Global);
       }
     });
 

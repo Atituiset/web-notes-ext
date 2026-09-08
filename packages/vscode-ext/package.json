@@ -2,7 +2,7 @@
   "name": "@markpilot/vscode-ext",
   "displayName": "Markpilot — Code Notes to Obsidian & AI",
   "description": "Code notes & highlights synced to an Obsidian vault, BYOK LLM Q&A with long-term memory, and streaming selection translation.",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "publisher": "atituiset",
   "private": true,
   "license": "MIT",
@@ -14,6 +14,7 @@
   ],
   "main": "./dist/extension.js",
   "activationEvents": [
+    "onCommand:markpilot.setup",
     "onCommand:markpilot.note",
     "onCommand:markpilot.ask",
     "onCommand:markpilot.translate",
@@ -23,6 +24,11 @@
   ],
   "contributes": {
     "commands": [
+      {
+        "command": "markpilot.setup",
+        "title": "快速配置（平台 / API Key / 模型）",
+        "category": "Markpilot"
+      },
       {
         "command": "markpilot.note",
         "title": "Add Note on Selection",
@@ -92,7 +98,29 @@
         "markpilot.provider": {
           "type": "string",
           "default": "openai-compatible",
-          "description": "LLM provider：opencode / openai-compatible / ollama / openrouter / anthropic / deepseek / zhipu / moonshot / qwen"
+          "enum": [
+            "opencode",
+            "openai-compatible",
+            "ollama",
+            "openrouter",
+            "anthropic",
+            "deepseek",
+            "zhipu",
+            "moonshot",
+            "qwen"
+          ],
+          "enumDescriptions": [
+            "OpenCode 免费模型 (零配置)",
+            "OpenAI 兼容 (自定义 baseUrl)",
+            "Ollama 本地 (localhost:11434)",
+            "OpenRouter",
+            "Anthropic",
+            "DeepSeek 深度求索",
+            "智谱 GLM",
+            "月之暗面 Kimi",
+            "阿里通义千问 (兼容模式)"
+          ],
+          "description": "LLM 平台（与 Chrome 版同一套 PROVIDERS 预设；推荐用「Markpilot: 快速配置」向导）"
         },
         "markpilot.model": {
           "type": "string",

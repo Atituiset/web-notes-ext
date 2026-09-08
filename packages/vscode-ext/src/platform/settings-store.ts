@@ -48,6 +48,11 @@ export function makeSettingsStore(secrets: vscode.SecretStorage): SettingsStore 
         const key = await secrets.get(SECRET_KEY(p));
         if (key) s.apiKeys[p] = key;
       }
+      // 未显式配模型且 provider 有预设模型：读时回退到第一个预设（非破坏性，不写配置）
+      if (!s.model) {
+        const preset = (PROVIDERS as Record<string, any>)[s.provider]?.models;
+        if (preset && preset.length) s.model = preset[0];
+      }
       return s;
     },
     async saveSettings(patch) {
