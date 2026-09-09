@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "Type to filter, or click \"Fetch models\""
   },
+  "labelAuxModel": {
+    "message": "Auxiliary model (optional)"
+  },
+  "auxModelPh": {
+    "message": "Empty = same as main model"
+  },
+  "auxModelHint": {
+    "message": "Background tasks (memory compression, translation, user profile) use the auxiliary model; panel Q&A always uses the main model."
+  },
+  "auxModelEmpty": {
+    "message": "No auxiliary model set — background tasks use the main model"
+  },
   "btnModels": {
     "message": "Fetch models"
   },

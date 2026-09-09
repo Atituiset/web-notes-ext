@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "Tapez pour filtrer, ou cliquez sur « Récupérer les modèles »"
   },
+  "labelAuxModel": {
+    "message": "Modèle auxiliaire (facultatif)"
+  },
+  "auxModelPh": {
+    "message": "Vide = identique au modèle principal"
+  },
+  "auxModelHint": {
+    "message": "Les tâches en arrière-plan (compression de la mémoire, traduction, profil utilisateur) utilisent le modèle auxiliaire ; le panneau de Q&R utilise toujours le modèle principal."
+  },
+  "auxModelEmpty": {
+    "message": "Aucun modèle auxiliaire — les tâches en arrière-plan utilisent le modèle principal"
+  },
   "btnModels": {
     "message": "Récupérer les modèles"
   },

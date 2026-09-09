@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "入力して絞り込むか、「モデルを取得」をクリック"
   },
+  "labelAuxModel": {
+    "message": "補助モデル（任意）"
+  },
+  "auxModelPh": {
+    "message": "空欄 = 主モデルと同じ"
+  },
+  "auxModelHint": {
+    "message": "記憶の圧縮・翻訳・ユーザー画像などのバックグラウンド処理に補助モデルを使用します。パネルの質問応答は常に主モデルを使用します。"
+  },
+  "auxModelEmpty": {
+    "message": "補助モデル未設定 — バックグラウンド処理は主モデルを使用します"
+  },
   "btnModels": {
     "message": "モデルを取得"
   },

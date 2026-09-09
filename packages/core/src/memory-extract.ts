@@ -5,7 +5,7 @@
  * 本模块负责 LLM 压缩、忽略规则、tag 推断。
  */
 
-import { streamChat } from './llm/index.js';
+import { streamChat, laneSettings } from './llm/index.js';
 import { saveMemoryDedup } from './memory.js';
 import { BUDGET } from './chat-pipeline.js';
 
@@ -36,7 +36,7 @@ export function guessTags(text: string): string[] {
 export async function compressQA(settings, question: string, answer: string): Promise<string | null> {
   if (shouldIgnore(question, answer)) return null;
   const { text } = await streamChat({
-    settings,
+    settings: laneSettings(settings, 'aux'),
     messages: [
       { role: 'system', content: COMPRESS_SYSTEM },
       { role: 'user', content: `Q: ${question}\n\nA: ${answer.slice(0, BUDGET.compressAnswerMaxChars)}` },

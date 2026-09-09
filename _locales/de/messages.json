@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "Zum Filtern tippen oder auf „Modelle abrufen“ klicken"
   },
+  "labelAuxModel": {
+    "message": "Hilfsmodell (optional)"
+  },
+  "auxModelPh": {
+    "message": "Leer = wie Hauptmodell"
+  },
+  "auxModelHint": {
+    "message": "Hintergrundaufgaben (Gedächtniskomprimierung, Übersetzung, Nutzerprofil) nutzen das Hilfsmodell; Panel-Fragen immer das Hauptmodell."
+  },
+  "auxModelEmpty": {
+    "message": "Kein Hilfsmodell gesetzt — Hintergrundaufgaben nutzen das Hauptmodell"
+  },
   "btnModels": {
     "message": "Modelle abrufen"
   },

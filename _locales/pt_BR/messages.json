@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "Digite para filtrar ou clique em \"Buscar modelos\""
   },
+  "labelAuxModel": {
+    "message": "Modelo auxiliar (opcional)"
+  },
+  "auxModelPh": {
+    "message": "Vazio = igual ao modelo principal"
+  },
+  "auxModelHint": {
+    "message": "Tarefas em segundo plano (compressão de memória, tradução, perfil do usuário) usam o modelo auxiliar; o painel de perguntas sempre usa o modelo principal."
+  },
+  "auxModelEmpty": {
+    "message": "Sem modelo auxiliar — tarefas em segundo plano usam o modelo principal"
+  },
   "btnModels": {
     "message": "Buscar modelos"
   },

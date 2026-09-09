@@ -5,7 +5,7 @@
  * SW 只保留消息管线与保活心跳，prompt 组装与 LLM 调用在本模块。
  */
 
-import { streamChat } from './llm/index.js';
+import { streamChat, laneSettings } from './llm/index.js';
 
 /** 语言 tag 的本地化名（zh-CN → 中文）；未知语言码直接用码本身，模型同样认 */
 export function languageName(langTag: string): string {
@@ -39,7 +39,7 @@ export async function runTranslate(opts: {
   onToken?: (tok: string) => void;
 }): Promise<{ text: string }> {
   const { text } = await streamChat({
-    settings: opts.settings,
+    settings: laneSettings(opts.settings, 'aux'),
     messages: buildTranslateMessages(opts.text, opts.langTag),
     signal: opts.signal,
     onToken: opts.onToken,

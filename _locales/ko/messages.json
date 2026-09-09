@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "입력해 필터링하거나 \"모델 가져오기\" 클릭"
   },
+  "labelAuxModel": {
+    "message": "보조 모델 (선택 사항)"
+  },
+  "auxModelPh": {
+    "message": "비워 두면 주 모델과 동일"
+  },
+  "auxModelHint": {
+    "message": "메모리 압축, 번역, 사용자 프로필 같은 백그라운드 작업에 보조 모델을 사용합니다. 패널 Q&A는 항상 주 모델을 사용합니다."
+  },
+  "auxModelEmpty": {
+    "message": "보조 모델 없음 — 백그라운드 작업은 주 모델을 사용합니다"
+  },
   "btnModels": {
     "message": "모델 가져오기"
   },

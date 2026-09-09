@@ -15,7 +15,7 @@
 import { listMemories, MEM_DIR } from './memory.js';
 import { vaultFS, settingsStore, type VaultFS } from './ports.js';
 import { parseFrontmatter } from './markdown.js';
-import { streamChat } from './llm/index.js';
+import { streamChat, laneSettings } from './llm/index.js';
 
 export const PROFILE_FILE = '_profile.md';
 
@@ -74,7 +74,7 @@ export async function generateProfile(settings: any): Promise<{ file: string; me
   }
 
   const { text } = await streamChat({
-    settings,
+    settings: laneSettings(settings, 'aux'),
     messages: [
       { role: 'system', content: PROFILE_SYSTEM },
       { role: 'user', content: buildProfilePrompt(packed) },

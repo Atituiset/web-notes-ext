@@ -241,6 +241,7 @@ export async function getSettings() {
   const defaults = {
     provider: 'openai-compatible',
     model: '',
+    auxModel: '', // 辅助模型：记忆压缩/翻译/画像等后台任务用；留空 = 与主模型相同
     apiKeys: {},
     baseUrl: '', // 留空 = 用 provider 预设端点；仅 openai-compatible 需手填
     vaultDirTemplate: 'Clippings',

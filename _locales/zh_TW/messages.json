@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "輸入以篩選，或點擊「取得模型」"
   },
+  "labelAuxModel": {
+    "message": "輔助模型（可選）"
+  },
+  "auxModelPh": {
+    "message": "留空 = 與主模型相同"
+  },
+  "auxModelHint": {
+    "message": "記憶壓縮、翻譯、使用者畫像等背景任務使用輔助模型；面板問答始終用主模型。"
+  },
+  "auxModelEmpty": {
+    "message": "未設定輔助模型，背景任務將與主模型相同"
+  },
   "btnModels": {
     "message": "取得模型"
   },

@@ -32,6 +32,7 @@ async function load() {
   if (!$('provider').value) $('provider').value = 'openai-compatible';
   $('baseUrl').value = s.baseUrl || '';
   $('model').value = s.model || '';
+  $('auxModel').value = s.auxModel || '';
   $('apiKey').value = (s.apiKeys && s.apiKeys[s.provider]) || '';
   $('vaultDirTemplate').value = s.vaultDirTemplate || 'Clippings';
   $('exportAiQA').checked = !!s.exportAiQA;
@@ -150,10 +151,16 @@ function matchModel(query, m) {
   return fuzzyMatch(query, m.id) || (alias ? fuzzyMatch(query, alias) : false);
 }
 
-function renderModelDropdown() {
+// 下拉当前附着的目标输入框：主模型或辅助模型（共用同一份 allModels 列表）
+let ddTarget: 'main' | 'aux' = 'main';
+const ddInput = () => $(ddTarget === 'aux' ? 'auxModel' : 'model');
+const ddEl = () => $(ddTarget === 'aux' ? 'aux-model-dropdown' : 'model-dropdown');
+
+function renderModelDropdown(target?: 'main' | 'aux') {
   clearTimeout(hideDdTimer); // 取消 blur 调度的隐藏（快速端点竞态）
-  const dd = $('model-dropdown');
-  const query = $('model').value.trim();
+  if (target) ddTarget = target;
+  const dd = ddEl();
+  const query = ddInput().value.trim();
   dd.textContent = '';
   let list = sortModels(allModels);
   if (query) list = list.filter((m) => matchModel(query, m));
@@ -179,9 +186,9 @@ function renderModelDropdown() {
     o.addEventListener('mousedown', (e) => {
       // mousedown 抢在 blur 前选中
       e.preventDefault();
-      $('model').value = m.id;
+      ddInput().value = m.id;
       hideModelDropdown();
-      testModel(); // 选中即测，坏模型提前暴露
+      if (ddTarget === 'aux') testAuxModel(); else testModel(); // 选中即测，坏模型提前暴露
     });
     dd.appendChild(o);
   }
@@ -190,6 +197,7 @@ function renderModelDropdown() {
 
 function hideModelDropdown() {
   $('model-dropdown').style.display = 'none';
+  $('aux-model-dropdown').style.display = 'none';
 }
 
 function fillModelList(models) {
@@ -200,9 +208,14 @@ function fillModelList(models) {
 // render 后 120ms 的 hide 才把下拉误隐藏 —— render 时取消 pending hide
 let hideDdTimer: any = null;
 
-$('model').addEventListener('focus', () => { if (allModels.length) renderModelDropdown(); });
-$('model').addEventListener('input', () => { if (allModels.length) renderModelDropdown(); });
+$('model').addEventListener('focus', () => { if (allModels.length) renderModelDropdown('main'); });
+$('model').addEventListener('input', () => { if (allModels.length) renderModelDropdown('main'); });
 $('model').addEventListener('blur', () => {
+  hideDdTimer = setTimeout(hideModelDropdown, 120);
+});
+$('auxModel').addEventListener('focus', () => { if (allModels.length) renderModelDropdown('aux'); });
+$('auxModel').addEventListener('input', () => { if (allModels.length) renderModelDropdown('aux'); });
+$('auxModel').addEventListener('blur', () => {
   hideDdTimer = setTimeout(hideModelDropdown, 120);
 });
 
@@ -304,7 +317,7 @@ $('btn-models').addEventListener('click', async () => {
     void enrichAliases();
     // 拉取后立即展示下拉（聚焦输入框），方便直接换模型
     if (models.length) {
-      renderModelDropdown();
+      renderModelDropdown('main');
       $('model').focus();
     }
   } catch (e: any) {
@@ -317,12 +330,9 @@ $('btn-models').addEventListener('click', async () => {
 
 let testing = false;
 
-/** 用表单当前值发一条真实请求验证模型可用性（选中模型后自动调用，也可点「测试」手动触发） */
-async function testModel() {
+/** 用表单当前值发一条真实请求验证模型可用性（主/辅助模型共用；状态写到各自 status 元素） */
+async function runModelTest(model: string, status: any) {
   if (testing) return;
-  const status = $('model-test-status');
-  const model = $('model').value.trim();
-  if (!model) { status.textContent = ''; return; }
   const provider = $('provider').value;
   testing = true;
   status.style.color = '#6b7280';
@@ -365,7 +375,28 @@ async function testModel() {
   }
 }
 
+/** 选中主模型后自动调用，也可点「测试」手动触发 */
+async function testModel() {
+  const status = $('model-test-status');
+  const model = $('model').value.trim();
+  if (!model) { status.textContent = ''; return; }
+  await runModelTest(model, status);
+}
+
+/** 辅助模型（可选）：留空表示与主模型相同，不测 */
+async function testAuxModel() {
+  const status = $('aux-test-status');
+  const model = $('auxModel').value.trim();
+  if (!model) {
+    status.style.color = '#6b7280';
+    status.textContent = t('auxModelEmpty');
+    return;
+  }
+  await runModelTest(model, status);
+}
+
 $('btn-test').addEventListener('click', testModel);
+$('btn-test-aux').addEventListener('click', testAuxModel);
 
 // ---------- 语义召回通道验证 ----------
 
@@ -443,6 +474,7 @@ $('btn-save').addEventListener('click', async () => {
     provider: $('provider').value,
     baseUrl: $('baseUrl').value.trim(),
     model: $('model').value.trim(),
+    auxModel: $('auxModel').value.trim(),
     apiKeys,
     vaultDirTemplate: $('vaultDirTemplate').value.trim() || 'Clippings',
     exportAiQA: $('exportAiQA').checked,

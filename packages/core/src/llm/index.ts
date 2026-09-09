@@ -166,6 +166,15 @@ async function consumeSSE(response, onData) {
   }
 }
 
+/**
+ * 车道解析：'aux'（记忆压缩/翻译/画像等后台任务）配置了辅助模型时换用 auxModel，
+ * 其余（含未配置）原样返回 settings —— 面板问答等主车道行为不变。
+ */
+export function laneSettings(settings: any, lane: 'main' | 'aux') {
+  if (lane === 'aux' && settings && settings.auxModel) return { ...settings, model: settings.auxModel };
+  return settings;
+}
+
 export async function streamChat({ settings, messages, signal, onToken, onReasoning }: {
   settings: any;
   messages: { role: string; content: string }[];

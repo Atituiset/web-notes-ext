@@ -238,6 +238,18 @@
   "modelPh": {
     "message": "手填、输入过滤，或点「获取模型」"
   },
+  "labelAuxModel": {
+    "message": "辅助模型（可选）"
+  },
+  "auxModelPh": {
+    "message": "留空 = 与主模型相同"
+  },
+  "auxModelHint": {
+    "message": "记忆压缩、翻译、用户画像等后台任务使用辅助模型；面板问答始终用主模型。"
+  },
+  "auxModelEmpty": {
+    "message": "未配置辅助模型，后台任务将与主模型相同"
+  },
   "btnModels": {
     "message": "获取模型"
   },
