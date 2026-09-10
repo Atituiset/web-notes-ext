@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "Chave de API (armazenada apenas no IndexedDB local, nunca enviada)"
   },
+  "apiKeySignupLink": {
+    "message": "Obter uma chave de API →"
+  },
   "apiKeyPh": {
     "message": "Não é necessária para modelos locais"
   },

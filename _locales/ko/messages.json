@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API 키 (로컬 IndexedDB에만 저장, 업로드되지 않음)"
   },
+  "apiKeySignupLink": {
+    "message": "API 키 발급 →"
+  },
   "apiKeyPh": {
     "message": "로컬 모델은 필요 없음"
   },

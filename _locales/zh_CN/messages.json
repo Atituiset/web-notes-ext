@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API Key（仅存本机 IndexedDB，不上传）"
   },
+  "apiKeySignupLink": {
+    "message": "获取 API Key →"
+  },
   "apiKeyPh": {
     "message": "本地模型无需填写"
   },

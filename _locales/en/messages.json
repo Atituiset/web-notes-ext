@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API Key (stored only in local IndexedDB, never uploaded)"
   },
+  "apiKeySignupLink": {
+    "message": "Get an API key →"
+  },
   "apiKeyPh": {
     "message": "Not needed for local models"
   },

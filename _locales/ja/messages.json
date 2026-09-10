@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API キー（ローカルの IndexedDB にのみ保存、アップロードされません）"
   },
+  "apiKeySignupLink": {
+    "message": "API キーを取得 →"
+  },
   "apiKeyPh": {
     "message": "ローカルモデルでは不要"
   },

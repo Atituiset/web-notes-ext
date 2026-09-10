@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API-ключ (хранится только в локальном IndexedDB, никогда не отправляется)"
   },
+  "apiKeySignupLink": {
+    "message": "Получить API-ключ →"
+  },
   "apiKeyPh": {
     "message": "Для локальных моделей не нужен"
   },

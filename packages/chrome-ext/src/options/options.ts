@@ -25,11 +25,20 @@ function fillProviders() {
   }
 }
 
+/** 「获取 API Key」链接：provider 有 signupUrl 时显示，指向其控制台 */
+function refreshApiKeyLink() {
+  const link = $('apiKeyLink');
+  const url = PROVIDERS[$('provider').value] && PROVIDERS[$('provider').value].signupUrl;
+  link.style.display = url ? 'inline' : 'none';
+  if (url) link.href = url;
+}
+
 async function load() {
   fillProviders();
   const s = await getSettings();
   $('provider').value = s.provider;
   if (!$('provider').value) $('provider').value = 'openai-compatible';
+  refreshApiKeyLink();
   $('baseUrl').value = s.baseUrl || '';
   $('model').value = s.model || '';
   $('auxModel').value = s.auxModel || '';
@@ -261,6 +270,7 @@ $('provider').addEventListener('change', async () => {
   const s = await getSettings();
   const p = $('provider').value;
   $('apiKey').value = (s.apiKeys && s.apiKeys[p]) || '';
+  refreshApiKeyLink();
   const preset = PROVIDERS[p];
   $('model-status').textContent = '';
   // 预设模型先垫上；baseUrl 显示预设提示

@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API Key（僅存於本機 IndexedDB，絕不上傳）"
   },
+  "apiKeySignupLink": {
+    "message": "取得 API Key →"
+  },
   "apiKeyPh": {
     "message": "本機模型無需填寫"
   },

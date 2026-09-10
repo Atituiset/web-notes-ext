@@ -262,6 +262,9 @@
   "labelApiKey": {
     "message": "API-Schlüssel (wird nur lokal in IndexedDB gespeichert, nie hochgeladen)"
   },
+  "apiKeySignupLink": {
+    "message": "API-Schlüssel holen →"
+  },
   "apiKeyPh": {
     "message": "Für lokale Modelle nicht nötig"
   },
