@@ -6,6 +6,12 @@
   "publisher": "atituiset",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Atituiset/web-notes-ext.git",
+    "directory": "packages/vscode-ext"
+  },
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -177,6 +183,7 @@
     "compile": "node build.mjs && tsc --noEmit -p tsconfig.json",
     "watch": "node build.mjs --watch",
     "package": "node scripts/vsix.mjs",
+    "publish:market": "node scripts/publish.mjs",
     "test:vscode": "node scripts/test.mjs"
   },
   "devDependencies": {
