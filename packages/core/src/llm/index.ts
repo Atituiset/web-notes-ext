@@ -19,7 +19,7 @@ export const PROVIDERS = {
   ollama: { label: 'Ollama 本地 (localhost:11434)', needsKey: false, presetBase: 'http://localhost:11434/v1' },
   openrouter: { label: 'OpenRouter', needsKey: true, presetBase: 'https://openrouter.ai/api/v1', signupUrl: 'https://openrouter.ai/settings/keys' },
   anthropic: { label: 'Anthropic', needsKey: true, signupUrl: 'https://console.anthropic.com/settings/keys' },
-  deepseek: { label: 'DeepSeek 深度求索', needsKey: true, presetBase: 'https://api.deepseek.com/v1', models: ['deepseek-chat', 'deepseek-reasoner'], signupUrl: 'https://platform.deepseek.com/api_keys' },
+  deepseek: { label: 'DeepSeek 深度求索', needsKey: true, presetBase: 'https://api.deepseek.com/v1', models: ['deepseek-flash', 'deepseek-v4-pro'], signupUrl: 'https://platform.deepseek.com/api_keys' },
   zhipu: { label: '智谱 GLM', needsKey: true, presetBase: 'https://open.bigmodel.cn/api/paas/v4', models: ['glm-4-plus', 'glm-4-air', 'glm-4-flash', 'glm-4-flashx'], signupUrl: 'https://open.bigmodel.cn/usercenter/proj-mgmt/apikeys' },
   moonshot: { label: '月之暗面 Kimi', needsKey: true, presetBase: 'https://api.moonshot.cn/v1', models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'], signupUrl: 'https://platform.moonshot.cn/console/api-keys' },
   qwen: { label: '阿里通义千问 (兼容模式)', needsKey: true, presetBase: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: ['qwen-plus', 'qwen-turbo', 'qwen-max'], signupUrl: 'https://bailian.console.aliyun.com/#/api-key' },

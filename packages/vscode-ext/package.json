@@ -2,7 +2,7 @@
   "name": "@markpilot/vscode-ext",
   "displayName": "Markpilot — Code Notes to Obsidian & AI",
   "description": "Code notes & highlights synced to an Obsidian vault, BYOK LLM Q&A with long-term memory, and streaming selection translation.",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "publisher": "atituiset",
   "private": true,
   "license": "MIT",
@@ -145,7 +145,7 @@
         "markpilot.model": {
           "type": "string",
           "default": "",
-          "description": "模型 ID（如 deepseek-chat、glm-4-flash）"
+          "description": "模型 ID（如 deepseek-flash、glm-4-flash）"
         },
         "markpilot.baseUrl": {
           "type": "string",

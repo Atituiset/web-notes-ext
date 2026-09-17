@@ -225,7 +225,7 @@ function defineTests(): void {
         assert.deepStrictEqual(
           m.models.map((x: any) => x.id).sort(),
           MOCK_MODELS.map((x) => x.id).sort(),
-          '应返回 mock 在线列表而非预设 deepseek-chat/reasoner'
+          '应返回 mock 在线列表而非预设 deepseek-flash/v4-pro'
         );
 
         mockModelsMode = '401';

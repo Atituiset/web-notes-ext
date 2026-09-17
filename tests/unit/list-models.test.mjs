@@ -19,7 +19,7 @@ test('listModels: fetch 失败且有预设 → 默认回退预设列表（兼容
   const models = await listModels({ provider: 'deepseek', apiKeys: { deepseek: 'k' } });
   assert.deepStrictEqual(
     models.map((m) => m.id),
-    ['deepseek-chat', 'deepseek-reasoner']
+    ['deepseek-flash', 'deepseek-v4-pro']
   );
 });
 
