@@ -549,5 +549,29 @@
   },
   "backupImportFailed": {
     "message": "Ошибка импорта: $1"
+  },
+  "tplSummaryLabel": {
+    "message": "Краткое содержание страницы"
+  },
+  "tplSummaryPrompt": {
+    "message": "Кратко изложи основные моменты этой страницы списком:"
+  },
+  "tplExplainLabel": {
+    "message": "Объяснить смысл и контекст"
+  },
+  "tplExplainPrompt": {
+    "message": "Понятно объясни следующее, включая смысл и контекст:"
+  },
+  "tplTranslateLabel": {
+    "message": "Перевести на русский"
+  },
+  "tplTranslatePrompt": {
+    "message": "Переведи следующее на русский язык, сохранив смысл и форматирование:"
+  },
+  "tplKeypointsLabel": {
+    "message": "Извлечь ключевое и задачи"
+  },
+  "tplKeypointsPrompt": {
+    "message": "Извлеки ключевую информацию и практические действия из следующего:"
   }
 }

@@ -551,5 +551,29 @@
   },
   "backupImportFailed": {
     "message": "가져오기 실패: $1"
+  },
+  "tplSummaryLabel": {
+    "message": "페이지 요약"
+  },
+  "tplSummaryPrompt": {
+    "message": "이 페이지의 핵심 내용을 글머리 기호 목록으로 요약해 주세요:"
+  },
+  "tplExplainLabel": {
+    "message": "의미와 맥락 설명"
+  },
+  "tplExplainPrompt": {
+    "message": "다음 내용의 의미와 배경을 알기 쉽게 설명해 주세요:"
+  },
+  "tplTranslateLabel": {
+    "message": "한국어로 번역"
+  },
+  "tplTranslatePrompt": {
+    "message": "다음 내용을 한국어로 번역해 주세요(의미와 형식 유지):"
+  },
+  "tplKeypointsLabel": {
+    "message": "핵심 정보와 실행 항목 추출"
+  },
+  "tplKeypointsPrompt": {
+    "message": "다음 내용에서 핵심 정보와 실행 가능한 항목을 추출해 주세요:"
   }
 }

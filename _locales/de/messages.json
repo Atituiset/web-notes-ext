@@ -549,5 +549,29 @@
   },
   "backupImportFailed": {
     "message": "Import fehlgeschlagen: $1"
+  },
+  "tplSummaryLabel": {
+    "message": "Seite zusammenfassen"
+  },
+  "tplSummaryPrompt": {
+    "message": "Fasse die Kernaussagen dieser Seite als Stichpunkte zusammen:"
+  },
+  "tplExplainLabel": {
+    "message": "Bedeutung & Kontext erklären"
+  },
+  "tplExplainPrompt": {
+    "message": "Erkläre den folgenden Inhalt verständlich, inklusive Bedeutung und Kontext:"
+  },
+  "tplTranslateLabel": {
+    "message": "Ins Deutsche übersetzen"
+  },
+  "tplTranslatePrompt": {
+    "message": "Übersetze den folgenden Inhalt ins Deutsche, Sinn und Formatierung beibehalten:"
+  },
+  "tplKeypointsLabel": {
+    "message": "Kerninfos & Aufgaben extrahieren"
+  },
+  "tplKeypointsPrompt": {
+    "message": "Extrahiere die wichtigsten Informationen und umsetzbaren Punkte aus dem Folgenden:"
   }
 }

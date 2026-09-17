@@ -549,5 +549,29 @@
   },
   "backupImportFailed": {
     "message": "Échec de l'import : $1"
+  },
+  "tplSummaryLabel": {
+    "message": "Résumer la page"
+  },
+  "tplSummaryPrompt": {
+    "message": "Résume les points essentiels de cette page sous forme de liste :"
+  },
+  "tplExplainLabel": {
+    "message": "Expliquer le sens et le contexte"
+  },
+  "tplExplainPrompt": {
+    "message": "Explique clairement le contenu suivant, y compris son sens et son contexte :"
+  },
+  "tplTranslateLabel": {
+    "message": "Traduire en français"
+  },
+  "tplTranslatePrompt": {
+    "message": "Traduis le texte suivant en français, en conservant le sens et la mise en forme :"
+  },
+  "tplKeypointsLabel": {
+    "message": "Extraire infos clés et actions"
+  },
+  "tplKeypointsPrompt": {
+    "message": "Extrais les informations essentielles et les actions concrètes du contenu suivant :"
   }
 }

@@ -551,5 +551,29 @@
   },
   "backupImportFailed": {
     "message": "匯入失敗：$1"
+  },
+  "tplSummaryLabel": {
+    "message": "總結頁面要點"
+  },
+  "tplSummaryPrompt": {
+    "message": "請總結這個頁面的核心內容，分點列出要點："
+  },
+  "tplExplainLabel": {
+    "message": "解釋含義與背景"
+  },
+  "tplExplainPrompt": {
+    "message": "請解釋以下內容的含義與相關背景，通俗易懂："
+  },
+  "tplTranslateLabel": {
+    "message": "翻譯為繁體中文"
+  },
+  "tplTranslatePrompt": {
+    "message": "請將以下內容翻譯成繁體中文，保持原意與格式："
+  },
+  "tplKeypointsLabel": {
+    "message": "提取關鍵資訊與行動項"
+  },
+  "tplKeypointsPrompt": {
+    "message": "請從以下內容中提取關鍵資訊與可執行的行動項："
   }
 }

@@ -549,5 +549,29 @@
   },
   "backupImportFailed": {
     "message": "Import failed: $1"
+  },
+  "tplSummaryLabel": {
+    "message": "Summarize page key points"
+  },
+  "tplSummaryPrompt": {
+    "message": "Summarize the key points of this page as a bulleted list:"
+  },
+  "tplExplainLabel": {
+    "message": "Explain meaning & context"
+  },
+  "tplExplainPrompt": {
+    "message": "Explain the following content clearly, including its meaning and context:"
+  },
+  "tplTranslateLabel": {
+    "message": "Translate to English"
+  },
+  "tplTranslatePrompt": {
+    "message": "Translate the following into English, preserving meaning and formatting:"
+  },
+  "tplKeypointsLabel": {
+    "message": "Extract key info & action items"
+  },
+  "tplKeypointsPrompt": {
+    "message": "Extract key takeaways and actionable items from the following:"
   }
 }

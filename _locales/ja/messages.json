@@ -549,5 +549,29 @@
   },
   "backupImportFailed": {
     "message": "インポートに失敗しました: $1"
+  },
+  "tplSummaryLabel": {
+    "message": "ページを要約"
+  },
+  "tplSummaryPrompt": {
+    "message": "このページの主要内容を箇条書きで要約してください："
+  },
+  "tplExplainLabel": {
+    "message": "意味と背景を説明"
+  },
+  "tplExplainPrompt": {
+    "message": "以下の内容の意味と背景をわかりやすく説明してください："
+  },
+  "tplTranslateLabel": {
+    "message": "日本語に翻訳"
+  },
+  "tplTranslatePrompt": {
+    "message": "以下の内容を日本語に翻訳してください（意味と書式は保持）："
+  },
+  "tplKeypointsLabel": {
+    "message": "要点とアクションを抽出"
+  },
+  "tplKeypointsPrompt": {
+    "message": "以下の内容から重要な情報と実行可能なアクション項目を抽出してください："
   }
 }

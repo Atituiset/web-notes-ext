@@ -346,6 +346,55 @@ function redrawThread() {
   scrollBottom();
 }
 
+// ---------- prompt 模板（/ 呼出；气泡/线程存原文，仅发给模型的 question 展开）----------
+
+const TPLS = [
+  { cmd: 'summary', labelKey: 'tplSummaryLabel', promptKey: 'tplSummaryPrompt' },
+  { cmd: 'explain', labelKey: 'tplExplainLabel', promptKey: 'tplExplainPrompt' },
+  { cmd: 'translate', labelKey: 'tplTranslateLabel', promptKey: 'tplTranslatePrompt' },
+  { cmd: 'keypoints', labelKey: 'tplKeypointsLabel', promptKey: 'tplKeypointsPrompt' },
+];
+let tplIdx = -1;
+
+function tplMatches() {
+  const v = $('chat-q').value;
+  if (v.charAt(0) !== '/') return [];
+  const frag = v.slice(1).toLowerCase();
+  if (frag.indexOf(' ') >= 0 || frag.indexOf('\n') >= 0) return []; // 命令后已带参数，不再弹
+  return TPLS.filter((tp) => tp.cmd.indexOf(frag) === 0);
+}
+function hideTpls() { $('tpl-box').style.display = 'none'; tplIdx = -1; }
+function renderTpls() {
+  const box = $('tpl-box');
+  const list = tplMatches();
+  if (!list.length) { hideTpls(); return; }
+  box.textContent = '';
+  list.forEach((tp, i) => {
+    const d = el('div', 'tpl' + (i === tplIdx ? ' sel' : ''));
+    d.appendChild(el('b', '', '/' + tp.cmd));
+    d.appendChild(document.createTextNode(t(tp.labelKey)));
+    d.addEventListener('click', () => pickTpl(tp));
+    box.appendChild(d);
+  });
+  box.style.display = 'block';
+}
+function pickTpl(tp) {
+  $('chat-q').value = '/' + tp.cmd + ' ';
+  hideTpls();
+  $('chat-q').focus();
+}
+function expandTpl(text: string): string {
+  for (const tp of TPLS) {
+    if (text === '/' + tp.cmd || text.indexOf('/' + tp.cmd + ' ') === 0) {
+      const rest = text.slice(tp.cmd.length + 1).trim();
+      return t(tp.promptKey) + (rest ? '\n\n' + rest : '');
+    }
+  }
+  return text;
+}
+
+$('chat-q').addEventListener('input', renderTpls);
+
 // ---------- 发送 / 停止（单 handler 状态机，无 listener 增删竞态）----------
 
 let streaming = false;
@@ -367,6 +416,22 @@ $('btn-send').addEventListener('click', () => {
   askLLMWith($('chat-q').value.trim(), $('chat-scope').value);
 });
 $('chat-q').addEventListener('keydown', (e) => {
+  const box = $('tpl-box');
+  if (box.style.display === 'block') {
+    const n = box.children.length;
+    if (e.key === 'ArrowDown') { tplIdx = (tplIdx + 1) % n; renderTpls(); e.preventDefault(); return; }
+    if (e.key === 'ArrowUp') { tplIdx = (tplIdx - 1 + n) % n; renderTpls(); e.preventDefault(); return; }
+    if (e.key === 'Escape') { hideTpls(); e.preventDefault(); return; }
+    if (e.key === 'Tab') {
+      const m = tplMatches();
+      if (m.length) pickTpl(m[Math.max(tplIdx, 0)]);
+      e.preventDefault(); return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && tplIdx >= 0) {
+      const m = tplMatches();
+      if (m[tplIdx]) { pickTpl(m[tplIdx]); e.preventDefault(); return; }
+    }
+  }
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     if (streaming) return;
@@ -422,6 +487,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
     : null;
 
   qEl.value = '';
+  hideTpls();
   clearMainIfFirstChat();
   addMsg('user', question);
 
@@ -482,7 +548,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   let abortedByUser = false;
   try {
     const { messages } = await buildLlmMessages({
-      settings, question, pageText, notes, selection, history,
+      settings, question: expandTpl(question), pageText, notes, selection, history,
     });
     await runStream({
       settings, messages, signal: abortCtrl.signal,
