@@ -157,6 +157,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
         answer += tok;
         this.post({ type: 'token', tok });
       },
+      onReasoning: (tok) => this.post({ type: 'reasoningToken', tok }),
     });
     answer = r.text;
     this.history.push({ role: 'user', content: question }, { role: 'assistant', content: answer });
@@ -250,6 +251,9 @@ export function chatHtml(): string {
   #input { display: flex; gap: 6px; margin-top: 8px; }
   #q { flex: 1; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; padding: 4px 8px; }
   #bar { display: flex; gap: 6px; margin-top: 6px; }
+  .think { font-size: 12px; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
+  .think summary { cursor: pointer; user-select: none; }
+  .think .t-body { white-space: pre-wrap; word-break: break-word; border-left: 2px solid var(--vscode-descriptionForeground); padding-left: 6px; opacity: .85; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -267,6 +271,8 @@ export function chatHtml(): string {
   const vs = acquireVsCodeApi();
   const log = document.getElementById('log');
   let cur = null; // 流式中的回答气泡
+  let thinkEl = null; // 流式中的思考块（<details>，回答开始时自动折叠）
+  let thinkBody = null;
   let translateDone = false;
 
   function add(who, cls) {
@@ -313,10 +319,34 @@ export function chatHtml(): string {
       }
       case 'start':
         cur = add('AI', '');
+        thinkEl = null;
+        thinkBody = null;
         translateDone = false;
         break;
+      case 'reasoningToken':
+        if (cur) {
+          if (!thinkEl) {
+            thinkEl = document.createElement('details');
+            thinkEl.className = 'think';
+            thinkEl.setAttribute('open', '');
+            const sm = document.createElement('summary');
+            sm.textContent = '思考过程';
+            thinkBody = document.createElement('div');
+            thinkBody.className = 't-body';
+            thinkEl.appendChild(sm);
+            thinkEl.appendChild(thinkBody);
+            cur.parentElement.insertBefore(thinkEl, cur);
+          }
+          thinkBody.textContent += m.tok;
+          log.scrollTop = log.scrollHeight;
+        }
+        break;
       case 'token':
-        if (cur) { cur.textContent += m.tok; log.scrollTop = log.scrollHeight; }
+        if (cur) {
+          if (thinkEl) thinkEl.removeAttribute('open'); // 正文开始，折叠思考
+          cur.textContent += m.tok;
+          log.scrollTop = log.scrollHeight;
+        }
         break;
       case 'done': {
         cur = null;
