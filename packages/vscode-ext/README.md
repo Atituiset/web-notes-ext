@@ -15,6 +15,7 @@ Code notes & highlights synced to an Obsidian vault, BYOK multi-provider LLM Q&A
 - **Export File Notes to Obsidian** — writes this file's notes to `<vaultPath>/Markpilot-Code/code-<file>.md` (idempotent, full-file rewrite matched by frontmatter source).
 - **Long-term memory** — Q&A is augmented with retrieval results from `<vaultPath>/Markpilot-Memory/` (same hybrid recall as the Chrome version); a `_profile.md` user profile, if present, is injected too.
 - **Bring Your Own Key** — 9 provider presets (OpenCode free models, OpenAI-compatible, Ollama, OpenRouter, Anthropic, DeepSeek, Zhipu GLM, Moonshot Kimi, Qwen). Keys are stored in VS Code SecretStorage, never in `settings.json`.
+- **Reasoning display & prompt templates** — thinking models (e.g. deepseek-flash) stream their reasoning into a collapsible block; type `/` in the chat input for preset prompts (`/explain`, `/review`, `/doc`, `/test`).
 
 ## Quick start
 

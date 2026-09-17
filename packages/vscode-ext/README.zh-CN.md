@@ -12,6 +12,7 @@
 - **Export File Notes to Obsidian** — 本文件笔记写入 `<vaultPath>/Markpilot-Code/code-<文件>.md`（幂等，frontmatter source 匹配整文件重写）
 - **长期记忆** — 问答时注入 `<vaultPath>/Markpilot-Memory/` 的检索结果（与 Chrome 版同一套混合召回）；用户画像 `_profile.md` 若存在同样注入
 - **BYOK** — 9 个平台预设（OpenCode 免费模型、OpenAI 兼容、Ollama、OpenRouter、Anthropic、DeepSeek、智谱 GLM、月之暗面 Kimi、通义千问）。密钥存 VS Code SecretStorage，不落 `settings.json`
+- **思考过程展示 & 提问模板** — 推理模型（如 deepseek-flash）的思考流式进可折叠块；聊天输入框敲 `/` 呼出预设模板（`/explain`、`/review`、`/doc`、`/test`)
 
 ## 快速上手
 

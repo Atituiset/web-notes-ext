@@ -249,6 +249,9 @@ export function chatHtml(): string {
   button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; border-radius: 3px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
   button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
   #input { display: flex; gap: 6px; margin-top: 8px; }
+  #tpls { display: none; margin-top: 6px; border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; overflow: hidden; }
+  .tpl { padding: 4px 8px; cursor: pointer; font-size: 12px; }
+  .tpl.sel { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
   #q { flex: 1; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; padding: 4px 8px; }
   #bar { display: flex; gap: 6px; margin-top: 6px; }
   .think { font-size: 12px; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
@@ -263,13 +266,16 @@ export function chatHtml(): string {
     <button class="secondary" id="btn-setup">快速配置</button>
     <button class="secondary" id="btn-export">导出本文件笔记</button>
   </div>
+  <div id="tpls"></div>
   <div id="input">
-    <input id="q" placeholder="问 AI…（选区/当前文件为上下文）">
+    <input id="q" placeholder="问 AI…（输入 / 呼出模板）">
     <button id="btn-send">发送</button>
   </div>
 <script nonce="${nonce}">
   const vs = acquireVsCodeApi();
   const log = document.getElementById('log');
+  const qEl = document.getElementById('q');
+  const tplBox = document.getElementById('tpls');
   let cur = null; // 流式中的回答气泡
   let thinkEl = null; // 流式中的思考块（<details>，回答开始时自动折叠）
   let thinkBody = null;
@@ -290,15 +296,76 @@ export function chatHtml(): string {
     return b;
   }
 
+  // prompt 模板：/ 开头呼出，发送时展开为完整提示词（气泡仍显示用户原文）
+  const TPLS = [
+    { cmd: 'explain', label: '/explain — 解释代码功能与意图', prompt: '请解释以下代码的功能与关键逻辑，并指出其设计意图：' },
+    { cmd: 'review', label: '/review — code review 找问题', prompt: '请以 code review 视角审查以下代码，指出潜在 bug、可维护性问题与改进建议：' },
+    { cmd: 'doc', label: '/doc — 生成文档注释', prompt: '请为以下代码生成简洁的文档注释（与代码语言匹配的 JSDoc/docstring 风格），并简要说明：' },
+    { cmd: 'test', label: '/test — 设计单元测试', prompt: '请为以下代码设计单元测试：列出测试用例（含边界情况）并给出关键实现：' }
+  ];
+  let tplIdx = -1;
+
+  function tplMatches() {
+    const v = qEl.value;
+    if (v.charAt(0) !== '/') return [];
+    const frag = v.slice(1).toLowerCase();
+    if (frag.indexOf(' ') >= 0) return []; // 命令后已带参数，不再弹
+    return TPLS.filter((t) => t.cmd.indexOf(frag) === 0);
+  }
+  function hideTpls() { tplBox.style.display = 'none'; tplIdx = -1; }
+  function renderTpls() {
+    const list = tplMatches();
+    if (!list.length) { hideTpls(); return; }
+    tplBox.textContent = '';
+    list.forEach((t, i) => {
+      const d = document.createElement('div');
+      d.className = 'tpl' + (i === tplIdx ? ' sel' : '');
+      d.textContent = t.label;
+      d.addEventListener('click', () => pickTpl(t));
+      tplBox.appendChild(d);
+    });
+    tplBox.style.display = 'block';
+  }
+  function pickTpl(t) {
+    qEl.value = '/' + t.cmd + ' ';
+    hideTpls();
+    qEl.focus();
+  }
+  function expandTpl(text) {
+    for (const t of TPLS) {
+      if (text === '/' + t.cmd || text.indexOf('/' + t.cmd + ' ') === 0) {
+        const rest = text.slice(t.cmd.length + 1).trim();
+        return t.prompt + (rest ? '\\n\\n补充要求：' + rest : '');
+      }
+    }
+    return text;
+  }
+
   function send() {
-    const q = document.getElementById('q');
-    if (!q.value.trim()) return;
-    add('你', '').textContent = q.value;
-    vs.postMessage({ type: 'ask', question: q.value });
-    q.value = '';
+    if (!qEl.value.trim()) return;
+    hideTpls();
+    add('你', '').textContent = qEl.value;
+    vs.postMessage({ type: 'ask', question: expandTpl(qEl.value) });
+    qEl.value = '';
   }
   document.getElementById('btn-send').addEventListener('click', send);
-  document.getElementById('q').addEventListener('keydown', (e) => {
+  qEl.addEventListener('input', renderTpls);
+  qEl.addEventListener('keydown', (e) => {
+    if (tplBox.style.display === 'block') {
+      const n = tplBox.children.length;
+      if (e.key === 'ArrowDown') { tplIdx = (tplIdx + 1) % n; renderTpls(); e.preventDefault(); return; }
+      if (e.key === 'ArrowUp') { tplIdx = (tplIdx - 1 + n) % n; renderTpls(); e.preventDefault(); return; }
+      if (e.key === 'Escape') { hideTpls(); e.preventDefault(); return; }
+      if (e.key === 'Tab') {
+        const m = tplMatches();
+        if (m.length) pickTpl(m[Math.max(tplIdx, 0)]);
+        e.preventDefault(); return;
+      }
+      if (e.key === 'Enter' && tplIdx >= 0) {
+        const m = tplMatches();
+        if (m[tplIdx]) { pickTpl(m[tplIdx]); e.preventDefault(); return; }
+      }
+    }
     if (e.key === 'Enter') send();
   });
   document.getElementById('btn-export').addEventListener('click', () => {
