@@ -186,6 +186,12 @@ export async function streamChat({ settings, messages, signal, onToken, onReason
   if (!model) throw new Error(i18n().msg('modelNotConfiguredError') || 'No model configured — set it in the settings page');
   const url = endpointFor(settings);
   const key = (settings.apiKeys && settings.apiKeys[settings.provider]) || '';
+  // needsKey 平台缺 key 时直接拦下：否则发出的无鉴权请求会被网关 401，
+  // 报错文本（如 DeepSeek 的 governor）会把用户引向错误方向
+  const meta = PROVIDERS[settings.provider];
+  if (meta && meta.needsKey && !key) {
+    throw new Error(`${meta.label || settings.provider} 需要 API Key — 请先在设置页选中该平台并保存 Key`);
+  }
   const headers = { 'Content-Type': 'application/json' };
   let body;
 

@@ -1,7 +1,10 @@
 // vsix 打包：vsce 不接受 npm scope 包名（@markpilot/vscode-ext），
 // 打包时临时改写 package.json 的 name，结束（含失败）后恢复原文。
+// 先重建 dist —— vsce 只打现有产物，不构建曾导致发布陈旧代码。
 import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+
+execSync('node build.mjs', { stdio: 'inherit' });
 
 const original = readFileSync('package.json', 'utf8');
 const pkg = JSON.parse(original);

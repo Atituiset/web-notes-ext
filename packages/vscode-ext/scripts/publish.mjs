@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const version = process.argv[2];
+execSync('node build.mjs', { stdio: 'inherit' });
 const original = readFileSync('package.json', 'utf8');
 const pkg = JSON.parse(original);
 pkg.name = 'markpilot-code';
