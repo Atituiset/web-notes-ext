@@ -4,8 +4,15 @@
 // vscode 由宿主提供必须 external；@xenova/transformers 懒加载（dynamic import），
 // 打包为可选外部依赖 —— 装不上时语义召回静默降级为词法单路。
 import * as esbuild from 'esbuild';
+import { copyFileSync, mkdirSync } from 'node:fs';
 
 const watch = process.argv.includes('--watch');
+
+// webview 侧资源（markdown 渲染器）：不经 bundle，原样拷进 dist 供 asWebviewUri 加载
+function copyWebviewAssets() {
+  mkdirSync('dist/webview', { recursive: true });
+  copyFileSync('src/webview/markdown-view.js', 'dist/webview/markdown-view.js');
+}
 
 const ctx = await esbuild.context({
   entryPoints: ['src/extension.ts'],
@@ -20,9 +27,11 @@ const ctx = await esbuild.context({
 });
 
 if (watch) {
+  copyWebviewAssets();
   await ctx.watch();
   console.log('watching...');
 } else {
   await ctx.rebuild();
+  copyWebviewAssets();
   await ctx.dispose();
 }

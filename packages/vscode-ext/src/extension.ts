@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   setupVsCodePlatform(context);
 
   const store = new NotesStore(context.globalState);
-  const chat = new ChatViewProvider(store);
+  const chat = new ChatViewProvider(store, context.extensionUri);
   context.subscriptions.push(
     // retainContextWhenHidden：侧栏隐藏时保留 webview（不重建），ready 握手状态不失效
     vscode.window.registerWebviewViewProvider('markpilot.chat', chat, {

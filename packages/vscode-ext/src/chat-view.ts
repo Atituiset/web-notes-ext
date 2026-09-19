@@ -34,13 +34,24 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   private ready = false;
   private outbox: any[] = [];
 
-  constructor(private store: NotesStore) {}
+  constructor(
+    private store: NotesStore,
+    private extensionUri: vscode.Uri
+  ) {}
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     this.ready = false; // （重）加载即重新武装握手
-    view.webview.options = { enableScripts: true };
-    view.webview.html = chatHtml();
+    view.webview.options = {
+      enableScripts: true,
+      localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview')],
+    };
+    view.webview.html = chatHtml({
+      scriptUri: view.webview
+        .asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'dist', 'webview', 'markdown-view.js'))
+        .toString(),
+      cspSource: view.webview.cspSource,
+    });
     view.webview.onDidReceiveMessage((msg) => {
       switch (msg && msg.type) {
         case 'ready':
@@ -230,13 +241,16 @@ export async function exportNotes(store: NotesStore): Promise<string> {
   return dirName + '/' + fileName;
 }
 
-export function chatHtml(): string {
+export function chatHtml(opts?: { scriptUri?: string; cspSource?: string }): string {
   const nonce = String(Date.now()) + String(Math.random()).slice(2, 8);
+  // markdown 渲染器走独立 webview 资源：内联脚本里写渲染正则要双重转义，极易炸（历史教训）
+  const mdScript = opts && opts.scriptUri ? '<script src="' + opts.scriptUri + '"></script>' : '';
+  const scriptSrc = "'nonce-" + nonce + "'" + (opts && opts.cspSource ? ' ' + opts.cspSource : '');
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src ${scriptSrc};">
 <style>
   body { font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 8px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
   #ctx { display: none; border-left: 3px solid var(--vscode-textLink-foreground); padding: 4px 8px; margin-bottom: 6px; color: var(--vscode-descriptionForeground); font-size: 12px; white-space: pre-wrap; word-break: break-all; }
@@ -257,12 +271,27 @@ export function chatHtml(): string {
   .think { font-size: 12px; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
   .think summary { cursor: pointer; user-select: none; }
   .think .t-body { white-space: pre-wrap; word-break: break-word; border-left: 2px solid var(--vscode-descriptionForeground); padding-left: 6px; opacity: .85; margin-top: 4px; }
+  /* AI 气泡的 markdown 渲染：正文正常排版，代码块保留空白 */
+  .msg.ai .body { white-space: normal; }
+  .msg.ai .body p { margin: 6px 0; }
+  .msg.ai .body h1, .msg.ai .body h2, .msg.ai .body h3, .msg.ai .body h4, .msg.ai .body h5 { margin: 8px 0 4px; font-size: 13px; }
+  .msg.ai .body ul, .msg.ai .body ol { margin: 4px 0; padding-left: 20px; }
+  .msg.ai .body a { color: var(--vscode-textLink-foreground); }
+  .msg.ai .body blockquote { border-left: 3px solid var(--vscode-descriptionForeground); margin: 6px 0; padding-left: 8px; opacity: .85; }
+  .msg.ai .body blockquote p { margin: 2px 0; }
+  .msg.ai .body code { background: var(--vscode-textCodeBlock-background, rgba(128,128,128,.15)); border-radius: 3px; padding: 0 3px; font-family: var(--vscode-editor-font-family, monospace); font-size: .92em; }
+  .msg.ai .body pre { position: relative; background: var(--vscode-textCodeBlock-background, rgba(128,128,128,.12)); border-radius: 4px; padding: 8px; margin: 6px 0; overflow-x: auto; }
+  .msg.ai .body pre code { background: none; padding: 0; white-space: pre; }
+  .msg.ai .body pre .lang-tag { position: absolute; top: 2px; right: 44px; font-size: 10px; opacity: .6; }
+  .msg.ai .body pre .copy-code { position: absolute; top: 2px; right: 4px; font-size: 10px; padding: 1px 6px; }
+  .msg.ai .body table { border-collapse: collapse; margin: 6px 0; font-size: 12px; }
+  .msg.ai .body th, .msg.ai .body td { border: 1px solid var(--vscode-input-border, rgba(128,128,128,.4)); padding: 3px 8px; }
+  .msg.ai .body hr { border: 0; border-top: 1px solid var(--vscode-input-border, rgba(128,128,128,.4)); margin: 8px 0; }
 </style>
 </head>
 <body>
   <div id="ctx"></div>
-  <div id="log"></div>
-  <div id="bar">
+  <div id="log"></div>  <div id="bar">
     <button class="secondary" id="btn-setup">快速配置</button>
     <button class="secondary" id="btn-export">导出本文件笔记</button>
   </div>
@@ -271,6 +300,7 @@ export function chatHtml(): string {
     <input id="q" placeholder="问 AI…（输入 / 呼出模板）">
     <button id="btn-send">发送</button>
   </div>
+${mdScript}
 <script nonce="${nonce}">
   const vs = acquireVsCodeApi();
   const log = document.getElementById('log');
@@ -280,6 +310,25 @@ export function chatHtml(): string {
   let thinkEl = null; // 流式中的思考块（<details>，回答开始时自动折叠）
   let thinkBody = null;
   let translateDone = false;
+  let curText = ''; // 当前气泡的 markdown 原文（渲染基于此累积串）
+  let mdRaf = false;
+  const hasMd = typeof renderMd === 'function'; // 渲染器资源加载失败时降级纯文本
+  function renderCur() {
+    if (!cur || mdRaf) return;
+    mdRaf = true;
+    requestAnimationFrame(() => {
+      mdRaf = false;
+      if (!cur) return;
+      if (hasMd) { cur.textContent = ''; cur.appendChild(renderMd(curText)); }
+      else cur.textContent = curText;
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+  function renderCurSync() {
+    if (!cur) return;
+    if (hasMd) { cur.textContent = ''; cur.appendChild(renderMd(curText)); }
+    else cur.textContent = curText;
+  }
 
   function add(who, cls) {
     const d = document.createElement('div');
@@ -385,7 +434,8 @@ export function chatHtml(): string {
         break;
       }
       case 'start':
-        cur = add('AI', '');
+        cur = add('AI', 'ai');
+        curText = '';
         thinkEl = null;
         thinkBody = null;
         translateDone = false;
@@ -411,11 +461,12 @@ export function chatHtml(): string {
       case 'token':
         if (cur) {
           if (thinkEl) thinkEl.removeAttribute('open'); // 正文开始，折叠思考
-          cur.textContent += m.tok;
-          log.scrollTop = log.scrollHeight;
+          curText += m.tok;
+          renderCur();
         }
         break;
       case 'done': {
+        renderCurSync();
         cur = null;
         const ops = document.createElement('div');
         ops.className = 'ops';
@@ -432,9 +483,11 @@ export function chatHtml(): string {
       }
       case 'translateStart':
         add('翻译', 'status').textContent = '原文：' + (m.source || '') + (m.source && m.source.length >= 200 ? '…' : '');
-        cur = add('译文', '');
+        cur = add('译文', 'ai');
+        curText = '';
         break;
       case 'translateDone': {
+        renderCurSync();
         cur = null;
         const ops = document.createElement('div');
         ops.className = 'ops';
