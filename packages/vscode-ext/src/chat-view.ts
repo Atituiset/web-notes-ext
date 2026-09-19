@@ -293,6 +293,11 @@ export function chatHtml(opts?: { scriptUri?: string; cspSource?: string }): str
   #log { flex: 1; overflow-y: auto; }
   .msg { margin: 8px 0; white-space: pre-wrap; word-break: break-word; }
   .who { font-weight: bold; font-size: 11px; color: var(--vscode-descriptionForeground); margin-bottom: 2px; }
+  /* 用户/AI 气泡视觉分层：用户 = 强调色底纹卡片，AI = 边框卡片 */
+  .msg.user .who { color: var(--vscode-textLink-foreground); }
+  .msg.user .body { background: color-mix(in srgb, var(--vscode-textLink-foreground) 12%, transparent); border: 1px solid color-mix(in srgb, var(--vscode-textLink-foreground) 30%, transparent); border-radius: 6px; padding: 6px 8px; }
+  .msg.ai .who { color: var(--vscode-foreground); }
+  .msg.ai .body { border: 1px solid var(--vscode-input-border, rgba(128,128,128,.35)); border-radius: 6px; padding: 6px 8px; }
   .err { color: var(--vscode-errorForeground); }
   .status { color: var(--vscode-descriptionForeground); font-size: 12px; }
   .ops { margin-top: 4px; }
@@ -443,7 +448,7 @@ ${mdScript}
     const raw = qEl.value;
     if (!raw.trim()) return;
     hideTpls();
-    const ub = add('你', '');
+    const ub = add('你', 'user');
     ub.textContent = raw;
     lastUserEl = ub.parentElement;
     sentHistory.push(raw);
