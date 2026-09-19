@@ -26,6 +26,8 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
   /** 最近一次翻译结果与其来源选区（「替换选区」用） */
   private lastTranslation = '';
   private translateOrigin: { uri: vscode.Uri; range: vscode.Range } | null = null;
+  /** 当前流式问答的中止器（webview 'stop' 消息触发） */
+  private currentAbort: AbortController | null = null;
   /**
    * webview 就绪握手：脚本加载完成后发 {type:'ready'}，此前所有出站消息进队列。
    * 没有这层时，命令首次打开面板后立刻 post 的消息会被静默丢弃
@@ -59,10 +61,26 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
           this.flush();
           break;
         case 'ask':
-          this.handleAsk(String(msg.question || '')).catch((e) =>
-            this.post({ type: 'error', message: describeError(e) })
-          );
+          this.handleAsk(String(msg.question || '')).catch((e) => {
+            if (e && (e as Error).name === 'AbortError') return; // handleAsk 内部已收尾
+            this.post({ type: 'error', message: describeError(e) });
+          });
           break;
+        case 'stop':
+          this.currentAbort?.abort();
+          break;
+        case 'revertLast': {
+          // 撤销最近一轮问答：历史弹出 user+assistant，问题回填输入框
+          const n = this.history.length;
+          if (n >= 2 && this.history[n - 2].role === 'user' && this.history[n - 1].role === 'assistant') {
+            const q = this.history[n - 2].content;
+            this.history.length = n - 2;
+            this.post({ type: 'reverted', question: q });
+          } else {
+            this.post({ type: 'reverted', question: null });
+          }
+          break;
+        }
         case 'saveQa':
           this.saveQa(String(msg.question || ''), String(msg.answer || '')).catch(() => {});
           break;
@@ -161,18 +179,36 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     });
     this.post({ type: 'start' });
     let answer = '';
-    const r = await streamChat({
-      settings,
-      messages,
-      onToken: (tok) => {
-        answer += tok;
-        this.post({ type: 'token', tok });
-      },
-      onReasoning: (tok) => this.post({ type: 'reasoningToken', tok }),
-    });
-    answer = r.text;
-    this.history.push({ role: 'user', content: question }, { role: 'assistant', content: answer });
-    this.post({ type: 'done', question, answer });
+    const ctrl = new AbortController();
+    this.currentAbort = ctrl;
+    try {
+      const r = await streamChat({
+        settings,
+        messages,
+        signal: ctrl.signal,
+        onToken: (tok) => {
+          answer += tok;
+          this.post({ type: 'token', tok });
+        },
+        onReasoning: (tok) => this.post({ type: 'reasoningToken', tok }),
+      });
+      answer = r.text;
+      this.history.push({ role: 'user', content: question }, { role: 'assistant', content: answer });
+      this.post({ type: 'done', question, answer });
+    } catch (e) {
+      if (ctrl.signal.aborted) {
+        // 用户停止：部分回答照常落历史（对齐 Chrome 侧 partial 语义），气泡定格已有内容
+        if (answer) {
+          this.history.push({ role: 'user', content: question }, { role: 'assistant', content: answer });
+        }
+        this.post({ type: 'done', question, answer });
+        this.post({ type: 'status', text: '已停止' });
+        return;
+      }
+      throw e;
+    } finally {
+      this.currentAbort = null;
+    }
   }
 
   /** AI 问答存为本文件笔记（kind=ai-qa，语义对齐 core saveAiQaNote 的 content 形状） */
@@ -262,11 +298,11 @@ export function chatHtml(opts?: { scriptUri?: string; cspSource?: string }): str
   .ops { margin-top: 4px; }
   button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: 0; border-radius: 3px; padding: 3px 10px; cursor: pointer; font-size: 12px; }
   button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
-  #input { display: flex; gap: 6px; margin-top: 8px; }
+  #input { display: flex; gap: 6px; margin-top: 8px; align-items: flex-end; }
   #tpls { display: none; margin-top: 6px; border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; overflow: hidden; }
   .tpl { padding: 4px 8px; cursor: pointer; font-size: 12px; }
   .tpl.sel { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
-  #q { flex: 1; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; padding: 4px 8px; }
+  #q { flex: 1; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; padding: 4px 8px; resize: none; font-family: inherit; font-size: inherit; line-height: 1.4; max-height: 140px; box-sizing: border-box; }
   #bar { display: flex; gap: 6px; margin-top: 6px; }
   .think { font-size: 12px; color: var(--vscode-descriptionForeground); margin-bottom: 4px; }
   .think summary { cursor: pointer; user-select: none; }
@@ -291,13 +327,15 @@ export function chatHtml(opts?: { scriptUri?: string; cspSource?: string }): str
 </head>
 <body>
   <div id="ctx"></div>
-  <div id="log"></div>  <div id="bar">
+  <div id="log"></div>
+  <div id="bar">
     <button class="secondary" id="btn-setup">快速配置</button>
     <button class="secondary" id="btn-export">导出本文件笔记</button>
+    <button class="secondary" id="btn-revert" title="删除最近一轮问答，问题回填输入框">↩ 撤销上轮</button>
   </div>
   <div id="tpls"></div>
   <div id="input">
-    <input id="q" placeholder="问 AI…（输入 / 呼出模板）">
+    <textarea id="q" rows="1" placeholder="问 AI…（/ 模板，Enter 发送，Shift+Enter 换行，Esc 停止）"></textarea>
     <button id="btn-send">发送</button>
   </div>
 ${mdScript}
@@ -310,6 +348,16 @@ ${mdScript}
   let thinkEl = null; // 流式中的思考块（<details>，回答开始时自动折叠）
   let thinkBody = null;
   let translateDone = false;
+  let streaming = false; // 流式中（问答/翻译）：Esc 停止、发送与撤销禁用
+  let lastUserEl = null; // 最近一条用户气泡（.msg 元素）
+  let pendingAiEl = null; // 流式中的 AI 气泡（.msg 元素）
+  const pairs = []; // 已完成问答的 DOM 对（撤销时移除）
+  const sentHistory = []; // 发送过的原文（↑ 召回）
+  let recallIdx = -1;
+  function autogrow() {
+    qEl.style.height = 'auto';
+    qEl.style.height = Math.min(qEl.scrollHeight, 140) + 'px';
+  }
   let curText = ''; // 当前气泡的 markdown 原文（渲染基于此累积串）
   let mdRaf = false;
   const hasMd = typeof renderMd === 'function'; // 渲染器资源加载失败时降级纯文本
@@ -391,14 +439,25 @@ ${mdScript}
   }
 
   function send() {
-    if (!qEl.value.trim()) return;
+    if (streaming) return;
+    const raw = qEl.value;
+    if (!raw.trim()) return;
     hideTpls();
-    add('你', '').textContent = qEl.value;
-    vs.postMessage({ type: 'ask', question: expandTpl(qEl.value) });
+    const ub = add('你', '');
+    ub.textContent = raw;
+    lastUserEl = ub.parentElement;
+    sentHistory.push(raw);
+    if (sentHistory.length > 50) sentHistory.shift();
+    recallIdx = -1;
+    vs.postMessage({ type: 'ask', question: expandTpl(raw) });
     qEl.value = '';
+    autogrow();
   }
   document.getElementById('btn-send').addEventListener('click', send);
-  qEl.addEventListener('input', renderTpls);
+  document.getElementById('btn-revert').addEventListener('click', () => {
+    if (!streaming) vs.postMessage({ type: 'revertLast' });
+  });
+  qEl.addEventListener('input', () => { autogrow(); renderTpls(); });
   qEl.addEventListener('keydown', (e) => {
     if (tplBox.style.display === 'block') {
       const n = tplBox.children.length;
@@ -415,7 +474,21 @@ ${mdScript}
         if (m[tplIdx]) { pickTpl(m[tplIdx]); e.preventDefault(); return; }
       }
     }
-    if (e.key === 'Enter') send();
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return; }
+    if (e.key === 'Escape' && streaming) { vs.postMessage({ type: 'stop' }); e.preventDefault(); return; }
+    // CLI 风格历史召回：空输入（或召回中）时 ↑↓ 翻发送历史
+    if (e.key === 'ArrowUp' && sentHistory.length && (!qEl.value || recallIdx >= 0)) {
+      recallIdx = recallIdx < 0 ? sentHistory.length - 1 : Math.max(0, recallIdx - 1);
+      qEl.value = sentHistory[recallIdx];
+      autogrow();
+      e.preventDefault(); return;
+    }
+    if (e.key === 'ArrowDown' && recallIdx >= 0) {
+      recallIdx++;
+      if (recallIdx >= sentHistory.length) { recallIdx = -1; qEl.value = ''; } else qEl.value = sentHistory[recallIdx];
+      autogrow();
+      e.preventDefault(); return;
+    }
   });
   document.getElementById('btn-export').addEventListener('click', () => {
     vs.postMessage({ type: 'exportNotes' });
@@ -435,10 +508,12 @@ ${mdScript}
       }
       case 'start':
         cur = add('AI', 'ai');
+        pendingAiEl = cur.parentElement;
         curText = '';
         thinkEl = null;
         thinkBody = null;
         translateDone = false;
+        streaming = true;
         break;
       case 'reasoningToken':
         if (cur) {
@@ -467,6 +542,10 @@ ${mdScript}
         break;
       case 'done': {
         renderCurSync();
+        streaming = false;
+        if (pendingAiEl) pairs.push({ u: lastUserEl, a: pendingAiEl });
+        pendingAiEl = null;
+        const answerText = m.answer || '';
         cur = null;
         const ops = document.createElement('div');
         ops.className = 'ops';
@@ -478,6 +557,18 @@ ${mdScript}
           b.disabled = true;
         });
         ops.appendChild(b);
+        if (answerText) {
+          const cp = document.createElement('button');
+          cp.className = 'secondary';
+          cp.textContent = '复制';
+          cp.addEventListener('click', () => {
+            navigator.clipboard.writeText(answerText).then(() => {
+              cp.textContent = '✓';
+              setTimeout(() => { cp.textContent = '复制'; }, 1200);
+            });
+          });
+          ops.appendChild(cp);
+        }
         log.lastChild.appendChild(ops);
         break;
       }
@@ -485,9 +576,12 @@ ${mdScript}
         add('翻译', 'status').textContent = '原文：' + (m.source || '') + (m.source && m.source.length >= 200 ? '…' : '');
         cur = add('译文', 'ai');
         curText = '';
+        streaming = true;
         break;
       case 'translateDone': {
         renderCurSync();
+        streaming = false;
+        const tText = curText;
         cur = null;
         const ops = document.createElement('div');
         ops.className = 'ops';
@@ -498,13 +592,41 @@ ${mdScript}
           b.disabled = true;
         });
         ops.appendChild(b);
+        if (tText) {
+          const cp = document.createElement('button');
+          cp.className = 'secondary';
+          cp.textContent = '复制';
+          cp.addEventListener('click', () => {
+            navigator.clipboard.writeText(tText).then(() => {
+              cp.textContent = '✓';
+              setTimeout(() => { cp.textContent = '复制'; }, 1200);
+            });
+          });
+          ops.appendChild(cp);
+        }
         log.lastChild.appendChild(ops);
         break;
       }
       case 'error':
         add('错误', 'err').textContent = m.message;
         cur = null;
+        streaming = false;
         break;
+      case 'reverted': {
+        if (m.question === null || m.question === undefined) {
+          add('', 'status').textContent = '没有可撤销的问答';
+          break;
+        }
+        const pair = pairs.pop();
+        if (pair) {
+          if (pair.a && pair.a.parentNode) pair.a.parentNode.removeChild(pair.a);
+          if (pair.u && pair.u.parentNode) pair.u.parentNode.removeChild(pair.u);
+        }
+        qEl.value = m.question;
+        autogrow();
+        qEl.focus();
+        break;
+      }
       case 'status':
         add('', 'status').textContent = m.text;
         break;
