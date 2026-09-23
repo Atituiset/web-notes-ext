@@ -441,7 +441,7 @@ $('chat-q').addEventListener('keydown', (e) => {
 
 async function askLLMWith(question, scope, selectionOverride?: string) {
   if (!question) return;
-  if (streaming) return; // 流式中不接受新提问
+  if (streaming) { toast(t('streamingWait')); return; } // 流式中不接受新提问（提示而非静默）
   const qEl = $('chat-q');
 
   // 先备料再动 UI：材料提取失败要能在不产生气泡/线程脏数据的情况下拦下
@@ -478,6 +478,11 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
   }
 
   const { info, pageUrl, notes } = mat;
+  // 线程归属校验：切 tab 后 sync 可能尚未跑（如流式刚结束），
+  // 当前线程属于别的页面时另起线程 —— 否则新页面的内容会被答进旧线程
+  if (currentThread && currentThread.url && pageUrl && currentThread.url !== pageUrl) {
+    currentThread = null;
+  }
   const pageText = scope === 'selection'
     ? null
     : (mat.pageText as string).slice(0, BUDGET.pageTextMaxChars * 6); // 提取层宽松截断，预算裁剪交给 buildContext
@@ -561,6 +566,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
       info, pageUrl, notes, selection, pageText, settings,
       reasoning: streamingReasoning,
     });
+    settleThreadView(thread, bubble);
     scrollBottom();
     renderFollowUps(bubble, question, streamingText);
   } catch (e: any) {
@@ -573,6 +579,7 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
           reasoning: streamingReasoning,
           partial: true,
         });
+        settleThreadView(thread, bubble);
         scrollBottom();
       } else {
         bubble.remove();
@@ -585,11 +592,26 @@ async function askLLMWith(question, scope, selectionOverride?: string) {
       appendError(String(e.message || e));
     }
   }
-  persistThread();
+  // 持久化闭包线程：流式期间用户可能已切 tab，currentThread 早就换了，
+  // 写全局 currentThread 会把这条线程存丢/存错对象；空线程（提问失败被 pop）不落库
+  if (thread.messages.length) await putThread(JSON.parse(JSON.stringify(thread))).catch(() => {});
   // 恢复发送按钮
   stopCurrent = null;
   streaming = false;
   setSendButton('send');
+}
+
+/**
+ * 流式完成于后台（用户切 tab 后视图已换）时的视图归位：
+ * 若当前面板恰好回到该线程所属页，currentThread 是 sync 从存储加载的副本
+ * （不含刚完成的消息）——统一为闭包线程对象并重绘出完整对话。
+ */
+function settleThreadView(thread: Thread, bubble: HTMLElement) {
+  if (bubble.isConnected) return; // 气泡还在屏上：流式渲染未被打断，无需处理
+  if (currentThread && currentThread.id === thread.id) {
+    currentThread = thread;
+    redrawThread();
+  }
 }
 
 /** 回答收尾：入 thread、渲染操作按钮、可选自动记忆/落盘 */
@@ -852,7 +874,8 @@ $('btn-options').addEventListener('click', () => chrome.runtime.openOptionsPage(
 let panelPageUrl = ''; // 面板内容当前绑定的 page key
 
 async function syncWithActiveTab() {
-  if (streaming) return; // 流式中不打断；panelPageUrl 不动，下次切 tab 会重新触发同步
+  // 流式中也跟随：面板是 window 级单例，不切会让会话「漏」到别的 tab；
+  // 流式闭包持有自己的 thread/bubble 引用，视图切走后仍在后台完成并落存储
   const info = await activeTabInfo();
   const url = info && /^https?:/.test(info.url) ? pageKey(info.url) : '';
   if (!url || url === panelPageUrl) return; // 受限页面（chrome:// 等）不抢当前会话
@@ -898,12 +921,9 @@ document.addEventListener('click', (e: any) => {
 
 applyI18n();
 renderNotes();
-// 记录启动时的激活页 key：syncWithActiveTab 的变更检测基线
-activeTabInfo()
-  .then((info) => {
-    if (info && /^https?:/.test(info.url)) panelPageUrl = pageKey(info.url);
-  })
-  .catch(() => {});
+// 启动即按激活页同步（含线程恢复）：panel 文档被浏览器回收重建后，
+// 聊天内容从存储按本页最近线程回填，而不是回欢迎屏装没事发生
+syncWithActiveTab().catch(() => {});
 // 语义召回接线：端侧模型后台下载/加载，就绪前自然降级为词法单路
 getSettings()
   .then(async (s) => {

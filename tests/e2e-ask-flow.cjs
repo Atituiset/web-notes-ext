@@ -38,12 +38,22 @@ function startServer() {
 <p>Beta paragraph discusses memory systems in browsers at length, with many useful words here for testing.</p>
 </article></body></html>`;
   const server = http.createServer((req, res) => {
+    // 测试不经设置页授权：面板 fetch 走 CORS 放行（ensureHost 由 panel.addInitScript 打桩）
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      });
+      res.end();
+      return;
+    }
     if (req.url.startsWith('/v1/chat/completions')) {
       let body = '';
       req.on('data', (c) => (body += c));
       req.on('end', () => {
         try { llmRequests.push(JSON.parse(body)); } catch {}
-        res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+        res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Access-Control-Allow-Origin': '*' });
         const words = ['Mock', ' 回答：', '选中内容', '已送达', '。'];
         let i = 0;
         const timer = setInterval(() => {
@@ -170,6 +180,12 @@ process.env.LANG = process.env.LC_ALL = 'zh_CN.UTF-8'; // 扩展 i18n 解析跟�
 
   // ---- 打开 panel（模拟侧栏），启动消费 pendingAsk → 应自动发问 ----
   const panel = await ctx.newPage();
+  // 测试不经设置页授权：打桩 ensureHost 依赖的 chrome.permissions.contains（CORS 由 mock 服务端放行）
+  await panel.addInitScript(() => {
+    try {
+      chrome.permissions.contains = () => Promise.resolve(true);
+    } catch { /* chrome.permissions 不可写时忽略（会暴露为 ensureHost 报错） */ }
+  });
   await page.bringToFront(); // 保持测试页为活动 tab，activeTabInfo 才能指到它
   await panel.goto(`chrome-extension://${extId}/panel/panel.html`);
 
