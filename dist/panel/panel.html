@@ -157,6 +157,16 @@
     .chat-input-wrap .send.stop { background: var(--danger); }
     .hint { color: var(--text-3); font-size: 11px; }
     #model-hint { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* ---------- prompt 模板弹层 ---------- */
+    #tpl-box {
+      display: none; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--r-md);
+      background: var(--bg-card); overflow: hidden; box-shadow: var(--shadow-sm);
+    }
+    .tpl { padding: 7px 10px; cursor: pointer; font-size: 12.5px; color: var(--text-2); }
+    .tpl:hover { background: var(--bg-soft); }
+    .tpl.sel { background: var(--accent-soft); color: var(--accent); }
+    .tpl b { color: var(--text); font-weight: 600; margin-right: 6px; }
+    .tpl.sel b { color: var(--accent); }
     /* ---------- 打字指示 ---------- */
     .typing { display: inline-flex; gap: 4px; padding: 6px 0; }
     .typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.2s infinite; }
@@ -214,6 +224,7 @@
   <button id="btn-scroll-bottom" data-i18n-title="scrollBottomTitle">↓</button>
   <div id="thread-list"></div>
   <div class="chat-input-wrap" id="chat-input-wrap">
+    <div id="tpl-box"></div>
     <textarea id="chat-q" data-i18n-ph="chatPlaceholder"></textarea>
     <div class="row">
       <select id="chat-scope">
